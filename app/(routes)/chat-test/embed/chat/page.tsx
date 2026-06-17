@@ -181,7 +181,7 @@ export default function StandaloneEmbedWidget() {
             bottom: isMobile ? '0' : '1.5rem',
             right: isMobile ? '0' : '0rem',
             width: isMobile ? '100vw' : '340px',
-            height: isMobile ? '100vh' : 'calc(100vh - 1rem)',
+            height: isMobile ? '100dvh' : 'calc(100vh - 1rem)',
             backgroundColor: '#111',
             borderRadius: isMobile ? '0' : '0px 12px',
             display: 'flex',
@@ -369,6 +369,7 @@ export default function StandaloneEmbedWidget() {
               backgroundColor: '#111',
               display: 'flex',
               flexDirection: 'column',
+              paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : '0',
             }}
           >
             {/* Input Row */}
