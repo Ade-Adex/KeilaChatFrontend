@@ -1,23 +1,31 @@
 // /scripts/embed.ts
 
-interface KeilaChatInterface {
-  open: () => void
-  close: () => void
-  toggle: () => void
-}
+export {} // Ensure this file is treated as a module
 
 ;(function () {
   const scriptTag = document.getElementById(
-    'keila-chat-chat-script',
+    'keila-chat-script',
   ) as HTMLScriptElement | null
+
   const widgetId = scriptTag?.getAttribute('data-widget-id')
 
-  if (!widgetId) return
+  if (!widgetId) {
+    console.warn('KeilaChat: Missing data-widget-id attribute.')
+    return
+  }
 
-  const host = 'https://christbcogbomoso.org'
+  const BASE_URL = 'https://keila-chat.vercel.app'
+
+  // 1. Create Container
+  const container = document.createElement('div')
+  container.id = 'keila-chat-container'
+  document.body.appendChild(container)
+
+  // 2. Create Iframe
   const iframe = document.createElement('iframe')
-  iframe.src = `${host}/chat-test/embed/chat?widgetId=${widgetId}`
+  iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`
 
+  // Apply styles securely
   Object.assign(iframe.style, {
     position: 'fixed',
     bottom: '20px',
@@ -29,21 +37,15 @@ interface KeilaChatInterface {
     display: 'none',
   })
 
-  document.body.appendChild(iframe)
+  container.appendChild(iframe)
 
-  const controls: KeilaChatInterface = {
-    open: () => {
-      iframe.style.display = 'block'
-    },
-    close: () => {
-      iframe.style.display = 'none'
-    },
-    toggle: () => {
-      iframe.style.display = iframe.style.display === 'none' ? 'block' : 'none'
-    },
+  // 3. Expose Controls to Window
+  // TypeScript now knows 'window.KeilaChat' exists because of src/types/window.d.ts
+  window.KeilaChat = {
+    open: () => (iframe.style.display = 'block'),
+    close: () => (iframe.style.display = 'none'),
+    toggle: () =>
+      (iframe.style.display =
+        iframe.style.display === 'none' ? 'block' : 'none'),
   }
-
-  // THE SOLUTION: Cast to unknown first, then to the desired interface.
-  // This bypasses the strict overlap check while maintaining type safety.
-  ;(window as unknown as { KeilaChat: KeilaChatInterface }).KeilaChat = controls
 })()

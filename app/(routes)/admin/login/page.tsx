@@ -28,34 +28,36 @@ export default function AdminLoginPage() {
     }
   }, [user, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !password) return
+ const handleSubmit = async (e: React.FormEvent) => {
+   e.preventDefault()
+   if (!email || !password) return
 
-    setSubmitting(true)
-    setErrorMsg(null)
+   setSubmitting(true)
+   setErrorMsg(null)
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
+   try {
+     const response = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ email, password }),
+     })
 
-      const resData = await response.json()
+     const resData = await response.json()
 
-      if (resData.status === 'success') {
-        await login(resData.token, resData.data.account)
-        router.push('/admin/dashboard')
-      } else {
-        setErrorMsg(resData.message || 'Invalid credentials provided.')
-      }
-    } catch (err) {
-      setErrorMsg('Network processing failure. Is your backend listening?')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+     if (resData.status === 'success') {
+       // FIX: Pass the property object along with account data
+       // Ensure your backend controller sends res.data.property
+       await login(resData.token, resData.data.account, resData.data.property)
+       router.push('/admin/dashboard')
+     } else {
+       setErrorMsg(resData.message || 'Invalid credentials provided.')
+     }
+   } catch (err) {
+     setErrorMsg('Network processing failure. Is your backend listening?')
+   } finally {
+     setSubmitting(false)
+   }
+ }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-[#ededed] px-4 font-sans">

@@ -3,6 +3,12 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+interface PropertyData {
+  id: string
+  widgetId: string
+  name: string
+}
+
 interface AccountData {
   id: string
   name: string
@@ -16,6 +22,7 @@ interface UserSession {
   email: string
   plan: string
   currentPropertyId: string
+  currentWidgetId: string // Add this
   accessToken: string
 }
 
@@ -23,7 +30,11 @@ interface AuthState {
   user: UserSession | null
   loading: boolean
   _hasHydrated: boolean
-  login: (token: string, accountData: AccountData) => Promise<void>
+  login: (
+    token: string,
+    accountData: AccountData,
+    propertyData: PropertyData,
+  ) => Promise<void>
   logout: () => void
   setLoading: (loading: boolean) => void
   setHasHydrated: (hydrated: boolean) => void
@@ -36,17 +47,20 @@ export const useAuthStore = create<AuthState>()(
       loading: false,
       _hasHydrated: false,
 
-      login: async (token: string, accountData: AccountData) => {
+      login: async (
+        token: string,
+        accountData: AccountData,
+        propertyData: PropertyData,
+      ) => {
         set({ loading: true })
         try {
-          const targetPropertyId = '6a3143b6d4767cbc5b60ac7c'
-
           const sessionPayload: UserSession = {
             id: accountData.id,
             name: accountData.name,
             email: accountData.ownerEmail,
             plan: accountData.plan,
-            currentPropertyId: targetPropertyId,
+            currentPropertyId: propertyData.id,
+            currentWidgetId: propertyData.widgetId, // Dynamically set
             accessToken: token,
           }
 

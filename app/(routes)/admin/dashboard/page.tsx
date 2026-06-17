@@ -108,6 +108,9 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (!user || !user.currentPropertyId) return
 
+
+    console.log("User", user)
+
     const propertyId = user.currentPropertyId
     const socketInstance = io(BACKEND_URL, {
       auth: { token: user.accessToken },
