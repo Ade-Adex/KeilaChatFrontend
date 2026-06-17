@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { FiX, FiSend, FiMessageSquare } from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/useAuthStore'
+import { IoMenuSharp } from 'react-icons/io5'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
@@ -46,6 +47,12 @@ declare global {
   }
 }
 
+  // Add this interface
+  interface MenuItem {
+    label: string
+    action: () => void
+  }
+
 // --- HELPER FUNCTION: Define it outside the component ---
 const getGroupDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -66,6 +73,14 @@ export default function StandaloneEmbedWidget() {
   const chatEndRef = useRef<HTMLDivElement | null>(null)
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  const [visitorName, setVisitorName] = useState(() =>
+    typeof window !== 'undefined'
+      ? localStorage.getItem('keila_visitor_name') || 'Visitor'
+      : 'Visitor',
+  )
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [tempName, setTempName] = useState('')
+
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
   const [visitorInput, setVisitorInput] = useState('')
   const [messages, setMessages] = useState<MessagePayload[]>([])
@@ -74,6 +89,9 @@ export default function StandaloneEmbedWidget() {
   const [isOperatorTyping, setIsOperatorTyping] = useState(false)
 
   const [isLoading, setIsLoading] = useState(true)
+  // Inside StandaloneEmbedWidget component
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
 
   const authUser = useAuthStore((state) => state.user)
 
@@ -222,6 +240,7 @@ export default function StandaloneEmbedWidget() {
       sessionId: config.sessionId,
       propertyId: config.propertyId,
       senderType: 'visitor',
+      senderName: visitorName,
       senderId: config.visitorId,
       messageText: visitorInput,
       createdAt: new Date().toISOString(),
@@ -266,6 +285,7 @@ export default function StandaloneEmbedWidget() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              position: 'relative',
             }}
           >
             <div>
@@ -274,18 +294,142 @@ export default function StandaloneEmbedWidget() {
                 We are online
               </div>
             </div>
-            <button
-              onClick={() => setIsWidgetOpen(false)}
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {/* Dropdown Trigger */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                <IoMenuSharp />
+              </button>
+              <button
+                onClick={() => setIsWidgetOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '3.5rem',
+                  right: '0.5rem',
+                  backgroundColor: '#222',
+                  borderRadius: '8px',
+                  padding: '0.5rem',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                  zIndex: 10,
+                  width: '150px',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '0.5rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    setIsEditingName(true)
+                    setIsMenuOpen(false)
+                  }}
+                >
+                  Change Name
+                </div>
+                <div
+                  style={{
+                    padding: '0.5rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    borderTop: '1px solid #333',
+                  }}
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                  }}
+                >
+                  Clear Chat
+                </div>
+              </div>
+            )}
+          </div>
+
+          {isEditingName && (
+            <div
               style={{
-                background: 'none',
-                border: 'none',
-                color: '#fff',
-                cursor: 'pointer',
+                position: 'absolute',
+                top: '4rem',
+                left: '1rem',
+                right: '1rem',
+                backgroundColor: '#1a1a1a',
+                padding: '1rem',
+                borderRadius: '8px',
+                border: '1px solid #333',
+                zIndex: 20,
               }}
             >
-              <FiX size={20} />
-            </button>
-          </div>
+              <input
+                autoFocus
+                placeholder="Enter your name"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  border: '1px solid #444',
+                  backgroundColor: '#000',
+                  color: '#fff',
+                }}
+              />
+              <div
+                style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}
+              >
+                <button
+                  onClick={() => {
+                    setVisitorName(tempName)
+                    localStorage.setItem('keila_visitor_name', tempName)
+                    setIsEditingName(false)
+                  }}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#0070f3',
+                    border: 'none',
+                    color: '#fff',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                  }}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setIsEditingName(false)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#333',
+                    border: 'none',
+                    color: '#fff',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Fixed Operator Bar */}
           {operatorName && (

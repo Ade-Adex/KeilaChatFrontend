@@ -22,7 +22,7 @@ interface UserSession {
   email: string
   plan: string
   currentPropertyId: string
-  currentWidgetId: string // Add this
+  currentWidgetId: string 
   accessToken: string
 }
 
