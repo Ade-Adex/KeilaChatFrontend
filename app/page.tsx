@@ -21,7 +21,7 @@ export default function Home() {
           href="/chat-test/embed/chat?propertyId=6a3143b6d4767cbc5b60ac7c"
           className="inline-block w-full py-3 px-4 rounded-lg bg-[#0070f3] hover:bg-blue-600 text-white font-medium transition-colors text-center shadow-lg shadow-blue-500/20"
         >
-          Open Live Chat Gateway Simulator →
+          Open Live Chat →
         </Link>
       </div>
     </div>
