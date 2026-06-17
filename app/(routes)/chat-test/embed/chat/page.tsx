@@ -32,6 +32,22 @@ interface MessagesSyncResponse {
   }
 }
 
+
+  // --- HELPER FUNCTION: Define it outside the component ---
+  const getGroupDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (date.toDateString() === today.toDateString()) return 'Today'
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
 export default function StandaloneEmbedWidget() {
   const socketRef = useRef<Socket | null>(null)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -121,6 +137,7 @@ export default function StandaloneEmbedWidget() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isWidgetOpen, isOperatorTyping])
 
+
   const sendTypingStatus = (isTyping: boolean) => {
     if (!socketRef.current || !config) return
     socketRef.current.emit('typing', {
@@ -166,7 +183,7 @@ export default function StandaloneEmbedWidget() {
             width: isMobile ? '100vw' : '340px',
             height: isMobile ? '100vh' : 'calc(100vh - 1rem)',
             backgroundColor: '#111',
-            borderRadius: isMobile ? '0' : '12px',
+            borderRadius: isMobile ? '0' : '0px 12px',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -203,6 +220,32 @@ export default function StandaloneEmbedWidget() {
             </button>
           </div>
 
+          {/* Fixed Operator Bar */}
+          {operatorName && (
+            <div
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#1a1a1a',
+                borderBottom: '1px solid #222',
+                fontSize: '0.75rem',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#10b981',
+                }}
+              />
+              Chatting with <strong>{operatorName}</strong>
+            </div>
+          )}
+
           {/* Messages */}
           <div
             style={{
@@ -227,35 +270,81 @@ export default function StandaloneEmbedWidget() {
             >
               Hi! How can we help you today?
             </div>
+            {(() => {
+              const groups: Record<string, MessagePayload[]> = {}
+              messages.forEach((msg) => {
+                const dateKey = getGroupDate(msg.createdAt)
+                if (!groups[dateKey]) groups[dateKey] = []
+                groups[dateKey].push(msg)
+              })
 
-            {messages.map((msg, idx) => {
-              const isMe = msg.senderType === 'visitor'
-              return (
-                <div
-                  key={msg._id || idx}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: isMe ? 'flex-end' : 'flex-start',
-                  }}
-                >
+              return Object.entries(groups).map(
+                ([dateLabel, groupMessages]) => (
                   <div
+                    key={dateLabel}
                     style={{
-                      padding: '0.6rem 0.9rem',
-                      borderRadius: isMe
-                        ? '12px 12px 0 12px'
-                        : '12px 12px 12px 0',
-                      maxWidth: '80%',
-                      fontSize: '0.85rem',
-                      backgroundColor: isMe ? '#0070f3' : '#333',
-                      color: '#fff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.8rem',
                     }}
                   >
-                    {msg.messageText}
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        fontSize: '0.7rem',
+                        color: '#666',
+                        margin: '0.5rem 0',
+                      }}
+                    >
+                      {dateLabel}
+                    </div>
+                    {groupMessages.map((msg, idx) => {
+                      const isMe = msg.senderType === 'visitor'
+                      const time = new Date(msg.createdAt).toLocaleTimeString(
+                        [],
+                        { hour: '2-digit', minute: '2-digit' },
+                      )
+
+                      return (
+                        <div
+                          key={msg._id || idx}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: isMe ? 'flex-end' : 'flex-start',
+                          }}
+                        >
+                          <div
+                            style={{
+                              padding: '0.6rem 0.9rem',
+                              borderRadius: isMe
+                                ? '12px 12px 0 12px'
+                                : '12px 12px 12px 0',
+                              maxWidth: '80%',
+                              fontSize: '0.85rem',
+                              backgroundColor: isMe ? '#0070f3' : '#333',
+                              color: '#fff',
+                            }}
+                          >
+                            {msg.messageText}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              color: '#666',
+                              marginTop: '2px',
+                              paddingLeft: '4px',
+                            }}
+                          >
+                            {time}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                </div>
+                ),
               )
-            })}
+            })()}
             <div ref={chatEndRef} />
           </div>
 
