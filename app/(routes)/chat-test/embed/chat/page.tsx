@@ -317,17 +317,24 @@ export default function StandaloneEmbedWidget() {
         fontFamily: 'Arial, sans-serif',
       }}
     >
-      <Modal 
-        opened={opened} 
-        onClose={close} 
+      <Modal
+        opened={opened}
+        onClose={close}
         title="End Chat Session"
         centered
         overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
       >
-        <p>Are you sure you want to end this chat session? This action cannot be undone.</p>
+        <p>
+          Are you sure you want to end this chat session? This action cannot be
+          undone.
+        </p>
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-          <Button variant="outline" onClick={close}>Cancel</Button>
-          <Button color="red" onClick={handleEndSession}>End Session</Button>
+          <Button variant="outline" onClick={close}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={handleEndSession}>
+            End Session
+          </Button>
         </div>
       </Modal>
 
@@ -369,9 +376,14 @@ export default function StandaloneEmbedWidget() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <Menu shadow="md" width={200}>
+              <Menu
+                shadow="md"
+                width={200}
+                withinPortal={false}
+                position="bottom-end"
+              >
                 <Menu.Target>
-                  <ActionIcon variant="transparent" color="white">
+                  <ActionIcon variant="transparent" color="white" size="lg">
                     <IoMenuSharp />
                   </ActionIcon>
                 </Menu.Target>
@@ -382,8 +394,6 @@ export default function StandaloneEmbedWidget() {
                   </Menu.Item>
                   <Menu.Divider />
                   <Menu.Item color="red" onClick={open}>
-                    {' '}
-                    {/* Open Modal here */}
                     End Chat Session
                   </Menu.Item>
                 </Menu.Dropdown>
