@@ -68,6 +68,48 @@ const getGroupDate = (dateString: string) => {
   })
 }
 
+
+ const TypingIndicator = () => (
+   <div
+     style={{
+       display: 'flex',
+       gap: '4px',
+       padding: '10px 14px',
+       backgroundColor: '#333',
+       borderRadius: '12px 12px 12px 0',
+       width: 'fit-content',
+       alignSelf: 'flex-start',
+     }}
+   >
+     {[0, 1, 2].map((i) => (
+       <div
+         key={i}
+         style={{
+           width: '6px',
+           height: '6px',
+           backgroundColor: '#888',
+           borderRadius: '50%',
+           animation: 'bounce 1.4s infinite ease-in-out both',
+           animationDelay: `${i * 0.16}s`,
+         }}
+       />
+     ))}
+     <style jsx>{`
+       @keyframes bounce {
+         0%,
+         80%,
+         100% {
+           transform: scale(0);
+         }
+         40% {
+           transform: scale(1);
+         }
+       }
+     `}</style>
+   </div>
+ )
+
+
 export default function StandaloneEmbedWidget() {
   const socketRef = useRef<Socket | null>(null)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -248,6 +290,25 @@ export default function StandaloneEmbedWidget() {
     setVisitorInput('')
   }
 
+  const handleEndSession = async () => {
+    if (!config?.sessionId) return
+
+    try {
+      await fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/end`, {
+        method: 'PATCH',
+      })
+      // Clear local state or close widget
+      setMessages([])
+      setIsWidgetOpen(false)
+      setIsMenuOpen(false)
+      // Optional: Force re-init or clear session cache
+      window.location.reload()
+    } catch (err) {
+      console.error('Failed to end session', err)
+    }
+  }
+
+
   return (
     <div
       style={{
@@ -355,12 +416,15 @@ export default function StandaloneEmbedWidget() {
                     fontSize: '0.8rem',
                     cursor: 'pointer',
                     borderTop: '1px solid #333',
+                    color: '#ff4d4d',
                   }}
                   onClick={() => {
-                    setIsMenuOpen(false)
+                    if (confirm('Are you sure you want to end this chat?')) {
+                      handleEndSession()
+                    }
                   }}
                 >
-                  Clear Chat
+                  End Chat Session
                 </div>
               </div>
             )}
@@ -556,22 +620,10 @@ export default function StandaloneEmbedWidget() {
                 ),
               )
             })()}
+            {isOperatorTyping && <TypingIndicator />}
             <div ref={chatEndRef} />
           </div>
 
-          {isOperatorTyping && (
-            <div
-              style={{
-                padding: '0.2rem 1rem',
-                fontSize: '0.65rem',
-                color: '#10b981',
-                fontStyle: 'italic',
-                backgroundColor: '#111',
-              }}
-            >
-              {operatorName || 'Operator'} is typing...
-            </div>
-          )}
 
           {/* Footer Section */}
           <div
