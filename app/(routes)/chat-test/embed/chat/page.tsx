@@ -7,6 +7,8 @@ import { io, Socket } from 'socket.io-client'
 import { FiX, FiSend, FiMessageSquare } from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { IoMenuSharp } from 'react-icons/io5'
+import { useDisclosure } from '@mantine/hooks'
+import { Modal, Button, Menu, ActionIcon } from '@mantine/core'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
@@ -131,7 +133,7 @@ export default function StandaloneEmbedWidget() {
   const [isOperatorTyping, setIsOperatorTyping] = useState(false)
 
   const [isLoading, setIsLoading] = useState(true)
-  // Inside StandaloneEmbedWidget component
+  const [opened, { open, close }] = useDisclosure(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
 
@@ -292,22 +294,18 @@ export default function StandaloneEmbedWidget() {
 
   const handleEndSession = async () => {
     if (!config?.sessionId) return
-
     try {
       await fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/end`, {
         method: 'PATCH',
       })
-      // Clear local state or close widget
-      setMessages([])
       setIsWidgetOpen(false)
       setIsMenuOpen(false)
-      // Optional: Force re-init or clear session cache
+      close() 
       window.location.reload()
     } catch (err) {
       console.error('Failed to end session', err)
     }
   }
-
 
   return (
     <div
@@ -319,6 +317,20 @@ export default function StandaloneEmbedWidget() {
         fontFamily: 'Arial, sans-serif',
       }}
     >
+      <Modal 
+        opened={opened} 
+        onClose={close} 
+        title="End Chat Session"
+        centered
+        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+      >
+        <p>Are you sure you want to end this chat session? This action cannot be undone.</p>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <Button variant="outline" onClick={close}>Cancel</Button>
+          <Button color="red" onClick={handleEndSession}>End Session</Button>
+        </div>
+      </Modal>
+
       {isWidgetOpen && (
         <div
           style={{
@@ -357,18 +369,25 @@ export default function StandaloneEmbedWidget() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {/* Dropdown Trigger */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                }}
-              >
-                <IoMenuSharp />
-              </button>
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <ActionIcon variant="transparent" color="white">
+                    <IoMenuSharp />
+                  </ActionIcon>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Item onClick={() => setIsEditingName(true)}>
+                    Change Name
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item color="red" onClick={open}>
+                    {' '}
+                    {/* Open Modal here */}
+                    End Chat Session
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
               <button
                 onClick={() => setIsWidgetOpen(false)}
                 style={{
@@ -381,53 +400,6 @@ export default function StandaloneEmbedWidget() {
                 <FiX size={20} />
               </button>
             </div>
-
-            {/* Dropdown Menu */}
-            {isMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '3.5rem',
-                  right: '0.5rem',
-                  backgroundColor: '#222',
-                  borderRadius: '8px',
-                  padding: '0.5rem',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                  zIndex: 10,
-                  width: '150px',
-                }}
-              >
-                <div
-                  style={{
-                    padding: '0.5rem',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setIsEditingName(true)
-                    setIsMenuOpen(false)
-                  }}
-                >
-                  Change Name
-                </div>
-                <div
-                  style={{
-                    padding: '0.5rem',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    borderTop: '1px solid #333',
-                    color: '#ff4d4d',
-                  }}
-                  onClick={() => {
-                    if (confirm('Are you sure you want to end this chat?')) {
-                      handleEndSession()
-                    }
-                  }}
-                >
-                  End Chat Session
-                </div>
-              </div>
-            )}
           </div>
 
           {isEditingName && (
@@ -623,7 +595,6 @@ export default function StandaloneEmbedWidget() {
             {isOperatorTyping && <TypingIndicator />}
             <div ref={chatEndRef} />
           </div>
-
 
           {/* Footer Section */}
           <div
