@@ -404,10 +404,10 @@ export default function AdminDashboardPage() {
               />
               <button
                 onClick={sendResponse}
-                className="bg-[#10b981] hover:bg-emerald-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                className={` ${operatorInput ? 'bg-[#10b981] hover:bg-emerald-600 cursor-pointer' : 'bg-[#222] text-gray-400 cursor-not-allowed'} text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2`}
               >
                 <span>Reply</span>
-                <FiSend />
+                <FiSend /> 
               </button>
             </div>
           </>
