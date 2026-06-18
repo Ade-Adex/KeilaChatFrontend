@@ -413,21 +413,55 @@ export default function AdminDashboardPage() {
                         })
 
                         return (
+                          // <div
+                          //   key={msg._id || idx}
+                          //   className={`flex flex-col ${isOp ? 'items-end' : 'items-start'}`}
+                          // >
+                          //   <div
+                          //     className={`p-3 rounded-xl max-w-[70%] text-sm shadow-sm ${
+                          //       isOp
+                          //         ? 'bg-[#10b981] text-white'
+                          //         : 'bg-[#333] text-zinc-100 dark:text-white'
+                          //     }`}
+                          //   >
+                          //     {msg.messageText}
+                          //   </div>
+                          //   <span className="text-[10px] text-black dark:text-white mt-1 px-1">
+                          //     {isOp ? 'You' : msg.senderName || 'Visitor'} •{' '}
+                          //     {time}
+                          //   </span>
+                          // </div>
+
                           <div
                             key={msg._id || idx}
-                            className={`flex flex-col ${isOp ? 'items-end' : 'items-start'}`}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: isOp ? 'flex-end' : 'flex-start',
+                            }}
                           >
                             <div
-                              className={`p-3 rounded-xl max-w-[70%] text-sm shadow-sm ${
-                                isOp
-                                  ? 'bg-[#10b981] text-white'
-                                  : 'bg-zinc-800 dark:bg-zinc-500 text-zinc-100 dark:text-white'
-                              }`}
+                              style={{
+                                padding: '0.6rem 0.9rem',
+                                borderRadius: isOp
+                                  ? '12px 12px 0 12px'
+                                  : '12px 12px 12px 0',
+                                maxWidth: '80%',
+                                backgroundColor: isOp ? '#10b981' : '#333',
+                                color: '#fff',
+                              }}
+                              className="text-xs! md:text-sm"
                             >
                               {msg.messageText}
                             </div>
-                            <span className="text-[10px] text-black dark:text-white mt-1 px-1">
-                              {isOp ? 'You' : msg.senderName || 'Visitor'} •{' '}
+                            <span
+                              style={{
+                                fontSize: '0.65rem',
+                                color: '#666',
+                                marginTop: '2px',
+                                paddingLeft: '4px',
+                              }}
+                            >
                               {time}
                             </span>
                           </div>

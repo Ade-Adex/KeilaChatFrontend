@@ -9,6 +9,7 @@ import { useAuthStore } from '@/app/store/useAuthStore'
 import { IoMenuSharp } from 'react-icons/io5'
 import { useDisclosure } from '@mantine/hooks'
 import { Modal, Button, Menu, ActionIcon } from '@mantine/core'
+import ThemeToggle from '@/app/components/ThemeToggle'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
@@ -352,13 +353,14 @@ export default function StandaloneEmbedWidget() {
             right: isMobile ? '0' : '0rem',
             width: isMobile ? '100vw' : '340px',
             height: isMobile ? '100dvh' : 'calc(100vh - 1rem)',
-            backgroundColor: '#111',
+            // backgroundColor: '#111',
             borderRadius: isMobile ? '0' : '0px 12px',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
+          className="bg-background"
         >
           {/* Header */}
           <div
@@ -380,6 +382,7 @@ export default function StandaloneEmbedWidget() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <ThemeToggle />
               <Menu
                 shadow="md"
                 width={200}
@@ -393,8 +396,11 @@ export default function StandaloneEmbedWidget() {
                   </ActionIcon>
                 </Menu.Target>
 
-                <Menu.Dropdown>
-                  <Menu.Item onClick={() => setIsEditingName(true)}>
+                <Menu.Dropdown className="bg-background! text-foreground! border border-border! py-2!">
+                  <Menu.Item
+                    onClick={() => setIsEditingName(true)}
+                    color="blue"
+                  >
                     Change Name
                   </Menu.Item>
                   <Menu.Divider />
@@ -424,26 +430,18 @@ export default function StandaloneEmbedWidget() {
                 top: '4rem',
                 left: '1rem',
                 right: '1rem',
-                backgroundColor: '#1a1a1a',
-                padding: '1rem',
                 borderRadius: '8px',
                 border: '1px solid #333',
                 zIndex: 20,
               }}
+              className="bg-card py-8 px-4"
             >
               <input
                 autoFocus
                 placeholder="Enter your name"
                 value={tempName}
                 onChange={(e) => setTempName(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  borderRadius: '4px',
-                  border: '1px solid #444',
-                  backgroundColor: '#000',
-                  color: '#fff',
-                }}
+                className="w-full bg-background border border-border text-foreground outline-none focus:border-primary rounded-lg px-4 py-2.5 text-sm!"
               />
               <div
                 style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}
@@ -454,27 +452,13 @@ export default function StandaloneEmbedWidget() {
                     localStorage.setItem('keila_visitor_name', tempName)
                     setIsEditingName(false)
                   }}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#0070f3',
-                    border: 'none',
-                    color: '#fff',
-                    padding: '0.5rem',
-                    borderRadius: '4px',
-                  }}
+                  className="flex-1 py-2 rounded-lg bg-primary hover:bg-button-hover text-white font-medium transition-colors text-center text-sm cursor-pointer"
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setIsEditingName(false)}
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#333',
-                    border: 'none',
-                    color: '#fff',
-                    padding: '0.5rem',
-                    borderRadius: '4px',
-                  }}
+                  className="flex-1 py-2 rounded-lg bg-[#333] text-white font-medium transition-colors text-center text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -514,11 +498,11 @@ export default function StandaloneEmbedWidget() {
               flex: 1,
               padding: '1rem',
               overflowY: 'auto',
-              backgroundColor: '#050505',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.8rem',
             }}
+            className="bg-background"
           >
             <div
               style={{
@@ -583,10 +567,10 @@ export default function StandaloneEmbedWidget() {
                                 ? '12px 12px 0 12px'
                                 : '12px 12px 12px 0',
                               maxWidth: '80%',
-                              fontSize: '0.85rem',
                               backgroundColor: isMe ? '#0070f3' : '#333',
                               color: '#fff',
                             }}
+                            className="text-xs! md:text-sm"
                           >
                             {msg.messageText}
                           </div>
@@ -614,12 +598,11 @@ export default function StandaloneEmbedWidget() {
           {/* Footer Section */}
           <div
             style={{
-              borderTop: '1px solid #222',
-              backgroundColor: '#111',
               display: 'flex',
               flexDirection: 'column',
               paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : '0',
             }}
+            className="border-t border-border bg-card"
           >
             {isSessionClosed ? (
               <div
@@ -643,6 +626,7 @@ export default function StandaloneEmbedWidget() {
                     gap: '0.4rem',
                     alignItems: 'center',
                   }}
+                  className="border-t border-border bg-card"
                 >
                   <input
                     type="text"
@@ -661,13 +645,9 @@ export default function StandaloneEmbedWidget() {
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     style={{
                       flex: 1,
-                      padding: '0.5rem 0.8rem',
                       borderRadius: '18px',
-                      border: '1px solid #333',
-                      backgroundColor: '#1a1a1a',
-                      color: '#fff',
-                      outline: 'none',
                     }}
+                    className=" bg-background border border-border text-foreground outline-none focus:border-primary text-xs! md:text-sm px-4 py-2.5"
                   />
                   {visitorInput && (
                     <button
@@ -699,8 +679,8 @@ export default function StandaloneEmbedWidget() {
                 padding: '0 0.6rem 0.6rem 0.6rem',
                 textAlign: 'center',
                 fontSize: '0.65rem',
-                color: '#444',
               }}
+              className="text-foreground"
             >
               Powered by <strong>Keila Technologies</strong>
             </div>
