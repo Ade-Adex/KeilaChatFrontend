@@ -12,6 +12,7 @@ import {
   FiLogOut,
   FiAward,
   FiShield,
+  FiArrowLeft,
 } from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/useAuthStore'
 
@@ -77,21 +78,46 @@ const getGroupDate = (dateString?: string) => {
 }
 
 export default function AdminDashboardPage() {
+  // const router = useRouter()
+
+  // const user = useAuthStore((state) => state.user)
+
+  // // console.log("Admin", user)
+
+  // const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  // const [isVisitorTyping, setIsVisitorTyping] = useState(false)
+
+  // const logout = useAuthStore((state) => state.logout)
+  // const authLoading = useAuthStore((state) => state.loading)
+  // const hasHydrated = useAuthStore((state) => state._hasHydrated)
+
+  // const socketRef = useRef<Socket | null>(null)
+  // const feedEndRef = useRef<HTMLDivElement | null>(null)
+
+  // const [activeThreads, setActiveThreads] = useState<ThreadSummary[]>([])
+  // const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+  //   null,
+  // )
+  // const [messages, setMessages] = useState<MessagePayload[]>([])
+  // const [operatorInput, setOperatorInput] = useState('')
+
+  // const selectedThread = activeThreads.find(
+  //   (t) => t.sessionId === selectedSessionId,
+  // )
+  // const isSessionClosed = selectedThread?.status === 'closed'
+
+
+
+
   const router = useRouter()
-
   const user = useAuthStore((state) => state.user)
-
-  // console.log("Admin", user)
-
-  const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const [isVisitorTyping, setIsVisitorTyping] = useState(false)
-
   const logout = useAuthStore((state) => state.logout)
   const authLoading = useAuthStore((state) => state.loading)
   const hasHydrated = useAuthStore((state) => state._hasHydrated)
 
   const socketRef = useRef<Socket | null>(null)
   const feedEndRef = useRef<HTMLDivElement | null>(null)
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const [activeThreads, setActiveThreads] = useState<ThreadSummary[]>([])
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
@@ -99,6 +125,7 @@ export default function AdminDashboardPage() {
   )
   const [messages, setMessages] = useState<MessagePayload[]>([])
   const [operatorInput, setOperatorInput] = useState('')
+  const [isVisitorTyping, setIsVisitorTyping] = useState(false)
 
   const selectedThread = activeThreads.find(
     (t) => t.sessionId === selectedSessionId,
@@ -316,96 +343,52 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-[#0a0a0a] text-[#ededed] font-sans select-none">
-      {/* SIDEBAR CONTAINER */}
-      <div className="w-80 border-r border-[#222] bg-[#111] flex flex-col justify-between">
+    // <div className="flex h-screen w-full bg-[#0a0a0a] text-[#ededed] font-sans select-none">
+    <div className="flex h-screen w-full bg-[#0a0a0a] text-[#ededed] font-sans select-none overflow-hidden">
+      <div
+        className={`w-full md:w-80 border-r border-[#222] bg-[#111] flex flex-col justify-between ${selectedSessionId ? 'hidden md:flex' : 'flex'}`}
+      >
         <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-4 border-b border-[#222] flex items-center justify-between text-white font-bold text-lg">
+          <div className="p-4 border-b border-[#222] flex items-center justify-between font-bold text-lg text-white">
             <div className="flex items-center gap-2">
-              <FiBriefcase className="text-[#10b981]" />
+              <FiBriefcase className="text-[#10b981]" />{' '}
               <span>Keila Operator</span>
             </div>
             <button
               onClick={() => logout()}
-              className="text-zinc-500 hover:text-red-400 p-1"
-              title="Log out"
+              className="text-zinc-500 hover:text-red-400"
             >
               <FiLogOut size={16} />
             </button>
           </div>
-
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {activeThreads.length === 0 ? (
-              <p className="text-zinc-500 text-xs text-center pt-8">
-                No active chat sessions found.
-              </p>
-            ) : (
-              activeThreads.map((thread) => {
-                const isSelected = thread.sessionId === selectedSessionId
-                return (
-                  <button
-                    key={thread.sessionId}
-                    onClick={() => setSelectedSessionId(thread.sessionId)}
-                    className={`w-full text-left p-3 rounded-lg block transition-colors cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#0070f3] text-white'
-                        : 'bg-[#161616] hover:bg-[#222] text-zinc-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 font-medium text-sm">
-                      <FiUser />
-                      <span className="truncate">
-                        Session: ...{thread.sessionId.substring(16)}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-xs truncate mt-1 ${isSelected ? 'text-blue-100' : 'text-zinc-500'}`}
-                    >
-                      {thread.lastMessageText}
-                    </p>
-                  </button>
-                )
-              })
-            )}
-          </div>
-        </div>
-
-        {/* ADMIN ACCOUNT CARD */}
-        <div className="p-4 border-t border-[#222] bg-[#141414] space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="space-y-0.5 max-w-[75%]">
-              <h4 className="text-sm font-semibold text-white truncate">
-                {user.name}
-              </h4>
-              <p className="text-xs text-zinc-400 truncate">{user.email}</p>
-            </div>
-            <span
-              className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
-                user.plan === 'premium'
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                  : 'bg-zinc-500/10 text-zinc-400 border border-[#333]'
-              }`}
-            >
-              <FiAward size={10} />
-              {user.plan}
-            </span>
-          </div>
-          <div className="pt-2 border-t border-[#222] flex items-center justify-between text-[11px] text-zinc-500">
-            <span className="flex items-center gap-1 text-emerald-500">
-              <FiShield size={12} /> Status: Active
-            </span>
-            <span className="text-zinc-600">
-              ID: ...{user.id.substring(16)}
-            </span>
+            {activeThreads.map((thread) => (
+              <button
+                key={thread.sessionId}
+                onClick={() => setSelectedSessionId(thread.sessionId)}
+                className={`w-full text-left p-3 rounded-lg ${thread.sessionId === selectedSessionId ? 'bg-[#0070f3] text-white' : 'bg-[#161616] hover:bg-[#222]'}`}
+              >
+                <div className="text-sm font-medium truncate">
+                  Session: ...{thread.sessionId.slice(-6)}
+                </div>
+                <div className="text-xs text-zinc-500 truncate mt-1">
+                  {thread.lastMessageText}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* CORE ACTIVE CONVERSATION WORKSPACE */}
-      <div className="flex-1 flex flex-col bg-[#050505]">
+      {/* <div className="flex-1 flex flex-col bg-[#050505]">
+        {selectedSessionId ? ( */}
+      <div
+        className={`flex-1 flex flex-col bg-[#050505] ${selectedSessionId ? 'flex' : 'hidden md:flex'}`}
+      >
         {selectedSessionId ? (
           <>
-            <div className="p-4 border-b border-[#222] bg-[#111]">
+            {/* <div className="p-4 border-b border-[#222] bg-[#111]">
               <h2 className="text-sm font-semibold text-white">
                 Active Thread: {selectedSessionId}
               </h2>
@@ -418,6 +401,31 @@ export default function AdminDashboardPage() {
               <button
                 onClick={handleEndSession}
                 className="text-[10px] bg-red-900/20 text-red-400 border border-red-900/50 px-2 py-1 rounded hover:bg-red-900/40 transition-colors"
+              >
+                End Session
+              </button>
+            </div> */}
+
+            <div className="p-4 border-b border-[#222] bg-[#111] flex items-center gap-3">
+              <button
+                onClick={() => setSelectedSessionId(null)}
+                className="md:hidden"
+              >
+                <FiArrowLeft />
+              </button>
+              <div className="flex-1">
+                <h2 className="text-sm font-semibold text-white">
+                  Active Thread
+                </h2>
+                {isVisitorTyping && (
+                  <p className="text-[10px] text-[#10b981] animate-pulse italic">
+                    Visitor is typing...
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleEndSession}
+                className="text-[10px] bg-red-900/20 text-red-400 border border-red-900/50 px-2 py-1 rounded"
               >
                 End Session
               </button>
