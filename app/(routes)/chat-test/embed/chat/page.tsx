@@ -27,6 +27,7 @@ interface ConfigData {
   propertyId: string
   sessionId: string
   visitorId: string
+  status: string
 }
 
 interface MessagesSyncResponse {
@@ -132,9 +133,8 @@ export default function StandaloneEmbedWidget() {
   const [isMobile, setIsMobile] = useState(false)
   const [isOperatorTyping, setIsOperatorTyping] = useState(false)
 
-  const [isLoading, setIsLoading] = useState(true)
+  const isSessionClosed = config?.status === 'closed'
   const [opened, { open, close }] = useDisclosure(false)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
 
   const authUser = useAuthStore((state) => state.user)
@@ -171,7 +171,7 @@ export default function StandaloneEmbedWidget() {
 
       if (!widgetId) {
         console.warn('KeilaChat: No Widget ID found.')
-        queueMicrotask(() => setIsLoading(false))
+        // queueMicrotask(() => setIsLoading(false))
         return
       }
 
@@ -206,6 +206,7 @@ export default function StandaloneEmbedWidget() {
             propertyId: resData.data.session.propertyId,
             sessionId: resData.data.session._id,
             visitorId: visitorId,
+            status: resData.data.session.status,
           })
         }
       } catch (err: unknown) {
@@ -218,7 +219,7 @@ export default function StandaloneEmbedWidget() {
           )
         }
       } finally {
-        queueMicrotask(() => setIsLoading(false))
+        // queueMicrotask(() => setIsLoading(false))
       }
     }
 
@@ -253,6 +254,10 @@ export default function StandaloneEmbedWidget() {
         prev.some((m) => m._id === payload._id) ? prev : [...prev, payload],
       )
     })
+
+   socketInstance.on('session_closed', () => {
+     setConfig((prev) => (prev ? { ...prev, status: 'closed' } : null))
+   })
 
     socketInstance.on('user_typing', (p: { isTyping: boolean }) =>
       setIsOperatorTyping(p.isTyping),
@@ -292,20 +297,19 @@ export default function StandaloneEmbedWidget() {
     setVisitorInput('')
   }
 
-  const handleEndSession = async () => {
-    if (!config?.sessionId) return
-    try {
-      await fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/end`, {
-        method: 'PATCH',
-      })
-      setIsWidgetOpen(false)
-      setIsMenuOpen(false)
-      close() 
-      window.location.reload()
-    } catch (err) {
-      console.error('Failed to end session', err)
-    }
-  }
+ const handleEndSession = async () => {
+   if (!config?.sessionId) return
+   try {
+     await fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/end`, {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ endedBy: 'visitor' }),
+     })
+     close()
+   } catch (err) {
+     console.error('Failed to end session', err)
+   }
+ }
 
   return (
     <div
@@ -379,6 +383,7 @@ export default function StandaloneEmbedWidget() {
               <Menu
                 shadow="md"
                 width={200}
+                // Force the menu to stay within your widget container
                 withinPortal={false}
                 position="bottom-end"
               >
@@ -616,61 +621,77 @@ export default function StandaloneEmbedWidget() {
               paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : '0',
             }}
           >
-            {/* Input Row */}
-            <div
-              style={{
-                padding: '0.6rem',
-                display: 'flex',
-                gap: '0.4rem',
-                alignItems: 'center',
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={visitorInput}
-                onChange={(e) => {
-                  setVisitorInput(e.target.value)
-                  sendTypingStatus(true)
-                  if (typingTimerRef.current)
-                    clearTimeout(typingTimerRef.current)
-                  typingTimerRef.current = setTimeout(
-                    () => sendTypingStatus(false),
-                    2000,
-                  )
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            {isSessionClosed ? (
+              <div
                 style={{
-                  flex: 1,
-                  padding: '0.5rem 0.8rem',
-                  borderRadius: '18px',
-                  border: '1px solid #333',
-                  backgroundColor: '#1a1a1a',
-                  color: '#fff',
-                  outline: 'none',
+                  textAlign: 'center',
+                  padding: '1rem',
+                  color: '#666',
+                  fontSize: '0.8rem',
+                  fontStyle: 'italic',
                 }}
-              />
-              {visitorInput && (
-                <button
-                  onClick={handleSend}
+              >
+                This chat session has ended.
+              </div>
+            ) : (
+              <>
+                {/* Input Row */}
+                <div
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    backgroundColor: '#0070f3',
-                    border: 'none',
-                    color: '#fff',
+                    padding: '0.6rem',
                     display: 'flex',
+                    gap: '0.4rem',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    cursor: 'pointer',
                   }}
                 >
-                  <FiSend />
-                </button>
-              )}
-            </div>
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={visitorInput}
+                    onChange={(e) => {
+                      setVisitorInput(e.target.value)
+                      sendTypingStatus(true)
+                      if (typingTimerRef.current)
+                        clearTimeout(typingTimerRef.current)
+                      typingTimerRef.current = setTimeout(
+                        () => sendTypingStatus(false),
+                        2000,
+                      )
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem 0.8rem',
+                      borderRadius: '18px',
+                      border: '1px solid #333',
+                      backgroundColor: '#1a1a1a',
+                      color: '#fff',
+                      outline: 'none',
+                    }}
+                  />
+                  {visitorInput && (
+                    <button
+                      onClick={handleSend}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: '#0070f3',
+                        border: 'none',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <FiSend />
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Powered By Branding */}
             <div

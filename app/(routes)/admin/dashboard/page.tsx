@@ -24,6 +24,7 @@ interface BackendSession {
   lastMessageText?: string
   updatedAt: string
   createdAt: string
+  status: 'unassigned' | 'active' | 'closed'
 }
 
 interface ThreadSummary {
@@ -31,6 +32,7 @@ interface ThreadSummary {
   propertyId: string
   lastMessageText: string
   updatedAt: string
+  status: 'unassigned' | 'active' | 'closed'
 }
 
 interface MessagePayload {
@@ -98,6 +100,11 @@ export default function AdminDashboardPage() {
   const [messages, setMessages] = useState<MessagePayload[]>([])
   const [operatorInput, setOperatorInput] = useState('')
 
+  const selectedThread = activeThreads.find(
+    (t) => t.sessionId === selectedSessionId,
+  )
+  const isSessionClosed = selectedThread?.status === 'closed'
+
   useEffect(() => {
     if (hasHydrated && !authLoading && !user) {
       router.push('/admin/login')
@@ -108,8 +115,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (!user || !user.currentPropertyId) return
 
-
-    console.log("User", user)
+    console.log('User', user)
 
     const propertyId = user.currentPropertyId
     const socketInstance = io(BACKEND_URL, {
@@ -132,6 +138,7 @@ export default function AdminDashboardPage() {
             propertyId,
             lastMessageText: payload.messageText,
             updatedAt: new Date().toISOString(),
+            status: 'active',
           }
           return [updated, ...filtered]
         })
@@ -150,6 +157,7 @@ export default function AdminDashboardPage() {
               propertyId: s.propertyId,
               lastMessageText: s.lastMessageText || 'No messages generated yet',
               updatedAt: s.updatedAt,
+              status: s.status,
             }),
           )
           setActiveThreads(formatted)
@@ -192,13 +200,15 @@ export default function AdminDashboardPage() {
 
     currentSocket.on('new_message', (payload: MessagePayload) => {
       if (payload.sessionId === selectedSessionId) {
-        setIsVisitorTyping(false) // Reset on message receipt
+        setIsVisitorTyping(false)
         setMessages((prev) => {
           if (payload._id && prev.some((m) => m._id === payload._id))
             return prev
           return [...prev, payload]
         })
       }
+
+
 
       setActiveThreads((prev) =>
         prev.map((t) =>
@@ -207,8 +217,17 @@ export default function AdminDashboardPage() {
                 ...t,
                 lastMessageText: payload.messageText,
                 updatedAt: payload.createdAt || new Date().toISOString(),
+                status: t.status,
               }
             : t,
+        ),
+      )
+    })
+
+    currentSocket.on('session_closed', (payload: { sessionId: string }) => {
+      setActiveThreads((prev) =>
+        prev.map((t) =>
+          t.sessionId === payload.sessionId ? { ...t, status: 'closed' } : t,
         ),
       )
     })
@@ -216,6 +235,7 @@ export default function AdminDashboardPage() {
     return () => {
       currentSocket.off('new_message')
       currentSocket.off('user_typing')
+      currentSocket.off('session_closed')
     }
   }, [selectedSessionId, user])
 
@@ -223,38 +243,67 @@ export default function AdminDashboardPage() {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
- const sendTypingStatus = (isTyping: boolean) => {
-   if (!socketRef.current || !selectedSessionId) return
-   socketRef.current.emit('typing', {
-     sessionId: selectedSessionId,
-     senderName: user?.name || 'Operator',
-     isTyping,
-   })
- }
+  const sendTypingStatus = (isTyping: boolean) => {
+    if (!socketRef.current || !selectedSessionId) return
+    socketRef.current.emit('typing', {
+      sessionId: selectedSessionId,
+      senderName: user?.name || 'Operator',
+      isTyping,
+    })
+  }
 
- const sendResponse = () => {
-   if (
-     !socketRef.current ||
-     !operatorInput.trim() ||
-     !selectedSessionId ||
-     !user
-   )
-     return
+  const sendResponse = () => {
+    if (
+      !socketRef.current ||
+      !operatorInput.trim() ||
+      !selectedSessionId ||
+      !user
+    )
+      return
 
-   // Stop typing indicator when sending
-   if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
-   sendTypingStatus(false)
+    // Stop typing indicator when sending
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+    sendTypingStatus(false)
 
-   socketRef.current.emit('send_message', {
-     sessionId: selectedSessionId,
-     propertyId: user.currentPropertyId,
-     senderType: 'operator',
-     senderId: user.id,
-     senderName: user.name,
-     messageText: operatorInput,
-   })
-   setOperatorInput('')
- }
+    socketRef.current.emit('send_message', {
+      sessionId: selectedSessionId,
+      propertyId: user.currentPropertyId,
+      senderType: 'operator',
+      senderId: user.id,
+      senderName: user.name,
+      messageText: operatorInput,
+    })
+    setOperatorInput('')
+  }
+
+  const handleEndSession = async () => {
+    if (!selectedSessionId || !user) return
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/v1/sessions/${selectedSessionId}/end`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+          body: JSON.stringify({ endedBy: 'admin' }),
+        },
+      )
+
+      if (response.ok) {
+        // Clear the selected session or refresh list
+        setSelectedSessionId(null)
+        // Optional: Remove from activeThreads locally
+        setActiveThreads((prev) =>
+          prev.filter((t) => t.sessionId !== selectedSessionId),
+        )
+      }
+    } catch (err) {
+      console.error('Failed to end session:', err)
+    }
+  }
 
   if (!hasHydrated || authLoading || !user) {
     return (
@@ -365,6 +414,13 @@ export default function AdminDashboardPage() {
                   Visitor is typing...
                 </p>
               )}
+
+              <button
+                onClick={handleEndSession}
+                className="text-[10px] bg-red-900/20 text-red-400 border border-red-900/50 px-2 py-1 rounded hover:bg-red-900/40 transition-colors"
+              >
+                End Session
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -426,7 +482,12 @@ export default function AdminDashboardPage() {
             <div className="p-4 border-t border-[#222] bg-[#111] flex gap-2">
               <input
                 type="text"
-                placeholder="Type response back to client..."
+                disabled={isSessionClosed}
+                placeholder={
+                  isSessionClosed
+                    ? 'Chat session closed'
+                    : 'Type response back to client...'
+                }
                 value={operatorInput}
                 onChange={(e) => {
                   setOperatorInput(e.target.value)
@@ -443,10 +504,18 @@ export default function AdminDashboardPage() {
               />
               <button
                 onClick={sendResponse}
-                className={` ${operatorInput ? 'bg-[#10b981] hover:bg-emerald-600 cursor-pointer' : 'bg-[#222] text-gray-400 cursor-not-allowed'} text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2`}
+                disabled={isSessionClosed || !operatorInput.trim()}
+                className={`
+    text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2
+    ${
+      isSessionClosed || !operatorInput.trim()
+        ? 'bg-[#222] text-gray-500 cursor-not-allowed'
+        : 'bg-[#10b981] hover:bg-emerald-600 cursor-pointer'
+    }
+  `}
               >
-                <span>Reply</span>
-                <FiSend />
+                {isSessionClosed ? 'Closed' : 'Reply'}
+                {!isSessionClosed && <FiSend size={14} />}
               </button>
             </div>
           </>
