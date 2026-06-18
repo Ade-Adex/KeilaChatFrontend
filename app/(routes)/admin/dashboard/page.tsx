@@ -106,9 +106,6 @@ export default function AdminDashboardPage() {
   // )
   // const isSessionClosed = selectedThread?.status === 'closed'
 
-
-
-
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
@@ -235,8 +232,6 @@ export default function AdminDashboardPage() {
         })
       }
 
-
-
       setActiveThreads((prev) =>
         prev.map((t) =>
           t.sessionId === payload.sessionId
@@ -343,8 +338,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    // <div className="flex h-screen w-full bg-[#0a0a0a] text-[#ededed] font-sans select-none">
-    <div className="flex h-screen w-full bg-[#0a0a0a] text-[#ededed] font-sans select-none overflow-hidden">
+    <div className="flex h-screen w-full bg-[#ffffff] text-[#ededed] font-sans select-none overflow-hidden">
       <div
         className={`w-full md:w-80 border-r border-[#222] bg-[#111] flex flex-col justify-between ${selectedSessionId ? 'hidden md:flex' : 'flex'}`}
       >
@@ -381,37 +375,19 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* CORE ACTIVE CONVERSATION WORKSPACE */}
-      {/* <div className="flex-1 flex flex-col bg-[#050505]">
-        {selectedSessionId ? ( */}
+
       <div
         className={`flex-1 flex flex-col bg-[#050505] ${selectedSessionId ? 'flex' : 'hidden md:flex'}`}
       >
         {selectedSessionId ? (
           <>
-            {/* <div className="p-4 border-b border-[#222] bg-[#111]">
-              <h2 className="text-sm font-semibold text-white">
-                Active Thread: {selectedSessionId}
-              </h2>
-              {isVisitorTyping && (
-                <p className="text-[10px] text-[#10b981] mt-1 animate-pulse italic">
-                  Visitor is typing...
-                </p>
-              )}
-
-              <button
-                onClick={handleEndSession}
-                className="text-[10px] bg-red-900/20 text-red-400 border border-red-900/50 px-2 py-1 rounded hover:bg-red-900/40 transition-colors"
-              >
-                End Session
-              </button>
-            </div> */}
-
             <div className="p-4 border-b border-[#222] bg-[#111] flex items-center gap-3">
               <button
                 onClick={() => setSelectedSessionId(null)}
-                className="md:hidden"
+                className="md:hidden p-2 rounded-full text-zinc-400 hover:text-white hover:bg-[#222] transition-colors active:scale-95"
+                aria-label="Back to conversations"
               >
-                <FiArrowLeft />
+                <FiArrowLeft size={20} />
               </button>
               <div className="flex-1">
                 <h2 className="text-sm font-semibold text-white">
@@ -489,41 +465,17 @@ export default function AdminDashboardPage() {
 
             <div className="p-4 border-t border-[#222] bg-[#111] flex gap-2">
               <input
-                type="text"
                 disabled={isSessionClosed}
-                placeholder={
-                  isSessionClosed
-                    ? 'Chat session closed'
-                    : 'Type response back to client...'
-                }
                 value={operatorInput}
-                onChange={(e) => {
-                  setOperatorInput(e.target.value)
-                  sendTypingStatus(true)
-                  if (typingTimerRef.current)
-                    clearTimeout(typingTimerRef.current)
-                  typingTimerRef.current = setTimeout(
-                    () => sendTypingStatus(false),
-                    2000,
-                  )
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && sendResponse()}
-                className="flex-1 bg-[#222] text-white border border-[#333] rounded-lg px-4 py-2 text-sm outline-none focus:border-[#10b981] transition-colors"
+                onChange={(e) => setOperatorInput(e.target.value)}
+                className="flex-1 bg-[#222] text-white rounded-lg px-4 py-2 text-sm outline-none"
               />
               <button
                 onClick={sendResponse}
-                disabled={isSessionClosed || !operatorInput.trim()}
-                className={`
-    text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2
-    ${
-      isSessionClosed || !operatorInput.trim()
-        ? 'bg-[#222] text-gray-500 cursor-not-allowed'
-        : 'bg-[#10b981] hover:bg-emerald-600 cursor-pointer'
-    }
-  `}
+                disabled={isSessionClosed}
+                className="bg-[#10b981] text-white px-4 py-2 rounded-lg text-sm"
               >
-                {isSessionClosed ? 'Closed' : 'Reply'}
-                {!isSessionClosed && <FiSend size={14} />}
+                <FiSend />
               </button>
             </div>
           </>
