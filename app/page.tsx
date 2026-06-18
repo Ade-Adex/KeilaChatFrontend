@@ -42,7 +42,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col gap-2 pt-4">
               <Link
-                href="/chat-test/embed/chat?propertyId=6a3143b6d4767cbc5b60ac7c"
+                href="/chat-test/embed/chat?propertyId=b9a5cea7-ec8b-4cb6-9c62-521e5fd8f195"
                 className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg bg-[#0070f3] hover:bg-blue-600 transition-all text-white font-medium shadow-lg shadow-blue-900/20"
               >
                 Start Conversation <FiMessageSquare size={16} />
