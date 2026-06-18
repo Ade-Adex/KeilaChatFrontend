@@ -60,18 +60,16 @@ export default function AdminLoginPage() {
  }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-[#ededed] px-4 font-sans">
-      <div className="max-w-md w-full space-y-6 border border-[#222] bg-[#111] p-8 rounded-xl shadow-2xl">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 font-sans">
+      <div className="max-w-md w-full space-y-6  bg-card p-8 rounded-xl shadow-2xl">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-blue-500/10 rounded-full text-[#0070f3] mb-2">
+          <div className="inline-flex p-3 bg-primary rounded-full text-white mb-2">
             <FiBriefcase size={28} />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Operator Access Portal
           </h1>
-          <p className="text-xs text-zinc-400">
-            Authenticate session via Zustand state node
-          </p>
+          <p className="text-xs text-foreground">Authenticate session</p>
         </div>
 
         {errorMsg && (
@@ -82,35 +80,35 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-zinc-400 block">
+            <label className="text-xs font-semibold text-foreground block">
               Operator Email Address
             </label>
             <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm" />
+              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="operator@company.com"
-                className="w-full bg-[#161616] border border-[#222] rounded-lg pl-10 pr-4 py-2.5 text-sm text-white outline-none focus:border-[#0070f3] transition-colors"
+                className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm! text-foreground outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-zinc-400 block">
+            <label className="text-xs font-semibold text-foreground block">
               Security Password Token
             </label>
             <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm" />
+              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full bg-[#161616] border border-[#222] rounded-lg pl-10 pr-4 py-2.5 text-sm text-white outline-none focus:border-[#0070f3] transition-colors"
+                className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm! text-foreground outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -118,11 +116,9 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2.5 rounded-lg bg-[#0070f3] hover:bg-blue-600 disabled:bg-blue-800 text-white font-medium transition-colors text-center text-sm flex items-center justify-center"
+            className={`w-full py-2.5 rounded-lg bg-primary hover:bg-button-hover disabled:bg-gray-400 text-white font-medium transition-colors text-center text-sm flex items-center justify-center ${submitting ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
-            {submitting
-              ? 'Verifying Credentials...'
-              : 'Sign In To Control Dashboard'}
+            {submitting ? 'Verifying Credentials...' : 'Sign In'}
           </button>
         </form>
       </div>

@@ -12,12 +12,12 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground font-sans transition-colors duration-300 py-32">
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-6 text-center mb-24">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/5 border border-foreground/10 text-[10px] font-semibold uppercase tracking-widest mb-6">
-          <FiZap className="text-[#0070f3]" /> Real-time messaging engine
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-foreground/5 border border-primary text-[10px] font-semibold uppercase tracking-widest mb-6">
+          <FiZap className="text-primary" /> Real-time messaging engine
         </div>
         <h1 className="text-3xl md:text-6xl font-extrabold mb-8 tracking-tighter">
           Connect with your <br /> customers{' '}
-          <span className="text-[#0070f3]">instantly</span>.
+          <span className="text-primary">instantly</span>.
         </h1>
         <p className="text-sm md:text-lg opacity-90 max-w-2xl mx-auto mb-10">
           Keila provides a robust, multi-tenant architecture for real-time
@@ -28,7 +28,7 @@ export default function Home() {
         <div className="flex gap-4 justify-center">
           <Link
             href="/chat-test/embed/chat?propertyId=b9a5cea7-ec8b-4cb6-9c62-521e5fd8f195"
-            className="px-8 py-4 bg-[#0070f3] hover:bg-[#0060e3] text-white rounded-xl font-bold transition-all shadow-xl shadow-[#0070f3]/20 flex items-center gap-2 text-sm"
+            className="px-8 py-4 bg-primary hover:bg-button-hover text-white rounded-xl font-bold transition-all shadow-xl shadow-[#0070f3]/20 flex items-center gap-2 text-sm"
           >
             Start Live Chat <FiMessageSquare />
           </Link>
@@ -56,11 +56,17 @@ export default function Home() {
         ].map((feature, i) => (
           <div
             key={i}
-            className="p-8 rounded-2xl bg-foreground/3 border border-foreground/5"
+            className="group p-8 rounded-2xl bg-card border border-border transition-all duration-300 hover:border-primary hover:shadow-lg"
           >
-            <feature.icon className="text-[#0070f3] w-8 h-8 mb-4" />
-            <h3 className="font-bold text-base md:text-lg mb-2">{feature.title}</h3>
-            <p className="opacity-80 text-xs md:text-sm">{feature.desc}</p>
+            <feature.icon className="text-primary w-8 h-8 mb-4 transition-transform duration-300 group-hover:scale-110" />
+
+            <h3 className="font-bold text-base md:text-lg mb-2 text-foreground">
+              {feature.title}
+            </h3>
+
+            <p className="opacity-80 text-xs md:text-sm group-hover:opacity-100 transition-opacity">
+              {feature.desc}
+            </p>
           </div>
         ))}
       </section>

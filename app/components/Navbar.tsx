@@ -10,7 +10,7 @@ export default function Navbar() {
   const [opened, { toggle, close }] = useDisclosure(false)
 
   return (
-    <nav className="fixed top-0 left-0 z-50 w-full border-b border-zinc-800 bg-background/80 backdrop-blur-md transition-colors">
+    <nav className="fixed top-0 left-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
         <Link
           href="/"
@@ -34,7 +34,7 @@ export default function Navbar() {
 
           <Link
             href="/signup"
-            className="rounded-xl bg-[#0070f3] px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-lg shadow-[#0070f3]/20 hover:bg-[#0060e3] hover:shadow-[#0070f3]/30 active:scale-95"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-lg shadow-primary/20 hover:bg-button-hover hover:shadow-primary/30 active:scale-95"
           >
             Add chat to your website
           </Link>

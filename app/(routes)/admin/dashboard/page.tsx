@@ -15,6 +15,8 @@ import {
   FiArrowLeft,
 } from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/useAuthStore'
+import ThemeToggle from '@/app/components/ThemeToggle'
+import TypingIndicator from '@/app/components/TypingIndicator'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
@@ -340,32 +342,35 @@ export default function AdminDashboardPage() {
   return (
     <div className="flex h-screen w-full bg-[#ffffff] text-[#ededed] font-sans select-none overflow-hidden">
       <div
-        className={`w-full md:w-80 border-r border-[#222] bg-[#111] flex flex-col justify-between ${selectedSessionId ? 'hidden md:flex' : 'flex'}`}
+        className={`w-full md:w-80 border-r border-border bg-sidebar flex flex-col justify-between ${selectedSessionId ? 'hidden md:flex' : 'flex'}`}
       >
         <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-4 border-b border-[#222] flex items-center justify-between font-bold text-lg text-white">
+          <div className="p-4 border-b border-border flex items-center justify-between font-bold text-lg text-white">
             <div className="flex items-center gap-2">
               <FiBriefcase className="text-[#10b981]" />{' '}
               <span>Keila Operator</span>
             </div>
-            <button
-              onClick={() => logout()}
-              className="text-zinc-500 hover:text-red-400"
-            >
-              <FiLogOut size={16} />
-            </button>
+            <div className="flex gap-4 items-center">
+              <ThemeToggle />
+              <button
+                onClick={() => logout()}
+                className="text-white hover:text-red-400"
+              >
+                <FiLogOut size={16} />
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {activeThreads.map((thread) => (
               <button
                 key={thread.sessionId}
                 onClick={() => setSelectedSessionId(thread.sessionId)}
-                className={`w-full text-left p-3 rounded-lg ${thread.sessionId === selectedSessionId ? 'bg-[#0070f3] text-white' : 'bg-[#161616] hover:bg-[#222]'}`}
+                className={`w-full text-left p-3 rounded-lg cursor-pointer ${thread.sessionId === selectedSessionId ? 'bg-[#2563eb] text-white' : 'bg-gray-800 hover:bg-[#222]'}`}
               >
                 <div className="text-sm font-medium truncate">
                   Session: ...{thread.sessionId.slice(-6)}
                 </div>
-                <div className="text-xs text-zinc-500 truncate mt-1">
+                <div className="text-xs text-slate-300 truncate mt-1">
                   {thread.lastMessageText}
                 </div>
               </button>
@@ -377,20 +382,20 @@ export default function AdminDashboardPage() {
       {/* CORE ACTIVE CONVERSATION WORKSPACE */}
 
       <div
-        className={`flex-1 flex flex-col bg-[#050505] ${selectedSessionId ? 'flex' : 'hidden md:flex'}`}
+        className={`flex-1 flex flex-col bg-background ${selectedSessionId ? 'flex' : 'hidden md:flex'}`}
       >
         {selectedSessionId ? (
           <>
-            <div className="p-4 border-b border-[#222] bg-[#111] flex items-center gap-3">
+            <div className="p-4 border-b border-border bg-background flex items-center gap-3">
               <button
                 onClick={() => setSelectedSessionId(null)}
-                className="md:hidden p-2 rounded-full text-zinc-400 hover:text-white hover:bg-[#222] transition-colors active:scale-95"
+                className="md:hidden p-2 rounded-full text-foreground transition-colors active:scale-95"
                 aria-label="Back to conversations"
               >
                 <FiArrowLeft size={20} />
               </button>
               <div className="flex-1">
-                <h2 className="text-sm font-semibold text-white">
+                <h2 className="text-sm font-semibold text-foreground">
                   Active Thread
                 </h2>
                 {isVisitorTyping && (
@@ -422,7 +427,7 @@ export default function AdminDashboardPage() {
                   ([dateLabel, groupMessages]) => (
                     <div key={dateLabel} className="flex flex-col gap-3">
                       {/* Date Divider */}
-                      <div className="text-center text-[10px] text-zinc-600 font-medium uppercase tracking-wider my-2">
+                      <div className="text-center text-[10px] text-foreground font-medium uppercase tracking-wider my-2">
                         {dateLabel}
                       </div>
 
@@ -444,12 +449,12 @@ export default function AdminDashboardPage() {
                               className={`p-3 rounded-xl max-w-[70%] text-sm shadow-sm ${
                                 isOp
                                   ? 'bg-[#10b981] text-white'
-                                  : 'bg-[#222] text-zinc-100'
+                                  : 'bg-zinc-800 dark:bg-zinc-500 text-zinc-100 dark:text-white'
                               }`}
                             >
                               {msg.messageText}
                             </div>
-                            <span className="text-[10px] text-zinc-600 mt-1 px-1">
+                            <span className="text-[10px] text-black dark:text-white mt-1 px-1">
                               {isOp ? 'You' : msg.senderName || 'Visitor'} •{' '}
                               {time}
                             </span>
@@ -460,15 +465,16 @@ export default function AdminDashboardPage() {
                   ),
                 )
               })()}
+              {isVisitorTyping && <TypingIndicator />}
               <div ref={feedEndRef} />
             </div>
 
-            <div className="p-4 border-t border-[#222] bg-[#111] flex gap-2">
+            <div className="p-4 border-t border-border bg-card flex gap-2">
               <input
                 disabled={isSessionClosed}
                 value={operatorInput}
                 onChange={(e) => setOperatorInput(e.target.value)}
-                className="flex-1 bg-[#222] text-white rounded-lg px-4 py-2 text-sm outline-none"
+                className="flex-1 bg-background border border-border text-foreground outline-none focus:border-primary rounded-lg px-4 py-2.5 text-sm!"
               />
               <button
                 onClick={sendResponse}
@@ -480,7 +486,7 @@ export default function AdminDashboardPage() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 text-sm">
+          <div className="flex-1 flex flex-col items-center justify-center text-foreground text-sm">
             <span>
               Select an active conversation from the routing matrix sidebar
               column

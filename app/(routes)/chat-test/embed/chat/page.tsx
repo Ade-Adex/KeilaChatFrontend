@@ -9,6 +9,7 @@ import { useAuthStore } from '@/app/store/useAuthStore'
 import { IoMenuSharp } from 'react-icons/io5'
 import { useDisclosure } from '@mantine/hooks'
 import { Modal, Button, Menu, ActionIcon } from '@mantine/core'
+import TypingIndicator from '@/app/components/TypingIndicator'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
@@ -71,46 +72,6 @@ const getGroupDate = (dateString: string) => {
   })
 }
 
-
- const TypingIndicator = () => (
-   <div
-     style={{
-       display: 'flex',
-       gap: '4px',
-       padding: '10px 14px',
-       backgroundColor: '#333',
-       borderRadius: '12px 12px 12px 0',
-       width: 'fit-content',
-       alignSelf: 'flex-start',
-     }}
-   >
-     {[0, 1, 2].map((i) => (
-       <div
-         key={i}
-         style={{
-           width: '6px',
-           height: '6px',
-           backgroundColor: '#888',
-           borderRadius: '50%',
-           animation: 'bounce 1.4s infinite ease-in-out both',
-           animationDelay: `${i * 0.16}s`,
-         }}
-       />
-     ))}
-     <style jsx>{`
-       @keyframes bounce {
-         0%,
-         80%,
-         100% {
-           transform: scale(0);
-         }
-         40% {
-           transform: scale(1);
-         }
-       }
-     `}</style>
-   </div>
- )
 
 
 export default function StandaloneEmbedWidget() {

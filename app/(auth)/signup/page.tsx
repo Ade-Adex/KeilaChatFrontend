@@ -33,16 +33,16 @@ function InputField({
 }: InputFieldProps) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">
+      <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
         {label}
       </label>
       <div className="relative flex items-center">
-        <div className="absolute left-3 text-zinc-500">{icon}</div>
+        <div className="absolute left-3 text-foreground">{icon}</div>
         <input
           type={type}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-foreground/5 border border-zinc-800 pl-10 pr-4 py-2 rounded-lg outline-none focus:border-[#0070f3] transition-all"
+          className="w-full bg-background border border-border text-foreground outline-none focus:border-primary rounded-lg pl-10 pr-4 py-2.5 text-sm!  transition-colors"
           required
         />
       </div>
@@ -113,7 +113,7 @@ export default function SignupPage() {
 
   if (data) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--background)]">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
         <div className="max-w-md w-full border border-zinc-800 bg-[#111] p-8 rounded-3xl text-center">
           <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <FiCheckCircle size={32} />
@@ -136,10 +136,10 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
-      <div className="hidden md:flex flex-col justify-between p-12 mt-10 bg-sidebar-background w-1/3 border-r border-zinc-800">
-        <div>
+      <div className="hidden md:flex flex-col justify-between p-12 mt-10 bg-sidebar-background w-1/3 border-r border-border">
+        <div className="my-auto">
           <div className="text-2xl font-black mb-4">Keila.</div>
-          <p className="text-zinc-500 text-sm leading-relaxed">
+          <p className="text-foreground text-sm leading-relaxed">
             Provision your multi-tenant messaging architecture in seconds.
             Secure, scalable, and ready for production.
           </p>
@@ -151,7 +151,9 @@ export default function SignupPage() {
 
       <div className="flex-1 p-8 md:p-20 overflow-y-auto mt-12 md:mt-0">
         <div className="max-w-lg">
-          <h1 className="text-2xl text-center md:text-start md:text-3xl font-bold mb-8">Create your workspace</h1>
+          <h1 className="text-2xl text-center md:text-start md:text-3xl font-bold mb-8">
+            Create your workspace
+          </h1>
           <form onSubmit={handleSignup} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField
@@ -175,7 +177,7 @@ export default function SignupPage() {
               placeholder="••••••••"
               onChange={(v) => setFormData({ ...formData, password: v })}
             />
-            <div className="pt-6 border-t border-zinc-800">
+            <div className="pt-6 border-t border-border">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InputField
                   label="Property Name"
@@ -197,7 +199,7 @@ export default function SignupPage() {
             </div>
             <button
               disabled={loading}
-              className="w-full bg-[#0070f3] hover:bg-[#0060e3] text-white py-3 rounded-xl font-semibold transition-all active:scale-[0.98]"
+              className="w-full  bg-primary hover:bg-button-hover text-white py-3 rounded-xl font-semibold transition-all active:scale-[0.98]"
             >
               {loading ? 'Provisioning...' : 'Deploy Node'}
             </button>

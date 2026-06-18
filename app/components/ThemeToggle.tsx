@@ -10,7 +10,7 @@ export default function ThemeToggle() {
     <button
       suppressHydrationWarning
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-lg bg-[#222] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+      className="p-2 rounded-lg bg-card border border-border text-foreground hover:text-foreground/70 transition-colors cursor-pointer"
     >
       {resolvedTheme === 'dark' ? <FiSun /> : <FiMoon />}
     </button>
