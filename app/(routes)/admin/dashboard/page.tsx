@@ -80,34 +80,6 @@ const getGroupDate = (dateString?: string) => {
 }
 
 export default function AdminDashboardPage() {
-  // const router = useRouter()
-
-  // const user = useAuthStore((state) => state.user)
-
-  // // console.log("Admin", user)
-
-  // const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
-  // const [isVisitorTyping, setIsVisitorTyping] = useState(false)
-
-  // const logout = useAuthStore((state) => state.logout)
-  // const authLoading = useAuthStore((state) => state.loading)
-  // const hasHydrated = useAuthStore((state) => state._hasHydrated)
-
-  // const socketRef = useRef<Socket | null>(null)
-  // const feedEndRef = useRef<HTMLDivElement | null>(null)
-
-  // const [activeThreads, setActiveThreads] = useState<ThreadSummary[]>([])
-  // const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
-  //   null,
-  // )
-  // const [messages, setMessages] = useState<MessagePayload[]>([])
-  // const [operatorInput, setOperatorInput] = useState('')
-
-  // const selectedThread = activeThreads.find(
-  //   (t) => t.sessionId === selectedSessionId,
-  // )
-  // const isSessionClosed = selectedThread?.status === 'closed'
-
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
@@ -406,7 +378,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={handleEndSession}
-                className="text-[10px] bg-red-900/20 text-red-400 border border-red-900/50 px-2 py-1 rounded"
+                className="text-[10px] bg-red-900/20 text-red-400 border border-red-900/50 px-2 py-1 rounded cursor-pointer"
               >
                 End Session
               </button>
@@ -470,16 +442,29 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="p-4 border-t border-border bg-card flex gap-2">
+            
               <input
                 disabled={isSessionClosed}
                 value={operatorInput}
-                onChange={(e) => setOperatorInput(e.target.value)}
+                placeholder="Reply to this chat..."
+                onChange={(e) => {
+                  setOperatorInput(e.target.value)
+                  // 1. Send "isTyping: true" on first keystroke
+                  sendTypingStatus(true)
+                  // 2. Clear existing timer
+                  if (typingTimerRef.current)
+                    clearTimeout(typingTimerRef.current)
+                  // 3. Set timer to stop typing indicator after 2 seconds of inactivity
+                  typingTimerRef.current = setTimeout(() => {
+                    sendTypingStatus(false)
+                  }, 2000)
+                }}
                 className="flex-1 bg-background border border-border text-foreground outline-none focus:border-primary rounded-lg px-4 py-2.5 text-sm!"
               />
               <button
                 onClick={sendResponse}
                 disabled={isSessionClosed}
-                className="bg-[#10b981] text-white px-4 py-2 rounded-lg text-sm"
+                className="bg-[#10b981] text-white px-4 py-2 rounded-lg text-sm cursor-pointer"
               >
                 <FiSend />
               </button>
