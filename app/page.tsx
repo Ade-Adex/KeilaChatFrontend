@@ -78,7 +78,7 @@ export default function Home() {
 
       {/* Footer Branding */}
       <footer className="mt-12 text-[10px] text-zinc-600 uppercase tracking-widest">
-        © {new Date().getFullYear()} Christ Baptist Church Ogbomoso
+        © {new Date().getFullYear()} Keila Chat
       </footer>
     </div>
   )
