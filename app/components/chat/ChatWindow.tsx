@@ -352,63 +352,26 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         }}
         className="bg-background"
       >
-        {/* Header */}
-        <div
-          style={{
-            backgroundColor: '#0070f3',
-            padding: '1rem',
-            color: '#fff',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'relative',
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: 'bold' }}>Live Support</div>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>
-              We are online
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <ThemeToggle />
-            <Menu
-              shadow="md"
-              width={200}
-              // Force the menu to stay within your widget container
-              withinPortal={false}
-              position="bottom-end"
-            >
-              <Menu.Target>
-                <ActionIcon variant="transparent" color="white" size="lg">
-                  <IoMenuSharp />
-                </ActionIcon>
-              </Menu.Target>
-
-              <Menu.Dropdown className="bg-background! text-foreground! border border-border! py-2!">
-                <Menu.Item onClick={() => setIsEditingName(true)} color="blue">
-                  Change Name
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item color="red" onClick={open}>
-                  End Chat Session
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-            <button
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#fff',
-                cursor: 'pointer',
-              }}
-            >
-              <FiX size={20} />
-            </button>
-          </div>
+        {/* Header - No fixed positioning, it flows with the flex container */}
+      <div className="bg-primary p-4 text-white flex justify-between items-center flex-shrink-0">
+        <div>
+          <div className="font-bold">Live Support</div>
+          <div className="text-xs opacity-80">We are online</div>
         </div>
+        <div className="flex gap-2">
+          <ThemeToggle />
+          <Menu shadow="md" width={200} withinPortal={false} position="bottom-end">
+            <Menu.Target>
+              <ActionIcon variant="transparent" color="white" size="lg"><IoMenuSharp /></ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item onClick={() => setIsEditingName(true)}>Change Name</Menu.Item>
+              <Menu.Item color="red" onClick={open}>End Session</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          <button onClick={onClose}><FiX size={20} /></button>
+        </div>
+      </div>
 
         {isEditingName && (
           <div
@@ -480,17 +443,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         )}
 
         {/* Messages */}
-        <div
-          style={{
-            flex: 1,
-            padding: '1rem',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.8rem',
-          }}
-          className="bg-background"
-        >
+        <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 bg-background">
           <div
             style={{
               alignSelf: 'flex-start',
