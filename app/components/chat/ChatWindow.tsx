@@ -534,14 +534,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer Section */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : '0',
-          }}
-          className="border-t border-border bg-card"
-        >
+        <div className="border-t border-border bg-card p-3 flex-shrink-0">
           {isSessionClosed ? (
             <div
               style={{
