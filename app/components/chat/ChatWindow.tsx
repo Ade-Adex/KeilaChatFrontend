@@ -313,7 +313,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className={`fixed ${isMobile ? 'inset-0' : 'bottom-6 right-6 w-80 h-[80vh]'} bg-background shadow-2xl flex flex-col overflow-hidden rounded-lg border border-border z-[999999]`}
+      className={`fixed ${isMobile ? 'inset-0' : 'bottom-6 right-6 w-80 h-[80vh]'} bg-background shadow-2xl flex flex-col overflow-hidden rounded-lg border border-border z-999999`}
     >
       <Modal
         opened={opened}
