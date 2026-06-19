@@ -6,7 +6,22 @@ export default function EmbedLayout({
   children: React.ReactNode
 }) {
   return (
-    <div style={{ width: '100%', height: '100%', background: 'transparent' }}>
+    <div
+      style={{
+        background: 'transparent',
+        height: '100dvh',
+        width: '100vw',
+        overflow: 'hidden',
+      }}
+    >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        body { background: transparent !important; margin: 0; padding: 0; }
+        html { background: transparent !important; }
+      `,
+        }}
+      />
       {children}
     </div>
   )
