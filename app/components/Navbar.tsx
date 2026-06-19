@@ -68,7 +68,7 @@ export default function Navbar() {
           </div> */}
           <Divider my="sm" />
           <Link
-            href="/login"
+            href="/signin"
             onClick={close}
             className="p-2 border border-zinc-700 rounded-lg text-center mt-8"
           >
