@@ -312,7 +312,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
  
 
   return (
-    <div className="w-full h-full flex flex-col bg-transparent shadow-2xl overflow-hidden rounded-lg">
+    <div className="w-full h-full flex flex-col bg-transparent dark:bg-transparent shadow-2xl overflow-hidden rounded-lg">
       <Modal
         opened={opened}
         onClose={close}
@@ -353,25 +353,38 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         // className="bg-background"
       >
         {/* Header - No fixed positioning, it flows with the flex container */}
-      <div className="bg-primary p-4 text-white flex justify-between items-center shrink-0">
-        <div>
-          <div className="font-bold">Live Support</div>
-          <div className="text-xs opacity-80">We are online</div>
+        <div className="bg-primary p-4 text-white flex justify-between items-center shrink-0">
+          <div>
+            <div className="font-bold">Live Support</div>
+            <div className="text-xs opacity-80">We are online</div>
+          </div>
+          <div className="flex gap-2">
+            <ThemeToggle />
+            <Menu
+              shadow="md"
+              width={200}
+              withinPortal={false}
+              position="bottom-end"
+            >
+              <Menu.Target>
+                <ActionIcon variant="transparent" color="white" size="lg">
+                  <IoMenuSharp />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item onClick={() => setIsEditingName(true)}>
+                  Change Name
+                </Menu.Item>
+                <Menu.Item color="red" onClick={open}>
+                  End Session
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+            <button onClick={onClose}>
+              <FiX size={20} />
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <ThemeToggle />
-          <Menu shadow="md" width={200} withinPortal={false} position="bottom-end">
-            <Menu.Target>
-              <ActionIcon variant="transparent" color="white" size="lg"><IoMenuSharp /></ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item onClick={() => setIsEditingName(true)}>Change Name</Menu.Item>
-              <Menu.Item color="red" onClick={open}>End Session</Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-          <button onClick={onClose}><FiX size={20} /></button>
-        </div>
-      </div>
 
         {isEditingName && (
           <div
