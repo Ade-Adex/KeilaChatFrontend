@@ -8,6 +8,7 @@ import {
   FiMail,
   FiCheckCircle,
   FiAlertCircle,
+  FiEye, FiEyeOff
 } from 'react-icons/fi'
 import { notifications } from '@mantine/notifications'
 
@@ -24,6 +25,7 @@ interface InputFieldProps {
   onChange: (value: string) => void
 }
 
+
 function InputField({
   label,
   icon,
@@ -31,6 +33,9 @@ function InputField({
   placeholder,
   onChange,
 }: InputFieldProps) {
+  const [show, setShow] = useState(false)
+  const isPassword = type === 'password'
+
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
@@ -39,12 +44,21 @@ function InputField({
       <div className="relative flex items-center">
         <div className="absolute left-3 text-foreground">{icon}</div>
         <input
-          type={type}
+          type={isPassword ? (show ? 'text' : 'password') : type}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-background border border-border text-foreground outline-none focus:border-primary rounded-lg pl-10 pr-4 py-2.5 text-sm!  transition-colors"
+          className="w-full bg-background border border-border text-foreground outline-none focus:border-primary rounded-lg pl-10 pr-10 py-2.5 text-sm! transition-colors"
           required
         />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShow(!show)}
+            className="absolute right-3 text-foreground/60 hover:text-foreground transition-colors"
+          >
+            {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+          </button>
+        )}
       </div>
     </div>
   )
