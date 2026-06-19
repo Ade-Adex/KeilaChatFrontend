@@ -1,3 +1,4 @@
+import ChatWidget from '@/app/components/ChatWidget'
 import Link from 'next/link'
 import {
   FiMessageSquare,
@@ -70,6 +71,8 @@ export default function Home() {
           </div>
         ))}
       </section>
+
+      <ChatWidget widgetId="b9a5cea7-ec8b-4cb6-9c62-521e5fd8f195" />
     </div>
   )
 }
