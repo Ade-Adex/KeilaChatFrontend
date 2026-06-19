@@ -353,7 +353,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         // className="bg-background"
       >
         {/* Header - No fixed positioning, it flows with the flex container */}
-      <div className="bg-primary p-4 text-white flex justify-between items-center flex-shrink-0">
+      <div className="bg-primary p-4 text-white flex justify-between items-center shrink-0">
         <div>
           <div className="font-bold">Live Support</div>
           <div className="text-xs opacity-80">We are online</div>
@@ -534,7 +534,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer Section */}
-        <div className="border-t border-border bg-card p-3 flex-shrink-0">
+        <div className="border-t border-border bg-card p-3 shrink-0">
           {isSessionClosed ? (
             <div
               style={{
