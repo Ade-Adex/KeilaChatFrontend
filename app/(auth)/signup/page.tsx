@@ -54,7 +54,7 @@ function InputField({
           <button
             type="button"
             onClick={() => setShow(!show)}
-            className="absolute right-3 text-foreground/60 hover:text-foreground transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors" 
           >
             {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
           </button>
