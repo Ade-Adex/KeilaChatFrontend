@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/app/store/useAuthStore'
-import { FiBriefcase, FiLock, FiMail } from 'react-icons/fi'
+import { FiBriefcase, FiLock, FiMail, FiEye, FiEyeOff } from 'react-icons/fi'
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
@@ -21,6 +21,7 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -97,21 +98,28 @@ export default function AdminLoginPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground block">
-              Security Password Token
-            </label>
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm! text-foreground outline-none focus:border-primary transition-colors"
-              />
-            </div>
-          </div>
+  <label className="text-xs font-semibold text-foreground block">
+    Security Password Token
+  </label>
+  <div className="relative">
+    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
+    <input
+      type={showPassword ? 'text' : 'password'}
+      required
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      placeholder="••••••••••••"
+      className="w-full bg-background border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm! text-foreground outline-none focus:border-primary transition-colors"
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors"
+    >
+      {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+    </button>
+  </div>
+</div>
 
           <button
             type="submit"
