@@ -11,10 +11,11 @@ export default function ChatWidget({ widgetId }: { widgetId: string }) {
       position: 'fixed',
       bottom: '0',
       right: '0',
-      width: '100%', 
+      width: '100%',
       height: '100%',
       border: 'none',
       zIndex: '999999',
+      backgroundColor: '#000000', // or '#000000', 'rgba(0,0,0,0.5)', etc.
       // Optional: limit size on desktop
       maxWidth: '400px',
       maxHeight: '90vh',
