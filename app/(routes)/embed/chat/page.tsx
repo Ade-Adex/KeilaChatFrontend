@@ -714,24 +714,19 @@
 'use client'
 
 import { useState } from 'react'
-import { FiMessageSquare } from 'react-icons/fi'
 import ChatWindow from '@/app/components/chat/ChatWindow'
+import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
 
 export default function StandaloneEmbedWidget() {
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
 
   return (
-    <div className="fixed bottom-6 right-6 z-[999999]">
+    <>
       {isWidgetOpen ? (
         <ChatWindow onClose={() => setIsWidgetOpen(false)} />
       ) : (
-        <button
-          onClick={() => setIsWidgetOpen(true)}
-          className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl shadow-lg"
-        >
-          <FiMessageSquare />
-        </button>
+        <ChatLauncher onClick={() => setIsWidgetOpen(true)} />
       )}
-    </div>
+    </>
   )
 }
