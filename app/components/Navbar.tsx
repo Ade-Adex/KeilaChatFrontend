@@ -23,7 +23,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-6">
           <ThemeToggle />
           <Link
-            href="/admin/login"
+            href="/signin"
             className="text-sm font-medium text-foreground transition-colors hover:text-foreground border border-[#0070f3] px-4 py-1.5 rounded-xl"
           >
             Login

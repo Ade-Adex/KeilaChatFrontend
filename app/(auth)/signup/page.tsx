@@ -126,7 +126,7 @@ export default function SignupPage() {
           </p>
           <div className="bg-black p-4 rounded-xl border border-zinc-800 text-left">
             <code className="text-[10px] text-blue-400 break-all font-mono">
-              {`<script src="https://cdn.keila-chat.org/embed.js" data-id="${data.property.widgetId}"></script>`}
+              {`<script src="https://keila-chat.vercel.app/embed.js" data-id="${data.property.widgetId}"></script>`}
             </code>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full  bg-primary hover:bg-button-hover text-white py-3 rounded-xl font-semibold transition-all active:scale-[0.98]"
             >
-              {loading ? 'Provisioning...' : 'Deploy Node'}
+              {loading ? 'Provisioning...' : 'Sign Up for free'}
             </button>
           </form>
         </div>

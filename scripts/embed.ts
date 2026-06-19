@@ -1,31 +1,22 @@
 // /scripts/embed.ts
-
-export {} // Ensure this file is treated as a module
-
 ;(function () {
-  const scriptTag = document.getElementById(
-    'keila-chat-script',
-  ) as HTMLScriptElement | null
+  const scriptTag = document.currentScript as HTMLScriptElement | null
+  const widgetId = scriptTag?.getAttribute('data-id')
 
-  const widgetId = scriptTag?.getAttribute('data-widget-id')
-
-  if (!widgetId) {
-    console.warn('KeilaChat: Missing data-widget-id attribute.')
-    return
-  }
+  if (!widgetId) return
 
   const BASE_URL = 'https://keila-chat.vercel.app'
 
-  // 1. Create Container
+  // Prevent multiple initializations
+  if (window.KeilaChat) return
+
   const container = document.createElement('div')
   container.id = 'keila-chat-container'
   document.body.appendChild(container)
 
-  // 2. Create Iframe
   const iframe = document.createElement('iframe')
   iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`
 
-  // Apply styles securely
   Object.assign(iframe.style, {
     position: 'fixed',
     bottom: '20px',
@@ -35,12 +26,12 @@ export {} // Ensure this file is treated as a module
     border: 'none',
     zIndex: '999999',
     display: 'none',
+    boxShadow: '0 5px 25px rgba(0,0,0,0.2)',
+    borderRadius: '16px',
   })
 
   container.appendChild(iframe)
 
-  // 3. Expose Controls to Window
-  // TypeScript now knows 'window.KeilaChat' exists because of src/types/window.d.ts
   window.KeilaChat = {
     open: () => (iframe.style.display = 'block'),
     close: () => (iframe.style.display = 'none'),

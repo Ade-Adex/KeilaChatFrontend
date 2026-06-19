@@ -105,7 +105,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (hasHydrated && !authLoading && !user) {
-      router.push('/admin/login')
+      router.push('/signin')
     }
   }, [user, authLoading, hasHydrated, router])
 

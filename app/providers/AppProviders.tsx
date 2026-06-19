@@ -17,7 +17,7 @@ interface AppProvidersProps {
 export default function AppProviders({ children }: AppProvidersProps) {
   const pathname = usePathname()
 
-  const showNavbar = ['/', '/signup', '/admin/login', '/pricing', '/about'].includes(
+  const showNavbar = ['/', '/signup', '/signin', '/pricing', '/about'].includes(
     pathname,
   )
   const showFooter = ['/', '/pricing', '/about'].includes(pathname)
