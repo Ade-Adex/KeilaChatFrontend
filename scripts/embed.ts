@@ -1,42 +1,43 @@
 // /scripts/embed.ts
-;(function () {
-  const scriptTag = document.currentScript as HTMLScriptElement | null
-  const widgetId = scriptTag?.getAttribute('data-id')
 
-  if (!widgetId) return
+(function () {
+  const scriptTag = document.currentScript;
+  const widgetId = scriptTag?.getAttribute('data-id');
+  if (!widgetId) return;
 
-  const BASE_URL = 'https://keila-chat.vercel.app'
+  const BASE_URL = 'https://keila-chat.vercel.app';
+  
+  // 1. Create a Shadow DOM container to prevent CSS conflicts
+  const container = document.createElement('div');
+  const shadow = container.attachShadow({ mode: 'open' });
+  document.body.appendChild(container);
 
-  // Prevent multiple initializations
-  if (window.KeilaChat) return
-
-  const container = document.createElement('div')
-  container.id = 'keila-chat-container'
-  document.body.appendChild(container)
-
-  const iframe = document.createElement('iframe')
-  iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`
-
+  // 2. Inject the Chat Iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`;
+  
+  // 3. Style it professionally
   Object.assign(iframe.style, {
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    width: '350px',
+    width: '350px', // or '80px' if closed
     height: '500px',
     border: 'none',
-    zIndex: '999999',
-    display: 'none',
-    boxShadow: '0 5px 25px rgba(0,0,0,0.2)',
-    borderRadius: '16px',
-  })
+    zIndex: '2147483647',
+    display: 'block' 
+  });
 
-  container.appendChild(iframe)
+  shadow.appendChild(iframe);
 
-  window.KeilaChat = {
-    open: () => (iframe.style.display = 'block'),
-    close: () => (iframe.style.display = 'none'),
-    toggle: () =>
-      (iframe.style.display =
-        iframe.style.display === 'none' ? 'block' : 'none'),
-  }
-})()
+  // 4. Handle incoming messages from the Iframe
+  window.addEventListener('message', (event) => {
+    if (event.origin !== BASE_URL) return;
+    
+    // Example: Iframe tells host to resize
+    if (event.data.type === 'RESIZE') {
+      iframe.style.width = event.data.width;
+      iframe.style.height = event.data.height;
+    }
+  });
+})();
