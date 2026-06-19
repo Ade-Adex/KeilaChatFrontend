@@ -72,7 +72,7 @@ export default function Home() {
         ))}
       </section>
 
-      <ChatWidget widgetId="b9a5cea7-ec8b-4cb6-9c62-521e5fd8f195" />
+      <ChatWidget widgetId="7e5884eb-1166-4230-a3d4-6d7620873b96" />
     </div>
   )
 }

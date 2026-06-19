@@ -164,7 +164,7 @@ export default function StandaloneEmbedWidget() {
       // Prioritize the script-injected ID, fallback to URL search params
       // const widgetId = hostConfig?.widgetId || params.get('widgetId')
 
-      const TEST_WIDGET_ID = 'b9a5cea7-ec8b-4cb6-9c62-521e5fd8f195'
+      const TEST_WIDGET_ID = '7e5884eb-1166-4230-a3d4-6d7620873b96'
 
       // Prioritize hardcoded ID -> script-injected ID -> URL search params
       const widgetId =
