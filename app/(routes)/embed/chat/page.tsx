@@ -720,19 +720,48 @@ import { useState } from 'react'
 export default function StandaloneEmbedWidget() {
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
 
+  // const toggleWidget = (open: boolean) => {
+  //   setIsWidgetOpen(open)
+  //   const isMobile = window.innerWidth < 640
+
+  //   window.parent.postMessage(
+  //     {
+  //       type: 'RESIZE',
+  //       width: open ? (isMobile ? '100vw' : '350px') : '80px',
+  //       height: open ? (isMobile ? '100dvh' : '500px') : '80px',
+  //       top: open && isMobile ? '0' : 'auto',
+  //       left: open && isMobile ? '0' : 'auto',
+  //       bottom: open ? '0' : '20px',
+  //       right: open ? '0' : '20px',
+  //     },
+  //     '*',
+  //   )
+  // }
+
   const toggleWidget = (open: boolean) => {
     setIsWidgetOpen(open)
     const isMobile = window.innerWidth < 640
 
+    // Define your exact Desktop dimensions
+    const DESKTOP_WIDTH = '350px'
+    const DESKTOP_HEIGHT = '500px'
+
     window.parent.postMessage(
       {
         type: 'RESIZE',
-        width: open ? (isMobile ? '100vw' : '350px') : '80px',
-        height: open ? (isMobile ? '100dvh' : '500px') : '80px',
+        // If open: use mobile full-screen or desktop dimensions
+        // If closed: use launcher size
+        width: open ? (isMobile ? '100vw' : DESKTOP_WIDTH) : '80px',
+        height: open ? (isMobile ? '100dvh' : DESKTOP_HEIGHT) : '80px',
+
+        // On mobile, we align to top-left. On desktop, we let the script
+        // handle the fixed positioning or use standard offset.
         top: open && isMobile ? '0' : 'auto',
         left: open && isMobile ? '0' : 'auto',
-        bottom: open ? '0' : '20px',
-        right: open ? '0' : '20px',
+
+        // Align to bottom-right corner for desktop
+        bottom: '20px',
+        right: '20px',
       },
       '*',
     )
