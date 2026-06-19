@@ -14,8 +14,8 @@ export default function ChatWidget({ widgetId }: { widgetId: string }) {
       width: '100%',
       height: '100%',
       border: 'none',
-      zIndex: '999999',
-      backgroundColor: 'transparent', // or '#000000', 'rgba(0,0,0,0.5)', etc.
+      zIndex: '2147483647',
+      backgroundColor: 'transparent',
       // Optional: limit size on desktop
       maxWidth: '400px',
       maxHeight: '90vh',
