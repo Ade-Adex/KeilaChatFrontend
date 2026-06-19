@@ -312,7 +312,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
  
 
   return (
-    <div className="w-full h-full flex flex-col bg-neutral-900 border border-neutral-700 shadow-2xl overflow-hidden rounded-lg">
+    <div className="w-full h-full flex flex-col bg-transparent shadow-2xl overflow-hidden rounded-lg">
       <Modal
         opened={opened}
         onClose={close}

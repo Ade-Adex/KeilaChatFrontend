@@ -18,7 +18,7 @@
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    width: '80px', // Start as a small launcher
+    width: '80px', 
     height: '80px',
     border: 'none',
     zIndex: '2147483647',
