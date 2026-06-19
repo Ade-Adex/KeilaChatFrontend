@@ -713,9 +713,9 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
-import ChatWindow from '@/app/components/chat/ChatWindow'
 import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
+import ChatWindow from '@/app/components/chat/ChatWindow'
+import { useState } from 'react'
 
 export default function StandaloneEmbedWidget() {
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
