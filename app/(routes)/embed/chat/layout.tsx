@@ -1,12 +1,9 @@
 // /app(routes)/embed/chat/layout.tsx
 
-export default function EmbedLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function EmbedLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: 'transparent', height: '100vh', width: '100%' }}>
+    // 'bg-transparent' ensures the iframe container itself doesn't show a white box
+    <div style={{ background: 'transparent', height: '100dvh', width: '100%' }}>
       {children}
     </div>
   )
