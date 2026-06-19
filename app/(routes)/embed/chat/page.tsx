@@ -713,12 +713,24 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ChatWindow from '@/app/components/chat/ChatWindow'
 import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
 
 export default function StandaloneEmbedWidget() {
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
+
+  useEffect(() => {
+    document.body.classList.add('embed-widget')
+
+    document.documentElement.classList.add('embed-widget')
+
+    return () => {
+      document.body.classList.remove('embed-widget')
+
+      document.documentElement.classList.remove('embed-widget')
+    }
+  }, [])
 
   return (
     <>
