@@ -12,29 +12,34 @@
 
   const iframe = document.createElement('iframe');
   iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`;
+  iframe.setAttribute('allowtransparency', 'true');
   
-  // Professional Styling: Default to a "Closed/Launcher" state
   Object.assign(iframe.style, {
     position: 'fixed',
-    bottom: '0px',
-    right: '0px',
-    width: '350px', // Normal desktop launcher size
-    height: '500px',
+    bottom: '20px',
+    right: '20px',
+    width: '80px', // Start as a small launcher
+    height: '80px',
     border: 'none',
     zIndex: '2147483647',
-    backgroundColor: 'transparent' // Essential for transparency
+    backgroundColor: 'transparent'
   });
 
   shadow.appendChild(iframe);
 
-  // Responsive logic: Resize for mobile
   window.addEventListener('message', (event) => {
     if (event.origin !== BASE_URL) return;
     
-    if (event.data.type === 'FULLSCREEN') {
-      Object.assign(iframe.style, { width: '100vw', height: '100vh', top: '0', left: '0' });
-    } else if (event.data.type === 'NORMAL') {
-      Object.assign(iframe.style, { width: '350px', height: '500px', top: 'auto', left: 'auto' });
+    // Commands triggered by your ChatWindow.tsx
+    if (event.data.type === 'RESIZE') {
+      Object.assign(iframe.style, { 
+        width: event.data.width, 
+        height: event.data.height,
+        top: event.data.top || 'auto',
+        left: event.data.left || 'auto',
+        bottom: event.data.bottom || '20px',
+        right: event.data.right || '20px'
+      });
     }
   });
 })();
