@@ -7,30 +7,29 @@ import { usePathname } from 'next/navigation'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import { Notifications } from '@mantine/notifications'
+
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 
-interface AppProvidersProps {
+export default function AppProviders({
+  children,
+}: {
   children: React.ReactNode
-}
-
-export default function AppProviders({ children }: AppProvidersProps) {
+}) {
   const pathname = usePathname()
 
-  const showNavbar = ['/', '/signup', '/signin', '/pricing', '/about'].includes(
-    pathname,
-  )
-  const showFooter = ['/', '/pricing', '/about'].includes(pathname)
+  const isEmbed = pathname.startsWith('/embed/chat')
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <MantineProvider>
-        <Notifications position="bottom-center" zIndex={1000} />
-        {showNavbar && <Navbar />}
+        <Notifications position="bottom-center" />
 
-        <main className="min-h-screen">{children}</main>
+        {!isEmbed && <Navbar />}
 
-        {showFooter && <Footer />}
+        <main className={!isEmbed ? 'min-h-screen' : ''}>{children}</main>
+
+        {!isEmbed && <Footer />}
       </MantineProvider>
     </ThemeProvider>
   )

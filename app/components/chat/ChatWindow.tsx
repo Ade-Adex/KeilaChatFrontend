@@ -345,14 +345,14 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           right: isMobile ? '0' : '0rem',
           width: isMobile ? '100vw' : '340px',
           height: isMobile ? '100dvh' : 'calc(100vh - 1rem)',
-          // backgroundColor: '#111',
+          background: 'transparent',
           borderRadius: isMobile ? '0' : '0px 12px',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}
-        className="bg-background"
+        // className="bg-background"
       >
         {/* Header */}
         <div
