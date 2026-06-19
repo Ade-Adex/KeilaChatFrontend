@@ -720,13 +720,28 @@ import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
 export default function StandaloneEmbedWidget() {
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
 
+  const toggleWidget = (open: boolean) => {
+    setIsWidgetOpen(open)
+    const isMobile = window.innerWidth < 640
+    
+    window.parent.postMessage({
+      type: 'RESIZE',
+      width: open ? (isMobile ? '100vw' : '350px') : '80px',
+      height: open ? (isMobile ? '100dvh' : '500px') : '80px',
+      top: open && isMobile ? '0' : 'auto',
+      left: open && isMobile ? '0' : 'auto',
+      bottom: open ? '0' : '20px',
+      right: open ? '0' : '20px'
+    }, '*')
+  }
+
   return (
-    <>
+    <div className="w-full h-full">
       {isWidgetOpen ? (
-        <ChatWindow onClose={() => setIsWidgetOpen(false)} />
+        <ChatWindow onClose={() => toggleWidget(false)} />
       ) : (
-        <ChatLauncher onClick={() => setIsWidgetOpen(true)} />
+        <ChatLauncher onClick={() => toggleWidget(true)} />
       )}
-    </>
+    </div>
   )
 }
