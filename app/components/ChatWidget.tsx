@@ -1,13 +1,15 @@
 // /app/components/ChatWidget.tsx
 
-
 'use client'
 import { useEffect } from 'react'
 
 export default function ChatWidget({ widgetId }: { widgetId: string }) {
   useEffect(() => {
     const iframe = document.createElement('iframe')
-    iframe.src = `https://keila-chat.vercel.app/embed/chat?widgetId=${widgetId}`
+
+    // Ensure the parameter name (propertyId) matches what your backend API expects
+    iframe.src = `https://keila-chat.vercel.app/embed/chat?propertyId=${widgetId}`
+
     Object.assign(iframe.style, {
       position: 'fixed',
       bottom: '20px',
