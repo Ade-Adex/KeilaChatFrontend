@@ -1,4 +1,4 @@
-// /app(routes)/chat-test/embed/chat/page.tsx
+// /app(routes)/embed/chat/page.tsx
 
 'use client'
 
