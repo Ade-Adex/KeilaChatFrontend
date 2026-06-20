@@ -751,8 +751,8 @@ export default function StandaloneEmbedWidget() {
         type: 'RESIZE',
         // If open: use mobile full-screen or desktop dimensions
         // If closed: use launcher size
-        width: open ? (isMobile ? '100vw' : DESKTOP_WIDTH) : '80px',
-        height: open ? (isMobile ? '100dvh' : DESKTOP_HEIGHT) : '80px',
+        width: open ? (isMobile ? '100vw' : DESKTOP_WIDTH) : '60px',
+        height: open ? (isMobile ? '100dvh' : DESKTOP_HEIGHT) : '60px',
 
         // On mobile, we align to top-left. On desktop, we let the script
         // handle the fixed positioning or use standard offset.
