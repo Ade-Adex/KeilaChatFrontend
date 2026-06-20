@@ -709,71 +709,137 @@
 //   )
 // }
 
-// /app(routes)/embed/chat/page.tsx
+// // /app(routes)/embed/chat/page.tsx
 
-'use client'
+// 'use client'
 
-import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
-import ChatWindow from '@/app/components/chat/ChatWindow'
-import { useState } from 'react'
+// import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
+// import ChatWindow from '@/app/components/chat/ChatWindow'
+// import { useState } from 'react'
 
-export default function StandaloneEmbedWidget() {
-  const [isWidgetOpen, setIsWidgetOpen] = useState(false)
+// export default function StandaloneEmbedWidget() {
+//   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
 
-  // const toggleWidget = (open: boolean) => {
-  //   setIsWidgetOpen(open)
-  //   const isMobile = window.innerWidth < 640
+//   // const toggleWidget = (open: boolean) => {
+//   //   setIsWidgetOpen(open)
+//   //   const isMobile = window.innerWidth < 640
 
-  //   window.parent.postMessage(
-  //     {
-  //       type: 'RESIZE',
-  //       width: open ? (isMobile ? '100vw' : '350px') : '80px',
-  //       height: open ? (isMobile ? '100dvh' : '500px') : '80px',
-  //       top: open && isMobile ? '0' : 'auto',
-  //       left: open && isMobile ? '0' : 'auto',
-  //       bottom: open ? '0' : '20px',
-  //       right: open ? '0' : '20px',
-  //     },
-  //     '*',
-  //   )
-  // }
+//   //   window.parent.postMessage(
+//   //     {
+//   //       type: 'RESIZE',
+//   //       width: open ? (isMobile ? '100vw' : '350px') : '80px',
+//   //       height: open ? (isMobile ? '100dvh' : '500px') : '80px',
+//   //       top: open && isMobile ? '0' : 'auto',
+//   //       left: open && isMobile ? '0' : 'auto',
+//   //       bottom: open ? '0' : '20px',
+//   //       right: open ? '0' : '20px',
+//   //     },
+//   //     '*',
+//   //   )
+//   // }
 
-  const toggleWidget = (open: boolean) => {
-    setIsWidgetOpen(open)
-    const isMobile = window.innerWidth < 640
+//   const toggleWidget = (open: boolean) => {
+//     setIsWidgetOpen(open)
+//     const isMobile = window.innerWidth < 640
 
-    // Define your exact Desktop dimensions
-    const DESKTOP_WIDTH = '350px'
-    const DESKTOP_HEIGHT = '500px'
+//     // Define your exact Desktop dimensions
+//     const DESKTOP_WIDTH = '350px'
+//     const DESKTOP_HEIGHT = '500px'
 
-    window.parent.postMessage(
-      {
-        type: 'RESIZE',
-        // If open: use mobile full-screen or desktop dimensions
-        // If closed: use launcher size
-        width: open ? (isMobile ? '100vw' : DESKTOP_WIDTH) : '60px',
-        height: open ? (isMobile ? '100dvh' : DESKTOP_HEIGHT) : '60px',
+//     window.parent.postMessage(
+//       {
+//         type: 'RESIZE',
+//         // If open: use mobile full-screen or desktop dimensions
+//         // If closed: use launcher size
+//         width: open ? (isMobile ? '100vw' : DESKTOP_WIDTH) : '60px',
+//         height: open ? (isMobile ? '100dvh' : DESKTOP_HEIGHT) : '60px',
 
-        // On mobile, we align to top-left. On desktop, we let the script
-        // handle the fixed positioning or use standard offset.
-        top: open && isMobile ? '0' : 'auto',
-        left: open && isMobile ? '0' : 'auto',
+//         // On mobile, we align to top-left. On desktop, we let the script
+//         // handle the fixed positioning or use standard offset.
+//         top: open && isMobile ? '0' : 'auto',
+//         left: open && isMobile ? '0' : 'auto',
 
-        // Align to bottom-right corner for desktop
-        bottom: '20px',
-        right: '20px',
+//         // Align to bottom-right corner for desktop
+//         bottom: '20px',
+//         right: '20px',
+//       },
+//       '*',
+//     )
+//   }
+
+//   return (
+//     <div className="w-full h-full">
+//       {isWidgetOpen ? (
+//         <ChatWindow onClose={() => toggleWidget(false)} />
+//       ) : (
+//         <ChatLauncher onClick={() => toggleWidget(true)} />
+//       )}
+//     </div>
+//   )
+// }
+
+
+
+
+
+
+
+
+// app/(routes)/embed/chat/page.tsx
+import { headers } from 'next/headers'
+import ClientChatWrapper from '@/app/(routes)/embed/chat/ClientChatWrapper'
+
+export const dynamic = 'force-dynamic'
+
+export default async function EmbedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ widgetId: string }>
+}) {
+  const { widgetId } = await searchParams
+
+  if (!widgetId) {
+    return <div className="flex justify-center items-center h-screen">Invalid Access</div>
+  }
+
+  const headersList = await headers()
+  const referer = headersList.get('referer') || ''
+
+  // 1. Perform logic to determine status
+  let isAuthorized = false
+  let hasConnectionError = false
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/widget/verify`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'referer': referer 
       },
-      '*',
+      body: JSON.stringify({ widgetId }),
+    })
+    
+    if (response.ok) {
+      isAuthorized = true
+    }
+  } catch (error) {
+    console.error('Verification fetch failed:', error)
+    hasConnectionError = true
+  }
+
+  // 2. Return JSX based on status (Separation of concerns)
+  if (hasConnectionError) {
+    return <div className="p-4 text-center text-red-500">Connection Error</div>
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-500 font-sans">
+        Unauthorized Widget Deployment
+      </div>
     )
   }
 
-  return (
-    <div className="w-full h-full">
-      {isWidgetOpen ? (
-        <ChatWindow onClose={() => toggleWidget(false)} />
-      ) : (
-        <ChatLauncher onClick={() => toggleWidget(true)} />
-      )}
-    </div>
-  )
+  // 3. Only reach here if authorized
+  return <ClientChatWrapper widgetId={widgetId} />
 }
