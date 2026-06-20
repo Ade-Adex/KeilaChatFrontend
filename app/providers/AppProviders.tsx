@@ -27,7 +27,7 @@ export default function AppProviders({
 
         {!isExcluded && <Navbar />}
 
-        <main className={!isEmbed ? 'min-h-screen' : ''}>{children}</main>
+        <main className={!isExcluded ? 'min-h-screen' : ''}>{children}</main>
 
         {!isExcluded && <Footer />}
       </MantineProvider>
