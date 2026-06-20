@@ -57,16 +57,26 @@
 
 
 
+// /scripts/embed.ts
+
+
 (async function () {
   const scriptTag = document.currentScript as HTMLScriptElement
-  const widgetId = scriptTag?.getAttribute('data-id')
-  if (!widgetId) return
 
-  // 1. Separate your environments
-const FRONTEND_URL =
-  process.env.NEXT_PUBLIC_FRONTEND_URL
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL 
+  // 1. Get values from data attributes, or use production defaults
+  const widgetId = scriptTag?.getAttribute('data-id')
+  const FRONTEND_URL =
+    scriptTag?.getAttribute('data-frontend-url') ||
+    'https://keila-chat.vercel.app'
+  const API_URL =
+    scriptTag?.getAttribute('data-api-url') ||
+    'https://keilachatbackend.onrender.com'
+
+  if (!widgetId) {
+    console.warn('[KeilaChat] Missing data-id attribute.')
+    return
+  }
+
   // 2. Retrieve or Generate Persistent Visitor ID
   let visitorTrackingId = localStorage.getItem('keila_visitor_id')
   if (!visitorTrackingId) {
@@ -75,7 +85,7 @@ const API_URL =
   }
 
   try {
-    // 3. THE GATEKEEPER: Call the BACKEND for data
+    // 3. THE GATEKEEPER
     const response = await fetch(`${API_URL}/api/v1/widget/init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,16 +94,15 @@ const API_URL =
 
     if (!response.ok) {
       console.warn('[KeilaChat] Unauthorized or invalid widget configuration.')
-      return 
+      return
     }
 
-    // 4. Proceed to inject the UI
+    // 4. Inject UI
     const container = document.createElement('div')
     const shadow = container.attachShadow({ mode: 'open' })
     document.body.appendChild(container)
 
     const iframe = document.createElement('iframe')
-    // Point the UI to the FRONTEND domain
     iframe.src = `${FRONTEND_URL}/embed/chat?widgetId=${widgetId}`
     iframe.setAttribute('allowtransparency', 'true')
 
@@ -115,13 +124,13 @@ const API_URL =
 
     shadow.appendChild(iframe)
 
-    // 5. Message Handling (Must verify origin against the FRONTEND_URL)
+    // 5. Message Handling
     window.addEventListener('message', (event) => {
+      // Ensure we only listen to messages from our trusted frontend
       if (event.origin !== FRONTEND_URL) return
 
       if (event.data.type === 'RESIZE') {
         const isOpening = event.data.width !== '60px'
-
         Object.assign(iframe.style, {
           width: event.data.width,
           height: event.data.height,
@@ -130,11 +139,12 @@ const API_URL =
           bottom: event.data.bottom || '20px',
           right: event.data.right || '20px',
           borderRadius: isOpening ? '0px' : '50%',
-          boxShadow: isOpening ? '0 10px 25px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.15)'
+          boxShadow: isOpening
+            ? '0 10px 25px rgba(0,0,0,0.2)'
+            : '0 4px 12px rgba(0,0,0,0.15)',
         })
       }
     })
-
   } catch (error) {
     console.error('[KeilaChat] Failed to initialize:', error)
   }
