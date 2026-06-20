@@ -162,7 +162,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
        // Prioritize the script-injected ID, fallback to URL search params
        // const widgetId = hostConfig?.widgetId || params.get('widgetId')
  
-       const TEST_WIDGET_ID = '7e5884eb-1166-4230-a3d4-6d7620873b96'
+       const TEST_WIDGET_ID = '6b1f81f9-b243-4afd-b670-66c32794d08d'
  
        // Prioritize hardcoded ID -> script-injected ID -> URL search params
        const widgetId =
