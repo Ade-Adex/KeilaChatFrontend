@@ -46,7 +46,7 @@
         left: event.data.left || 'auto',
         bottom: event.data.bottom || '20px',
         right: event.data.right || '20px',
-        borderRadius: isOpening ? '20px' : '50%',
+        borderRadius: isOpening ? '0px' : '50%',
         boxShadow: isOpening ? '0 10px 25px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.15)'
       })
     }
