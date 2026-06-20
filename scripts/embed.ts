@@ -37,7 +37,7 @@
     if (event.origin !== BASE_URL) return
 
     if (event.data.type === 'RESIZE') {
-      const isOpening = event.data.width !== '80px' // Heuristic: if width is not 80px, it's opening
+      const isOpening = event.data.width !== '60px' // Heuristic: if width is not 80px, it's opening
 
       Object.assign(iframe.style, {
         width: event.data.width,
