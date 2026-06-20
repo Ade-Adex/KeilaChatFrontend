@@ -14,15 +14,20 @@
   iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`
   iframe.setAttribute('allowtransparency', 'true')
 
+  // Initial Style: The "Bubble" state
   Object.assign(iframe.style, {
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    width: '80px', 
+    width: '80px',
     height: '80px',
     border: 'none',
     zIndex: '2147483647',
     backgroundColor: 'transparent',
+    borderRadius: '50%', // Makes the launcher a perfect circle
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth animation
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', // Subtle pop effect
+    overflow: 'hidden',
   })
 
   shadow.appendChild(iframe)
@@ -30,8 +35,9 @@
   window.addEventListener('message', (event) => {
     if (event.origin !== BASE_URL) return
 
-    // Commands triggered by your ChatWindow.tsx
     if (event.data.type === 'RESIZE') {
+      const isOpening = event.data.width !== '80px' // Heuristic: if width is not 80px, it's opening
+
       Object.assign(iframe.style, {
         width: event.data.width,
         height: event.data.height,
@@ -39,6 +45,8 @@
         left: event.data.left || 'auto',
         bottom: event.data.bottom || '20px',
         right: event.data.right || '20px',
+        borderRadius: isOpening ? '20px' : '50%',
+        boxShadow: isOpening ? '0 10px 25px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.15)'
       })
     }
   })
