@@ -18,18 +18,18 @@ export default function AppProviders({
 }) {
   const pathname = usePathname()
 
-  const isEmbed = pathname.startsWith('/embed/chat')
+  const isExcluded = ['/embed/chat', '/admin'].some((path) => pathname.startsWith(path));
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <MantineProvider>
         <Notifications position="bottom-center" />
 
-        {!isEmbed && <Navbar />}
+        {!isExcluded && <Navbar />}
 
         <main className={!isEmbed ? 'min-h-screen' : ''}>{children}</main>
 
-        {!isEmbed && <Footer />}
+        {!isExcluded && <Footer />}
       </MantineProvider>
     </ThemeProvider>
   )
