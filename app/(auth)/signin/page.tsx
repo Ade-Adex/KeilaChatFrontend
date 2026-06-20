@@ -29,6 +29,15 @@ export default function AdminLoginPage() {
     }
   }, [user, router])
 
+  useEffect(() => {
+    if (errorMsg) {
+      const timer = setTimeout(() => {
+        setErrorMsg(null)
+      }, 5000) 
+      return () => clearTimeout(timer)
+    }
+  }, [errorMsg])
+
  const handleSubmit = async (e: React.FormEvent) => {
    e.preventDefault()
    if (!email || !password) return
@@ -74,10 +83,10 @@ export default function AdminLoginPage() {
         </div>
 
         {errorMsg && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg text-center font-medium">
-            {errorMsg}
-          </div>
-        )}
+      <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg text-center font-medium">
+        {errorMsg}
+      </div>
+    )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
