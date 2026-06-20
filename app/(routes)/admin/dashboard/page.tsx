@@ -91,6 +91,7 @@ export default function AdminDashboardPage() {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const [activeThreads, setActiveThreads] = useState<ThreadSummary[]>([])
+const [isLoadingThreads, setIsLoadingThreads] = useState(true) 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   )
@@ -114,6 +115,7 @@ export default function AdminDashboardPage() {
     if (!user || !user.currentPropertyId) return
 
     console.log('User', user)
+    setIsLoadingThreads(true)
 
     const propertyId = user.currentPropertyId
     const socketInstance = io(BACKEND_URL, {
@@ -162,6 +164,7 @@ export default function AdminDashboardPage() {
         }
       })
       .catch((err) => console.error('Failed processing dashboard queue:', err))
+    .finally(() => setIsLoadingThreads(false))
 
     return () => {
       socketInstance.disconnect()
@@ -333,7 +336,13 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-  {activeThreads.length > 0 ? (
+  {isLoadingThreads ? (
+    <div className="flex flex-col gap-2 p-2">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div key={i} className="w-full h-16 bg-gray-800 animate-pulse rounded-lg" />
+      ))}
+    </div>
+  ) : activeThreads.length > 0 ? (
     activeThreads.map((thread) => (
       <button
         key={thread.sessionId}
@@ -353,6 +362,7 @@ export default function AdminDashboardPage() {
       </button>
     ))
   ) : (
+    // Show empty state
     <div className="flex flex-col items-center justify-center h-full text-white text-sm p-4">
       <p>No active sessions</p>
     </div>
