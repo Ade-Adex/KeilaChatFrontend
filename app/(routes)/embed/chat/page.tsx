@@ -12,7 +12,7 @@
 // import ThemeToggle from '@/app/components/ThemeToggle'
 
 // const BACKEND_URL =
-//   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+//   process.env.NEXT_PUBLIC_API_URL  || 'http://localhost:5000'
 
 // interface MessagePayload {
 //   _id?: string
@@ -778,16 +778,9 @@
 //   )
 // }
 
-
-
-
-
-
-
-
 // app/(routes)/embed/chat/page.tsx
-import { headers } from 'next/headers'
 import ClientChatWrapper from '@/app/(routes)/embed/chat/ClientChatWrapper'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -799,7 +792,11 @@ export default async function EmbedPage({
   const { widgetId } = await searchParams
 
   if (!widgetId) {
-    return <div className="flex justify-center items-center h-screen">Invalid Access</div>
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Invalid Access
+      </div>
+    )
   }
 
   const headersList = await headers()
@@ -810,15 +807,18 @@ export default async function EmbedPage({
   let hasConnectionError = false
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/widget/verify`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'referer': referer 
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/widget/verify`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          referer: referer,
+        },
+        body: JSON.stringify({ widgetId }),
       },
-      body: JSON.stringify({ widgetId }),
-    })
-    
+    )
+
     if (response.ok) {
       isAuthorized = true
     }

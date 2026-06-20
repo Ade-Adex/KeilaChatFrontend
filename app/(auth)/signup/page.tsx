@@ -1,16 +1,17 @@
 'use client'
 
+import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 import {
-  FiLock,
-  FiGlobe,
-  FiBriefcase,
-  FiMail,
-  FiCheckCircle,
   FiAlertCircle,
-  FiEye, FiEyeOff
+  FiBriefcase,
+  FiCheckCircle,
+  FiEye,
+  FiEyeOff,
+  FiGlobe,
+  FiLock,
+  FiMail,
 } from 'react-icons/fi'
-import { notifications } from '@mantine/notifications'
 
 interface IntegrationResponse {
   account: { id: string; name: string; ownerEmail: string }
@@ -25,9 +26,7 @@ interface InputFieldProps {
   onChange: (value: string) => void
 }
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
-
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL 
 
 function InputField({
   label,
@@ -57,7 +56,7 @@ function InputField({
           <button
             type="button"
             onClick={() => setShow(!show)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors" 
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors"
           >
             {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
           </button>
@@ -78,55 +77,55 @@ export default function SignupPage() {
   const [loading, setLoading] = useState<boolean>(false)
   const [data, setData] = useState<IntegrationResponse | null>(null)
 
- const handleSignup = async (e: React.FormEvent) => {
-   e.preventDefault()
-   setLoading(true)
-   try {
-     const res = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify(formData),
-     })
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
 
-     const json = await res.json()
+      const json = await res.json()
 
-     // If the response is not OK, throw the error to be caught by the catch block
-     if (!res.ok) throw new Error(json.message || 'Registration failed')
+      // If the response is not OK, throw the error to be caught by the catch block
+      if (!res.ok) throw new Error(json.message || 'Registration failed')
 
-     setData(json.data as IntegrationResponse)
-   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : 'An unknown error occurred'
+      setData(json.data as IntegrationResponse)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'An unknown error occurred'
 
-    notifications.show({
-      title: 'Registration Failed',
-      message: message,
-      color: 'red', 
-      icon: <FiAlertCircle />,
-      autoClose: 5000,
-      styles: {
-        root: {
-          backgroundColor: '#dc2626', 
-          borderColor: '#991b1b',
-          '&::before': { backgroundColor: 'white' },
+      notifications.show({
+        title: 'Registration Failed',
+        message: message,
+        color: 'red',
+        icon: <FiAlertCircle />,
+        autoClose: 5000,
+        styles: {
+          root: {
+            backgroundColor: '#dc2626',
+            borderColor: '#991b1b',
+            '&::before': { backgroundColor: 'white' },
+          },
+          title: {
+            color: 'white',
+            fontWeight: 700,
+          },
+          description: {
+            color: 'white',
+          },
+          closeButton: {
+            color: 'white',
+            '&:hover': { backgroundColor: '#b91c1c' },
+          },
         },
-        title: {
-          color: 'white',
-          fontWeight: 700,
-        },
-        description: {
-          color: 'white',
-        },
-        closeButton: {
-          color: 'white',
-          '&:hover': { backgroundColor: '#b91c1c' },
-        },
-      },
-    })
-   } finally {
-     setLoading(false)
-   }
- }
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (data) {
     return (

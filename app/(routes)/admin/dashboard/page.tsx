@@ -2,24 +2,15 @@
 
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { io, Socket } from 'socket.io-client'
-import {
-  FiBriefcase,
-  FiSend,
-  FiUser,
-  FiLogOut,
-  FiAward,
-  FiShield,
-  FiArrowLeft,
-} from 'react-icons/fi'
-import { useAuthStore } from '@/app/store/useAuthStore'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import TypingIndicator from '@/app/components/TypingIndicator'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { FiArrowLeft, FiBriefcase, FiLogOut, FiSend } from 'react-icons/fi'
+import { io, Socket } from 'socket.io-client'
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 
 interface BackendSession {
   _id: string
@@ -91,7 +82,7 @@ export default function AdminDashboardPage() {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const [activeThreads, setActiveThreads] = useState<ThreadSummary[]>([])
-const [isLoadingThreads, setIsLoadingThreads] = useState(true) 
+  const [isLoadingThreads, setIsLoadingThreads] = useState(true)
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   )
@@ -164,7 +155,7 @@ const [isLoadingThreads, setIsLoadingThreads] = useState(true)
         }
       })
       .catch((err) => console.error('Failed processing dashboard queue:', err))
-    .finally(() => setIsLoadingThreads(false))
+      .finally(() => setIsLoadingThreads(false))
 
     return () => {
       socketInstance.disconnect()
@@ -336,38 +327,41 @@ const [isLoadingThreads, setIsLoadingThreads] = useState(true)
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-  {isLoadingThreads ? (
-    <div className="flex flex-col gap-2 p-2">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="w-full h-16 bg-gray-800 animate-pulse rounded-lg" />
-      ))}
-    </div>
-  ) : activeThreads.length > 0 ? (
-    activeThreads.map((thread) => (
-      <button
-        key={thread.sessionId}
-        onClick={() => setSelectedSessionId(thread.sessionId)}
-        className={`w-full text-left p-3 rounded-lg cursor-pointer ${
-          thread.sessionId === selectedSessionId 
-            ? 'bg-[#2563eb] text-white' 
-            : 'bg-gray-800 hover:bg-[#222]'
-        }`}
-      >
-        <div className="text-sm font-medium truncate">
-          Session: ...{thread.sessionId.slice(-6)}
-        </div>
-        <div className="text-xs text-slate-300 truncate mt-1">
-          {thread.lastMessageText}
-        </div>
-      </button>
-    ))
-  ) : (
-    // Show empty state
-    <div className="flex flex-col items-center justify-center h-full text-white text-sm p-4">
-      <p>No active sessions</p>
-    </div>
-  )}
-</div>
+            {isLoadingThreads ? (
+              <div className="flex flex-col gap-2 p-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="w-full h-16 bg-gray-800 animate-pulse rounded-lg"
+                  />
+                ))}
+              </div>
+            ) : activeThreads.length > 0 ? (
+              activeThreads.map((thread) => (
+                <button
+                  key={thread.sessionId}
+                  onClick={() => setSelectedSessionId(thread.sessionId)}
+                  className={`w-full text-left p-3 rounded-lg cursor-pointer ${
+                    thread.sessionId === selectedSessionId
+                      ? 'bg-[#2563eb] text-white'
+                      : 'bg-gray-800 hover:bg-[#222]'
+                  }`}
+                >
+                  <div className="text-sm font-medium truncate">
+                    Session: ...{thread.sessionId.slice(-6)}
+                  </div>
+                  <div className="text-xs text-slate-300 truncate mt-1">
+                    {thread.lastMessageText}
+                  </div>
+                </button>
+              ))
+            ) : (
+              // Show empty state
+              <div className="flex flex-col items-center justify-center h-full text-white text-sm p-4">
+                <p>No active sessions</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -496,7 +490,6 @@ const [isLoadingThreads, setIsLoadingThreads] = useState(true)
             </div>
 
             <div className="p-4 border-t border-border bg-card flex gap-2">
-            
               <input
                 disabled={isSessionClosed}
                 value={operatorInput}

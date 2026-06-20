@@ -2,17 +2,16 @@
 
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { io, Socket } from 'socket.io-client'
-import { FiX, FiSend, FiMessageSquare } from 'react-icons/fi'
-import { useAuthStore } from '@/app/store/useAuthStore'
-import { IoMenuSharp } from 'react-icons/io5'
-import { useDisclosure } from '@mantine/hooks'
-import { Modal, Button, Menu, ActionIcon } from '@mantine/core'
 import ThemeToggle from '@/app/components/ThemeToggle'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import { ActionIcon, Button, Menu, Modal } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
+import { useEffect, useRef, useState } from 'react'
+import { FiSend, FiX } from 'react-icons/fi'
+import { IoMenuSharp } from 'react-icons/io5'
+import { io, Socket } from 'socket.io-client'
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 
 interface MessagePayload {
   _id?: string
@@ -51,11 +50,11 @@ declare global {
   }
 }
 
-  // Add this interface
-  interface MenuItem {
-    label: string
-    action: () => void
-  }
+// Add this interface
+interface MenuItem {
+  label: string
+  action: () => void
+}
 
 // --- HELPER FUNCTION: Define it outside the component ---
 const getGroupDate = (dateString: string) => {
@@ -72,230 +71,229 @@ const getGroupDate = (dateString: string) => {
   })
 }
 
- const TypingIndicator = () => (
-   <div
-     style={{
-       display: 'flex',
-       gap: '4px',
-       padding: '10px 14px',
-       backgroundColor: '#333',
-       borderRadius: '12px 12px 12px 0',
-       width: 'fit-content',
-       alignSelf: 'flex-start',
-     }}
-   >
-     {[0, 1, 2].map((i) => (
-       <div
-         key={i}
-         style={{
-           width: '6px',
-           height: '6px',
-           backgroundColor: '#888',
-           borderRadius: '50%',
-           animation: 'bounce 1.4s infinite ease-in-out both',
-           animationDelay: `${i * 0.16}s`,
-         }}
-       />
-     ))}
-     <style jsx>{`
-       @keyframes bounce {
-         0%,
-         80%,
-         100% {
-           transform: scale(0);
-         }
-         40% {
-           transform: scale(1);
-         }
-       }
-     `}</style>
-   </div>
- )
-
+const TypingIndicator = () => (
+  <div
+    style={{
+      display: 'flex',
+      gap: '4px',
+      padding: '10px 14px',
+      backgroundColor: '#333',
+      borderRadius: '12px 12px 12px 0',
+      width: 'fit-content',
+      alignSelf: 'flex-start',
+    }}
+  >
+    {[0, 1, 2].map((i) => (
+      <div
+        key={i}
+        style={{
+          width: '6px',
+          height: '6px',
+          backgroundColor: '#888',
+          borderRadius: '50%',
+          animation: 'bounce 1.4s infinite ease-in-out both',
+          animationDelay: `${i * 0.16}s`,
+        }}
+      />
+    ))}
+    <style jsx>{`
+      @keyframes bounce {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
+    `}</style>
+  </div>
+)
 
 export default function ChatWindow({ onClose }: { onClose: () => void }) {
   const socketRef = useRef<Socket | null>(null)
-   const chatEndRef = useRef<HTMLDivElement | null>(null)
-   const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
- 
-   const [visitorName, setVisitorName] = useState(() =>
-     typeof window !== 'undefined'
-       ? localStorage.getItem('keila_visitor_name') || 'Visitor'
-       : 'Visitor',
-   )
-   const [isEditingName, setIsEditingName] = useState(false)
-   const [tempName, setTempName] = useState('')
- 
+  const chatEndRef = useRef<HTMLDivElement | null>(null)
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const [visitorName, setVisitorName] = useState(() =>
+    typeof window !== 'undefined'
+      ? localStorage.getItem('keila_visitor_name') || 'Visitor'
+      : 'Visitor',
+  )
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [tempName, setTempName] = useState('')
+
   //  const [isWidgetOpen, setIsWidgetOpen] = useState(false)
-   const [visitorInput, setVisitorInput] = useState('')
-   const [messages, setMessages] = useState<MessagePayload[]>([])
-   const [config, setConfig] = useState<ConfigData | null>(null)
-   const [isMobile, setIsMobile] = useState(false)
-   const [isOperatorTyping, setIsOperatorTyping] = useState(false)
- 
-   const isSessionClosed = config?.status === 'closed'
-   const [opened, { open, close }] = useDisclosure(false)
- 
-   const authUser = useAuthStore((state) => state.user)
- 
-   useEffect(() => {
-     const handleResize = () => setIsMobile(window.innerWidth < 640)
-     handleResize()
-     window.addEventListener('resize', handleResize)
-     return () => window.removeEventListener('resize', handleResize)
-   }, [])
- 
-   const operatorName = messages
-     .filter((m) => m.senderType === 'operator')
-     .pop()?.senderName
- 
-   // --- 1. Identity & Session Initialization ---
-   useEffect(() => {
-     const initSession = async () => {
-       const { _hasHydrated } = useAuthStore.getState()
- 
-       if (!_hasHydrated) return
- 
-       const hostConfig = window.KeilaConfig
-       const params = new URLSearchParams(window.location.search)
- 
-       // Prioritize the script-injected ID, fallback to URL search params
-       // const widgetId = hostConfig?.widgetId || params.get('widgetId')
- 
-       const TEST_WIDGET_ID = '6b1f81f9-b243-4afd-b670-66c32794d08d'
- 
-       // Prioritize hardcoded ID -> script-injected ID -> URL search params
-       const widgetId =
-         TEST_WIDGET_ID || hostConfig?.widgetId || params.get('widgetId')
- 
-       if (!widgetId) {
-         console.warn('KeilaChat: No Widget ID found.')
-         // queueMicrotask(() => setIsLoading(false))
-         return
-       }
- 
-       // Use widgetId for persistent storage tracking
-       const visitorId =
-         authUser?.id ||
-         localStorage.getItem(`keila_visitor_${widgetId}`) ||
-         crypto.randomUUID()
- 
-       if (!authUser) {
-         localStorage.setItem(`keila_visitor_${widgetId}`, visitorId)
-       }
- 
-       const controller = new AbortController()
- 
-       try {
-         const response = await fetch(
-           `${BACKEND_URL}/api/v1/sessions/initiate`,
-           {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ widgetId, visitorId }),
-             signal: controller.signal,
-           },
-         )
- 
-         const resData = await response.json()
- 
-         // Update config with the internal propertyId returned by the backend
-         if (resData.status === 'success' && resData.data.session) {
-           setConfig({
-             propertyId: resData.data.session.propertyId,
-             sessionId: resData.data.session._id,
-             visitorId: visitorId,
-             status: resData.data.session.status,
-           })
-         }
-       } catch (err: unknown) {
-         if (err instanceof Error) {
-           if (err.name !== 'AbortError')
-             console.error('Session Init Error:', err.message)
-         } else {
-           console.error(
-             'An unexpected error occurred during session initiation',
-           )
-         }
-       } finally {
-         // queueMicrotask(() => setIsLoading(false))
-       }
-     }
- 
-     initSession()
-   }, [authUser])
- 
-   // --- 2. Socket Connection & Message Sync ---
-   useEffect(() => {
-     if (!config?.sessionId) return
- 
-     // Fetch message history
-     fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/messages`)
-       .then((res) => res.json())
-       .then((resData) => {
-         if (resData.status === 'success')
-           setMessages(resData.data.messages || [])
-       })
- 
-     // Initialize Socket with Auth token if available
-     const socketInstance = io(BACKEND_URL, {
-       auth: { token: authUser?.accessToken || null },
-     })
- 
-     socketRef.current = socketInstance
- 
-     socketInstance.on('connect', () => {
-       socketInstance.emit('join_chat_session', { sessionId: config.sessionId })
-     })
- 
-     socketInstance.on('new_message', (payload: MessagePayload) => {
-       setMessages((prev) =>
-         prev.some((m) => m._id === payload._id) ? prev : [...prev, payload],
-       )
-     })
- 
+  const [visitorInput, setVisitorInput] = useState('')
+  const [messages, setMessages] = useState<MessagePayload[]>([])
+  const [config, setConfig] = useState<ConfigData | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+  const [isOperatorTyping, setIsOperatorTyping] = useState(false)
+
+  const isSessionClosed = config?.status === 'closed'
+  const [opened, { open, close }] = useDisclosure(false)
+
+  const authUser = useAuthStore((state) => state.user)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const operatorName = messages
+    .filter((m) => m.senderType === 'operator')
+    .pop()?.senderName
+
+  // --- 1. Identity & Session Initialization ---
+  useEffect(() => {
+    const initSession = async () => {
+      const { _hasHydrated } = useAuthStore.getState()
+
+      if (!_hasHydrated) return
+
+      const hostConfig = window.KeilaConfig
+      const params = new URLSearchParams(window.location.search)
+
+      // Prioritize the script-injected ID, fallback to URL search params
+      // const widgetId = hostConfig?.widgetId || params.get('widgetId')
+
+      const TEST_WIDGET_ID = '6b1f81f9-b243-4afd-b670-66c32794d08d'
+
+      // Prioritize hardcoded ID -> script-injected ID -> URL search params
+      const widgetId =
+        TEST_WIDGET_ID || hostConfig?.widgetId || params.get('widgetId')
+
+      if (!widgetId) {
+        console.warn('KeilaChat: No Widget ID found.')
+        // queueMicrotask(() => setIsLoading(false))
+        return
+      }
+
+      // Use widgetId for persistent storage tracking
+      const visitorId =
+        authUser?.id ||
+        localStorage.getItem(`keila_visitor_${widgetId}`) ||
+        crypto.randomUUID()
+
+      if (!authUser) {
+        localStorage.setItem(`keila_visitor_${widgetId}`, visitorId)
+      }
+
+      const controller = new AbortController()
+
+      try {
+        const response = await fetch(
+          `${BACKEND_URL}/api/v1/sessions/initiate`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ widgetId, visitorId }),
+            signal: controller.signal,
+          },
+        )
+
+        const resData = await response.json()
+
+        // Update config with the internal propertyId returned by the backend
+        if (resData.status === 'success' && resData.data.session) {
+          setConfig({
+            propertyId: resData.data.session.propertyId,
+            sessionId: resData.data.session._id,
+            visitorId: visitorId,
+            status: resData.data.session.status,
+          })
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          if (err.name !== 'AbortError')
+            console.error('Session Init Error:', err.message)
+        } else {
+          console.error(
+            'An unexpected error occurred during session initiation',
+          )
+        }
+      } finally {
+        // queueMicrotask(() => setIsLoading(false))
+      }
+    }
+
+    initSession()
+  }, [authUser])
+
+  // --- 2. Socket Connection & Message Sync ---
+  useEffect(() => {
+    if (!config?.sessionId) return
+
+    // Fetch message history
+    fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/messages`)
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.status === 'success')
+          setMessages(resData.data.messages || [])
+      })
+
+    // Initialize Socket with Auth token if available
+    const socketInstance = io(BACKEND_URL, {
+      auth: { token: authUser?.accessToken || null },
+    })
+
+    socketRef.current = socketInstance
+
+    socketInstance.on('connect', () => {
+      socketInstance.emit('join_chat_session', { sessionId: config.sessionId })
+    })
+
+    socketInstance.on('new_message', (payload: MessagePayload) => {
+      setMessages((prev) =>
+        prev.some((m) => m._id === payload._id) ? prev : [...prev, payload],
+      )
+    })
+
     socketInstance.on('session_closed', () => {
       setConfig((prev) => (prev ? { ...prev, status: 'closed' } : null))
     })
- 
-     socketInstance.on('user_typing', (p: { isTyping: boolean }) =>
-       setIsOperatorTyping(p.isTyping),
-     )
- 
-     return () => {
-       socketInstance.disconnect()
-     }
-   }, [config?.sessionId, authUser?.accessToken])
- 
+
+    socketInstance.on('user_typing', (p: { isTyping: boolean }) =>
+      setIsOperatorTyping(p.isTyping),
+    )
+
+    return () => {
+      socketInstance.disconnect()
+    }
+  }, [config?.sessionId, authUser?.accessToken])
+
   //  useEffect(() => {
   //    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   //  }, [messages, isWidgetOpen, isOperatorTyping])
- 
-   const sendTypingStatus = (isTyping: boolean) => {
-     if (!socketRef.current || !config) return
-     socketRef.current.emit('typing', {
-       sessionId: config.sessionId,
-       senderName: 'Visitor',
-       isTyping,
-     })
-   }
- 
-   const handleSend = () => {
-     if (!socketRef.current || !visitorInput.trim() || !config) return
-     if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
-     sendTypingStatus(false)
-     socketRef.current.emit('send_message', {
-       sessionId: config.sessionId,
-       propertyId: config.propertyId,
-       senderType: 'visitor',
-       senderName: visitorName,
-       senderId: config.visitorId,
-       messageText: visitorInput,
-       createdAt: new Date().toISOString(),
-     })
-     setVisitorInput('')
-   }
- 
+
+  const sendTypingStatus = (isTyping: boolean) => {
+    if (!socketRef.current || !config) return
+    socketRef.current.emit('typing', {
+      sessionId: config.sessionId,
+      senderName: 'Visitor',
+      isTyping,
+    })
+  }
+
+  const handleSend = () => {
+    if (!socketRef.current || !visitorInput.trim() || !config) return
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+    sendTypingStatus(false)
+    socketRef.current.emit('send_message', {
+      sessionId: config.sessionId,
+      propertyId: config.propertyId,
+      senderType: 'visitor',
+      senderName: visitorName,
+      senderId: config.visitorId,
+      messageText: visitorInput,
+      createdAt: new Date().toISOString(),
+    })
+    setVisitorInput('')
+  }
+
   const handleEndSession = async () => {
     if (!config?.sessionId) return
     try {
@@ -309,7 +307,6 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
       console.error('Failed to end session', err)
     }
   }
- 
 
   return (
     <div className="w-full h-full flex flex-col bg-transparent dark:bg-transparent overflow-hidden shadow-2xl">
