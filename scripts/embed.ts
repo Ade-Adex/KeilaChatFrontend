@@ -19,15 +19,16 @@
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    width: '80px',
-    height: '80px',
+    width: '60px',
+    height: '60px',
     border: 'none',
     zIndex: '2147483647',
     backgroundColor: 'transparent',
-    borderRadius: '50%', // Makes the launcher a perfect circle
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth animation
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', // Subtle pop effect
+    borderRadius: '50%',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
     overflow: 'hidden',
+    cursor: 'pointer', 
   })
 
   shadow.appendChild(iframe)
