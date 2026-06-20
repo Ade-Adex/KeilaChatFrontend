@@ -333,21 +333,31 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {activeThreads.map((thread) => (
-              <button
-                key={thread.sessionId}
-                onClick={() => setSelectedSessionId(thread.sessionId)}
-                className={`w-full text-left p-3 rounded-lg cursor-pointer ${thread.sessionId === selectedSessionId ? 'bg-[#2563eb] text-white' : 'bg-gray-800 hover:bg-[#222]'}`}
-              >
-                <div className="text-sm font-medium truncate">
-                  Session: ...{thread.sessionId.slice(-6)}
-                </div>
-                <div className="text-xs text-slate-300 truncate mt-1">
-                  {thread.lastMessageText}
-                </div>
-              </button>
-            ))}
-          </div>
+  {activeThreads.length > 0 ? (
+    activeThreads.map((thread) => (
+      <button
+        key={thread.sessionId}
+        onClick={() => setSelectedSessionId(thread.sessionId)}
+        className={`w-full text-left p-3 rounded-lg cursor-pointer ${
+          thread.sessionId === selectedSessionId 
+            ? 'bg-[#2563eb] text-white' 
+            : 'bg-gray-800 hover:bg-[#222]'
+        }`}
+      >
+        <div className="text-sm font-medium truncate">
+          Session: ...{thread.sessionId.slice(-6)}
+        </div>
+        <div className="text-xs text-slate-300 truncate mt-1">
+          {thread.lastMessageText}
+        </div>
+      </button>
+    ))
+  ) : (
+    <div className="flex flex-col items-center justify-center h-full text-white text-sm p-4">
+      <p>No active sessions</p>
+    </div>
+  )}
+</div>
         </div>
       </div>
 
