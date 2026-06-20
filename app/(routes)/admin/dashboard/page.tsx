@@ -303,8 +303,8 @@ export default function AdminDashboardPage() {
 
   if (!hasHydrated || authLoading || !user) {
     return (
-      <div className="h-screen w-full bg-[#0a0a0a] flex items-center justify-center text-zinc-400 font-sans">
-        <p className="animate-pulse text-sm">
+      <div className="h-screen w-full bg-background flex items-center justify-center text-zinc-400 font-sans">
+        <p className="animate-pulse text-sm text-foreground">
           Verifying secure pipeline permissions...
         </p>
       </div>
