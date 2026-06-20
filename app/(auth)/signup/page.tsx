@@ -25,6 +25,9 @@ interface InputFieldProps {
   onChange: (value: string) => void
 }
 
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+
 
 function InputField({
   label,
@@ -79,7 +82,7 @@ export default function SignupPage() {
    e.preventDefault()
    setLoading(true)
    try {
-     const res = await fetch('http://localhost:5000/api/v1/auth/register', {
+     const res = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
        body: JSON.stringify(formData),
