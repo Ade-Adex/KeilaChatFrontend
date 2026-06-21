@@ -1,0 +1,109 @@
+// /app/components/dashboard/Sidebar.tsx
+
+'use client'
+
+import { NavLink, Tooltip } from '@mantine/core'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import {
+  FiHome,
+  FiMessageSquare,
+  FiUsers,
+  FiCode,
+  FiSettings,
+  FiLogOut,
+} from 'react-icons/fi'
+import { useAuthStore } from '@/app/store/useAuthStore'
+
+interface SidebarProps {
+  isOpened: boolean
+}
+
+const links = [
+  { name: 'Overview', href: '/admin/dashboard', icon: <FiHome size={18} /> },
+  {
+    name: 'Inbox',
+    href: '/admin/dashboard/inbox',
+    icon: <FiMessageSquare size={18} />,
+  },
+  {
+    name: 'Contacts',
+    href: '/admin/dashboard/contacts',
+    icon: <FiUsers size={18} />,
+  },
+  { name: 'Setup', href: '/admin/dashboard/setup', icon: <FiCode size={18} /> },
+  {
+    name: 'Settings',
+    href: '/admin/dashboard/settings',
+    icon: <FiSettings size={18} />,
+  },
+]
+
+export default function Sidebar({ isOpened }: SidebarProps) {
+  const pathname = usePathname()
+  const logout = useAuthStore((state) => state.logout)
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between bg-sidebar text-white">
+      {/* Main Navigation links mapping container */}
+      <div className="flex flex-col gap-2">
+        {links.map((link) => {
+          const isActive = pathname === link.href
+
+          return (
+            <Tooltip
+              key={link.name}
+              label={link.name}
+              disabled={isOpened}
+              position="right"
+              withArrow
+              transitionProps={{ transition: 'fade', duration: 150 }}
+            >
+              <NavLink
+                component={Link}
+                href={link.href}
+                label={isOpened ? link.name : null}
+                leftSection={link.icon}
+                className={`rounded-lg font-medium transition-all duration-200 py-2.5! ${
+                  isActive
+                    ? ' bg-primary! hover:bg-button-hover! shadow-sm'
+                    : 'bg-slate-900! text-foreground opacity-80 hover:opacity-100'
+                }`}
+                styles={{
+                  root: {
+                    paddingLeft: isOpened ? 12 : 14,
+                    backgroundColor: 'transparent',
+                  },
+                  label: { fontSize: '14px' },
+                  section: { color: 'currentColor' },
+                }}
+              />
+            </Tooltip>
+          )
+        })}
+      </div>
+
+      {/* Footer Segment: Boundary Divider + Logout Action */}
+      <div className="flex flex-col gap-2">
+        <div className="border-t border-neutral-200 dark:border-neutral-800 w-full my-1" />
+
+        <Tooltip label="Logout" disabled={isOpened} position="right" withArrow>
+          <NavLink
+            onClick={() => logout()}
+            label={isOpened ? 'Logout' : null}
+            leftSection={<FiLogOut size={18} />}
+            className="text-red-600! dark:text-red-400! font-medium hover:bg-red-50! dark:hover:bg-red-950/30! rounded-lg transition-all duration-200 py-2.5!"
+            styles={{
+              root: {
+                paddingLeft: isOpened ? 12 : 14,
+                backgroundColor: 'transparent',
+              },
+              label: { fontSize: '14px', color: 'currentColor' },
+              section: { color: 'currentColor' },
+            }}
+          />
+        </Tooltip>
+      </div>
+    </div>
+  )
+}

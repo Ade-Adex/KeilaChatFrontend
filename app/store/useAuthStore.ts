@@ -1,30 +1,8 @@
-//  /app/store/useAuthStore.ts
+// /app/store/useAuthStore.ts
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-
-interface PropertyData {
-  id: string
-  widgetId: string
-  name: string
-}
-
-interface AccountData {
-  id: string
-  name: string
-  ownerEmail: string
-  plan: string
-}
-
-interface UserSession {
-  id: string
-  name: string
-  email: string
-  plan: string
-  currentPropertyId: string
-  currentWidgetId: string 
-  accessToken: string
-}
+import type { AccountData, PropertyData, UserSession } from '@/app/types/auth'
 
 interface AuthState {
   user: UserSession | null
@@ -33,7 +11,7 @@ interface AuthState {
   login: (
     token: string,
     accountData: AccountData,
-    propertyData: PropertyData,
+    propertyData: PropertyData | null,
   ) => Promise<void>
   logout: () => void
   setLoading: (loading: boolean) => void
@@ -47,11 +25,7 @@ export const useAuthStore = create<AuthState>()(
       loading: false,
       _hasHydrated: false,
 
-      login: async (
-        token: string,
-        accountData: AccountData,
-        propertyData: PropertyData,
-      ) => {
+      login: async (token, accountData, propertyData) => {
         set({ loading: true })
         try {
           const sessionPayload: UserSession = {
@@ -59,8 +33,7 @@ export const useAuthStore = create<AuthState>()(
             name: accountData.name,
             email: accountData.ownerEmail,
             plan: accountData.plan,
-            currentPropertyId: propertyData.id,
-            currentWidgetId: propertyData.widgetId, // Dynamically set
+            property: propertyData,
             accessToken: token,
           }
 
