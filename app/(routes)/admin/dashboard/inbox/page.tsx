@@ -2,7 +2,6 @@
 
 // 'use client'
 
-// import ThemeToggle from '@/app/components/ThemeToggle'
 // import TypingIndicator from '@/app/components/TypingIndicator'
 // import { useAuthStore } from '@/app/store/useAuthStore'
 // import { useRouter } from 'next/navigation'
@@ -97,9 +96,6 @@
 //   useEffect(() => {
 //     if (!user || !user.property?.id) return
 
-//     console.log('User', user)
-//     // setIsLoadingThreads(true)
-
 //     const propertyId = user.property.id
 //     const socketInstance = io(BACKEND_URL, {
 //       auth: { token: user.accessToken },
@@ -110,7 +106,6 @@
 //       socketInstance.emit('join_property_dashboard', { propertyId })
 //     })
 
-//     // Catch real-time workspace alert signals sent from visitors
 //     socketInstance.on(
 //       'incoming_visitor_alert',
 //       (payload: IncomingAlertPayload) => {
@@ -160,11 +155,20 @@
 
 //     const currentSocket = socketRef.current
 
-//     currentSocket.emit('join_chat_session', { sessionId: selectedSessionId })
-
-//     fetch(`${BACKEND_URL}/api/v1/sessions/${selectedSessionId}/messages`, {
-//       headers: { Authorization: `Bearer ${user.accessToken}` },
+//     // SECURE FIX: Pass explicit operational context down inside payload metrics
+//     currentSocket.emit('join_chat_session', {
+//       sessionId: selectedSessionId,
+//       clientType: 'operator',
+//       senderName: user.name,
 //     })
+
+//     // SECURE FIX: Forward active propertyId to secure API filters preventing database leak overlays
+//     fetch(
+//       `${BACKEND_URL}/api/v1/sessions/${selectedSessionId}/messages?propertyId=${user.property?.id}`,
+//       {
+//         headers: { Authorization: `Bearer ${user.accessToken}` },
+//       },
+//     )
 //       .then((res) => res.json())
 //       .then((resData: HistoryResponse) => {
 //         if (resData.status === 'success') {
@@ -173,11 +177,16 @@
 //       })
 //       .catch((err) => console.error('History integration break:', err))
 
-//     // Handle Visitor Typing Indicator
+//     // Real-Time System Event Monitoring: Tracks arrivals/departures of operators or widgets
+//     currentSocket.on('presence_notification', (payload: MessagePayload) => {
+//       if (payload.sessionId === selectedSessionId) {
+//         setMessages((prev) => [...prev, payload])
+//       }
+//     })
+
 //     currentSocket.on(
 //       'user_typing',
 //       (payload: { senderName: string; isTyping: boolean }) => {
-//         // Logic: Only update if the typing event matches the current session
 //         setIsVisitorTyping(payload.isTyping)
 //       },
 //     )
@@ -218,6 +227,7 @@
 //       currentSocket.off('new_message')
 //       currentSocket.off('user_typing')
 //       currentSocket.off('session_closed')
+//       currentSocket.off('presence_notification')
 //     }
 //   }, [selectedSessionId, user])
 
@@ -243,7 +253,6 @@
 //     )
 //       return
 
-//     // Stop typing indicator when sending
 //     if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
 //     sendTypingStatus(false)
 
@@ -275,9 +284,7 @@
 //       )
 
 //       if (response.ok) {
-//         // Clear the selected session or refresh list
 //         setSelectedSessionId(null)
-//         // Optional: Remove from activeThreads locally
 //         setActiveThreads((prev) =>
 //           prev.filter((t) => t.sessionId !== selectedSessionId),
 //         )
@@ -301,14 +308,11 @@
 //     <div className="flex h-[calc(100vh-60px-var(--mantine-spacing-md)*2)] w-full bg-background text-foreground font-sans select-none overflow-hidden rounded-xl border border-border shadow-sm">
 //       {/* SIDEBAR ACTIVE QUEUE COLUMN */}
 //       <div
-//         className={`w-full md:w-85 border-r border-border flex flex-col justify-between ${
-//           selectedSessionId ? 'hidden md:flex' : 'flex'
-//         }`}
+//         className={`w-full md:w-85 border-r border-border flex flex-col justify-between ${selectedSessionId ? 'hidden md:flex' : 'flex'}`}
 //       >
 //         <div className="flex flex-col flex-1 overflow-hidden">
-//           {/* Header section inside the list pane */}
 //           <div className="p-4 border-b border-border flex items-center justify-between bg-background">
-//             <h3 className="text-sm font-semibold tracking-tight ">
+//             <h3 className="text-sm font-semibold tracking-tight">
 //               Live Conversations
 //             </h3>
 //             <span className="text-[11px] bg-blue-500/10 text-primary font-medium px-2 py-0.5 rounded-full">
@@ -344,16 +348,11 @@
 //                     className={`group w-full text-left p-3.5 rounded-xl cursor-pointer transition-all duration-200 flex items-start gap-3 border ${
 //                       isSelected
 //                         ? 'bg-primary text-white border-border shadow-md shadow-neutral-900/10 dark:shadow-none'
-//                         : 'bg-background border-border  hover:bg-button-hover'
+//                         : 'bg-background border-border hover:bg-button-hover'
 //                     }`}
 //                   >
-//                     {/* Visual Avatar Monogram */}
 //                     <div
-//                       className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 ${
-//                         isSelected
-//                           ? 'bg-neutral-800 text-neutral-100 dark:bg-neutral-200 dark:text-neutral-800'
-//                           : 'bg-button-hover group-hover:bg-background'
-//                       }`}
+//                       className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 ${isSelected ? 'bg-neutral-800 text-neutral-100 dark:bg-neutral-200 dark:text-neutral-800' : 'bg-button-hover group-hover:bg-background'}`}
 //                     >
 //                       {shortId.slice(0, 2)}
 //                     </div>
@@ -377,7 +376,6 @@
 //                       >
 //                         {thread.lastMessageText}
 //                       </p>
-
 //                       {thread.status === 'closed' && (
 //                         <span className="inline-block mt-1.5 text-[9px] uppercase tracking-wider font-bold bg-button-hover px-1.5 py-0.5 rounded">
 //                           Archived
@@ -411,7 +409,6 @@
 //       >
 //         {selectedSessionId ? (
 //           <>
-//             {/* ACTIVE WORKSPACE HEADER BANNER */}
 //             <div className="p-4 border-b border-border flex items-center justify-between gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
 //               <div className="flex items-center gap-3 min-w-0">
 //                 <button
@@ -467,7 +464,6 @@
 //                 return Object.entries(groups).map(
 //                   ([dateLabel, groupMessages]) => (
 //                     <div key={dateLabel} className="flex flex-col gap-4">
-//                       {/* Elegant Date Divider */}
 //                       <div className="flex items-center justify-center my-2">
 //                         <div className="h-px bg-border flex-1" />
 //                         <span className="text-[10px] text-foreground font-semibold uppercase tracking-widest px-3">
@@ -478,12 +474,27 @@
 
 //                       {groupMessages.map((msg, idx) => {
 //                         const isOp = msg.senderType === 'operator'
+//                         const isSys = msg.senderType === 'system'
 //                         const time = new Date(
 //                           msg.createdAt || new Date(),
 //                         ).toLocaleTimeString([], {
 //                           hour: '2-digit',
 //                           minute: '2-digit',
 //                         })
+
+//                         // Render center-aligned system notification banner cleanly
+//                         if (isSys) {
+//                           return (
+//                             <div
+//                               key={msg._id || idx}
+//                               className="flex items-center justify-center w-full my-1"
+//                             >
+//                               <span className="text-[11px] bg-neutral-100 dark:bg-neutral-800 border border-border text-zinc-400 font-medium px-3 py-1 rounded-full text-center max-w-[85%]">
+//                                 {msg.messageText}
+//                               </span>
+//                             </div>
+//                           )
+//                         }
 
 //                         return (
 //                           <div
@@ -504,8 +515,8 @@
 //                             <div
 //                               className={`px-4 py-2.5 text-sm max-w-[70%] shadow-sm leading-relaxed ${
 //                                 isOp
-//                                   ? 'rounded-2xl rounded-tr-none text-white bg-neutral-300 dark:bg-neutral-500'
-//                                   : 'text-white bg-neutral-300 dark:bg-neutral-500 rounded-2xl rounded-tl-none'
+//                                   ? 'rounded-2xl rounded-tr-none text-white bg-neutral-600 dark:bg-neutral-700'
+//                                   : 'text-zinc-800 dark:text-zinc-100 bg-neutral-100 dark:bg-neutral-800 rounded-2xl rounded-tl-none border border-border'
 //                               }`}
 //                             >
 //                               <p className="whitespace-pre-wrap wrap-break-word">
@@ -519,19 +530,12 @@
 //                   ),
 //                 )
 //               })()}
-//               {isVisitorTyping && (
-//                 <div className="flex items-center gap-1.5 p-3 bg-background border border-border rounded-xl w-fit shadow-sm">
-//                   <TypingIndicator />
-//                   <span className="text-xs text-foreground">
-//                     Visitor is writing
-//                   </span>
-//                 </div>
-//               )}
+//               {isVisitorTyping && <TypingIndicator />}
 //               <div ref={feedEndRef} />
 //             </div>
 
 //             {/* MESSAGE CONTROL INPUT BLOCK */}
-//             <div className=" py-2 px-4 border-t border-border bg-card">
+//             <div className="py-2 px-4 border-t border-border bg-card">
 //               <div className="flex items-center gap-2 rounded-xl transition-colors">
 //                 <input
 //                   disabled={isSessionClosed}
@@ -587,13 +591,6 @@
 //     </div>
 //   )
 // }
-
-
-
-
-
-//  /app/(routes)/admin/dashboard/page.tsx
-
 
 'use client'
 
@@ -750,14 +747,12 @@ export default function AdminInboxPage() {
 
     const currentSocket = socketRef.current
 
-    // SECURE FIX: Pass explicit operational context down inside payload metrics
     currentSocket.emit('join_chat_session', {
       sessionId: selectedSessionId,
       clientType: 'operator',
       senderName: user.name,
     })
 
-    // SECURE FIX: Forward active propertyId to secure API filters preventing database leak overlays
     fetch(
       `${BACKEND_URL}/api/v1/sessions/${selectedSessionId}/messages?propertyId=${user.property?.id}`,
       {
@@ -772,7 +767,6 @@ export default function AdminInboxPage() {
       })
       .catch((err) => console.error('History integration break:', err))
 
-    // Real-Time System Event Monitoring: Tracks arrivals/departures of operators or widgets
     currentSocket.on('presence_notification', (payload: MessagePayload) => {
       if (payload.sessionId === selectedSessionId) {
         setMessages((prev) => [...prev, payload])
@@ -826,9 +820,18 @@ export default function AdminInboxPage() {
     }
   }, [selectedSessionId, user])
 
+  // Professional Auto-Scrolling Hook Matrix
   useEffect(() => {
-    feedEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    // If the window has few messages (initial route loading), snap immediately without a transition look.
+    // If it's a dynamic live conversation push, make it scroll smoothly.
+    const scrollBehavior = messages.length <= 30 ? 'auto' : 'smooth'
+
+    const executionTimer = setTimeout(() => {
+      feedEndRef.current?.scrollIntoView({ behavior: scrollBehavior })
+    }, 40)
+
+    return () => clearTimeout(executionTimer)
+  }, [messages, isVisitorTyping, selectedSessionId])
 
   const sendTypingStatus = (isTyping: boolean) => {
     if (!socketRef.current || !selectedSessionId) return
@@ -860,6 +863,11 @@ export default function AdminInboxPage() {
       messageText: operatorInput,
     })
     setOperatorInput('')
+
+    // Micro snap directly downwards on layout registration
+    setTimeout(() => {
+      feedEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 20)
   }
 
   const handleEndSession = async () => {
@@ -1077,7 +1085,6 @@ export default function AdminInboxPage() {
                           minute: '2-digit',
                         })
 
-                        // Render center-aligned system notification banner cleanly
                         if (isSys) {
                           return (
                             <div
