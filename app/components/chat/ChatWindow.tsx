@@ -914,8 +914,18 @@ export default function ChatWindow({
     visitorName,
   ])
 
+  // --- 3. Professional Auto-Scrolling Pipeline ---
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Use 'auto' for the initial fetch load, and 'smooth' for real-time messages
+    const behavior = messages.length <= 20 ? 'auto' : 'smooth'
+
+    // Wrap in a micro-task timeout to ensure the DOM has finished rendering the
+    // newest elements (like new bubbles or the typing indicator) before calculating position
+    const timer = setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior })
+    }, 50)
+
+    return () => clearTimeout(timer)
   }, [messages, isOperatorTyping])
 
   const sendTypingStatus = (isTyping: boolean) => {
@@ -941,6 +951,9 @@ export default function ChatWindow({
       createdAt: new Date().toISOString(),
     })
     setVisitorInput('')
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 30)
   }
 
   const handleEndSession = async () => {
