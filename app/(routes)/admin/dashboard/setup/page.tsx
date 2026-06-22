@@ -284,7 +284,7 @@ function CodeSnippet({ code, copyValue }: CodeSnippetProps) {
               leftSection={
                 copied ? <FiCheck size={14} /> : <FiCopy size={14} />
               }
-              className="transition-all duration-200"
+              className="transition-all duration-200 hover:bg-button-hover!"
             >
               {copied ? 'Copied Snippet' : 'Copy Snippet'}
             </Button>
