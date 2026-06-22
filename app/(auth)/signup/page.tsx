@@ -284,6 +284,7 @@ interface InputFieldProps {
 }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL
 
 function InputField({
   label,
@@ -349,7 +350,7 @@ function SignupFormContent() {
     if (callbackUrl) {
       try {
         const decodedUrl = decodeURIComponent(callbackUrl)
-        const urlObj = new URL(decodedUrl, 'http://localhost:3000')
+        const urlObj = new URL(decodedUrl, FRONTEND_URL)
         return urlObj.searchParams.get('token')
       } catch (e) {
         console.error('Failed to trace deep token links:', e)
