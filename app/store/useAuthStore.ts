@@ -48,9 +48,8 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null })
 
         try {
-          // Change this URL to match your explicit Express backend address variable
-          // e.g., ENV.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
-          const BACKEND_URL = 'http://localhost:5000/api/v1'
+
+          const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 
           // 2. Trigger cross-origin cookie destruction using credentials include
           await fetch(`${BACKEND_URL}/auth/logout`, {

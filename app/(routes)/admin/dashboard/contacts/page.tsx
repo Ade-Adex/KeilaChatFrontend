@@ -1,7 +1,7 @@
 // app/(routes)/admin/dashboard/contacts/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import {
   TextInput,
@@ -37,7 +37,6 @@ interface OperatorData {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 
-
 export default function ContactsPage() {
   const authUser = useAuthStore((state) => state.user)
   const tenantAccountId = authUser?.accountId || authUser?.id
@@ -51,27 +50,46 @@ export default function ContactsPage() {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<string | null>('agent')
 
-  const fetchOperators = async () => {
-    if (!tenantAccountId) return
-    setLoading(true)
-    try {
-      const res = await fetch(
-        `${BACKEND_URL}/api/v1/operators?accountId=${tenantAccountId}`,
-      )
-      const json = await res.json()
-      if (json.status === 'success') {
-        setOperators(json.data)
-      }
-    } catch (err) {
-      console.error('Error fetching operators:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [refreshKey, setRefreshKey] = useState(0)
+  const triggerRefresh = useCallback(
+    () => setRefreshKey((prev) => prev + 1),
+    [],
+  )
 
   useEffect(() => {
-    fetchOperators()
-  }, [tenantAccountId])
+    // 🚀 FIXED: Removed setLoading(false). It's already false by default,
+    // so returning immediately prevents the cascading render error entirely.
+    if (!tenantAccountId) {
+      return
+    }
+
+    let isMounted = true
+
+    async function executeFetch() {
+      setLoading(true)
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/api/v1/operators?accountId=${tenantAccountId}`,
+        )
+        const json = await res.json()
+        if (isMounted && json.status === 'success') {
+          setOperators(json.data)
+        }
+      } catch (err) {
+        console.error('Error fetching operators:', err)
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    executeFetch()
+
+    return () => {
+      isMounted = false
+    }
+  }, [tenantAccountId, refreshKey])
 
   const handleInviteOperator = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,7 +115,8 @@ export default function ContactsPage() {
         setEmail('')
         setRole('agent')
         close()
-        fetchOperators()
+
+        triggerRefresh()
       } else {
         setErrorMsg(
           data.message || 'Failed to dispatch operator team invitation.',
