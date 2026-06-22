@@ -224,6 +224,8 @@ function LoginContent() {
       if (resData.status === 'success') {
         await login(resData.token, resData.data.account, resData.data.property)
         router.push(callbackUrl)
+
+        console.log('callbackUrl', callbackUrl)
       } else {
         setErrorMsg(resData.message || 'Invalid credentials provided.')
       }
