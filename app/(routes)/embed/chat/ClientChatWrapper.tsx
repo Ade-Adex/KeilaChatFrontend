@@ -1,11 +1,21 @@
 // app/(routes)/embed/chat/ClientChatWrapper.tsx
+
+
 'use client'
 
 import { useState } from 'react'
 import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
 import ChatWindow from '@/app/components/chat/ChatWindow'
 
-export default function ClientChatWrapper({ widgetId }: { widgetId: string }) {
+interface ClientChatWrapperProps {
+  widgetId: string
+  originWebsite: string
+}
+
+export default function ClientChatWrapper({
+  widgetId,
+  originWebsite,
+}: ClientChatWrapperProps) {
   const [isWidgetOpen, setIsWidgetOpen] = useState(false)
 
   const toggleWidget = (open: boolean) => {
@@ -24,14 +34,18 @@ export default function ClientChatWrapper({ widgetId }: { widgetId: string }) {
         bottom: '20px',
         right: '20px',
       },
-      '*',
+      '*', // Consider replacing '*' with your actual dashboard/API origin for stricter security if applicable
     )
   }
 
   return (
     <div className="w-full h-full">
       {isWidgetOpen ? (
-        <ChatWindow onClose={() => toggleWidget(false)} />
+        <ChatWindow
+          onClose={() => toggleWidget(false)}
+          widgetId={widgetId}
+          originWebsite={originWebsite}
+        />
       ) : (
         <ChatLauncher onClick={() => toggleWidget(true)} />
       )}

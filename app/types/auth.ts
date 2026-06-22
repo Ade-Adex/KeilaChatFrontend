@@ -36,6 +36,7 @@ export interface UserSession {
   name: string
   email: string
   plan: string
-  property: PropertyData | null 
+  accountId?: string
+  property: PropertyData | null
   accessToken: string
 }

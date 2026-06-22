@@ -1,5 +1,4 @@
 // /app/store/useAuthStore.ts
-
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { AccountData, PropertyData, UserSession } from '@/app/types/auth'
@@ -36,7 +35,6 @@ export const useAuthStore = create<AuthState>()(
             property: propertyData,
             accessToken: token,
           }
-
           set({ user: sessionPayload })
         } catch (err) {
           console.error('Zustand login pipeline hydration failed:', err)
@@ -45,8 +43,23 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: () => {
+      logout: async () => {
+        // 1. Wipe out client local state immediately
         set({ user: null })
+
+        try {
+          // Change this URL to match your explicit Express backend address variable
+          // e.g., ENV.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
+          const BACKEND_URL = 'http://localhost:5000/api/v1'
+
+          // 2. Trigger cross-origin cookie destruction using credentials include
+          await fetch(`${BACKEND_URL}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include', 
+          })
+        } catch (err) {
+          console.error('Failed to clear backend server session cookie:', err)
+        }
       },
 
       setLoading: (loading: boolean) => set({ loading }),

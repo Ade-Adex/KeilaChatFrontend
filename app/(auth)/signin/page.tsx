@@ -1,19 +1,192 @@
-//  /app/(routes)/admin/login/page.tsx
+// //  /app/(auth)/signin/page.tsx
 
+// 'use client'
+
+// import { useAuthStore } from '@/app/store/useAuthStore'
+// import { useRouter, useSearchParams } from 'next/navigation'
+// import { useEffect, useState, Suspense } from 'react'
+// import { FiBriefcase, FiEye, FiEyeOff, FiLock, FiMail } from 'react-icons/fi'
+
+// const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
+
+// function LoginContent() {
+//   const router = useRouter()
+//   const searchParams = useSearchParams()
+
+//   // Dynamic post-login redirect path extraction
+//   const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
+
+//   const login = useAuthStore((state) => state.login)
+
+//   const [email, setEmail] = useState('')
+//   const [password, setPassword] = useState('')
+//   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+//   const [submitting, setSubmitting] = useState(false)
+//   const [showPassword, setShowPassword] = useState(false)
+
+//   useEffect(() => {
+//     if (errorMsg) {
+//       const timer = setTimeout(() => {
+//         setErrorMsg(null)
+//       }, 5000)
+//       return () => clearTimeout(timer)
+//     }
+//   }, [errorMsg])
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault()
+//     if (!email || !password) return
+
+//     setSubmitting(true)
+//     setErrorMsg(null)
+
+//     try {
+//       const response = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ email, password }),
+//         credentials: 'include',
+//       })
+
+//       const resData = await response.json()
+
+//       if (resData.status === 'success') {
+//         await login(resData.token, resData.data.account, resData.data.property)
+//         // Router pushes directly to context intent path
+//         router.push(callbackUrl)
+//       } else {
+//         setErrorMsg(resData.message || 'Invalid credentials provided.')
+//       }
+//     } catch (err) {
+//       setErrorMsg('Network processing failure. Is your backend listening?')
+//     } finally {
+//       setSubmitting(false)
+//     }
+//   }
+
+//   return (
+//     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 font-sans">
+//       <div className="max-w-md w-full space-y-6 bg-card p-8 rounded-xl shadow-2xl">
+//         <div className="text-center space-y-2">
+//           <div className="inline-flex p-3 bg-primary rounded-full text-white mb-2">
+//             <FiBriefcase size={28} />
+//           </div>
+//           <h1 className="text-2xl font-bold tracking-tight text-foreground">
+//             Operator Access Portal
+//           </h1>
+//           <p className="text-xs text-foreground/70">Authenticate session</p>
+//         </div>
+
+//         {errorMsg && (
+//           <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg text-center font-medium">
+//             {errorMsg}
+//           </div>
+//         )}
+
+//         <form onSubmit={handleSubmit} className="space-y-4">
+//           <div className="space-y-1">
+//             <label className="text-xs font-semibold text-foreground block">
+//               Operator Email Address
+//             </label>
+//             <div className="relative">
+//               <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
+//               <input
+//                 type="email"
+//                 required
+//                 value={email}
+//                 onChange={(e) => setEmail(e.target.value)}
+//                 placeholder="operator@company.com"
+//                 className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
+//               />
+//             </div>
+//           </div>
+
+//           <div className="space-y-1">
+//             <label className="text-xs font-semibold text-foreground block">
+//               Security Password Token
+//             </label>
+//             <div className="relative">
+//               <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
+//               <input
+//                 type={showPassword ? 'text' : 'password'}
+//                 required
+//                 value={password}
+//                 onChange={(e) => setPassword(e.target.value)}
+//                 placeholder="••••••••••••"
+//                 className="w-full bg-background border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
+//               />
+//               <button
+//                 type="button"
+//                 onClick={() => setShowPassword(!showPassword)}
+//                 className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors"
+//               >
+//                 {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+//               </button>
+//             </div>
+//           </div>
+
+//           <button
+//             type="submit"
+//             disabled={submitting}
+//             className={`w-full py-2.5 rounded-lg bg-primary hover:bg-button-hover disabled:bg-gray-400 text-white font-medium transition-colors text-center text-sm flex items-center justify-center ${submitting ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+//           >
+//             {submitting ? 'Verifying Credentials...' : 'Sign In'}
+//           </button>
+//         </form>
+//       </div>
+//     </div>
+//   )
+// }
+
+// // Next.js explicitly demands components pulling query search context arrays to be enclosed inside Suspense containers
+// export default function AdminLoginPage() {
+//   return (
+//     <Suspense
+//       fallback={
+//         <div className="min-h-screen bg-background flex items-center justify-center">
+//           <span className="text-sm text-muted animate-pulse">
+//             Loading login gateway...
+//           </span>
+//         </div>
+//       }
+//     >
+//       <LoginContent />
+//     </Suspense>
+//   )
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// /app/(auth)/signin/page.tsx
 'use client'
 
 import { useAuthStore } from '@/app/store/useAuthStore'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
 import { FiBriefcase, FiEye, FiEyeOff, FiLock, FiMail } from 'react-icons/fi'
+import Link from 'next/link' // 👈 Added for parameter-safe navigation
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 
-export default function AdminLoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  // Select micro-states cleanly from Zustand store
-  const user = useAuthStore((state) => state.user)
+  // Dynamic post-login redirect path extraction
+  const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
+
   const login = useAuthStore((state) => state.login)
 
   const [email, setEmail] = useState('')
@@ -21,12 +194,6 @@ export default function AdminLoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-
-  useEffect(() => {
-    if (user) {
-      router.push('/admin/dashboard')
-    }
-  }, [user, router])
 
   useEffect(() => {
     if (errorMsg) {
@@ -49,15 +216,14 @@ export default function AdminLoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       })
 
       const resData = await response.json()
 
       if (resData.status === 'success') {
-        // FIX: Pass the property object along with account data
-        // Ensure your backend controller sends res.data.property
         await login(resData.token, resData.data.account, resData.data.property)
-        router.push('/admin/dashboard')
+        router.push(callbackUrl)
       } else {
         setErrorMsg(resData.message || 'Invalid credentials provided.')
       }
@@ -68,9 +234,13 @@ export default function AdminLoginPage() {
     }
   }
 
+  // Helper to determine if the redirected context implies an incoming team invite
+  const currentParamsString = searchParams.toString()
+  const isInviteContext = currentParamsString.includes('token=') || currentParamsString.includes('accept-invite')
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 font-sans">
-      <div className="max-w-md w-full space-y-6  bg-card p-8 rounded-xl shadow-2xl">
+      <div className="max-w-md w-full space-y-6 bg-card p-8 rounded-xl shadow-2xl">
         <div className="text-center space-y-2">
           <div className="inline-flex p-3 bg-primary rounded-full text-white mb-2">
             <FiBriefcase size={28} />
@@ -78,7 +248,7 @@ export default function AdminLoginPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Operator Access Portal
           </h1>
-          <p className="text-xs text-foreground">Authenticate session</p>
+          <p className="text-xs text-foreground/70">Authenticate session</p>
         </div>
 
         {errorMsg && (
@@ -100,7 +270,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="operator@company.com"
-                className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm! text-foreground outline-none focus:border-primary transition-colors"
+                className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
               />
             </div>
           </div>
@@ -117,7 +287,7 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full bg-background border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm! text-foreground outline-none focus:border-primary transition-colors"
+                className="w-full bg-background border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
               />
               <button
                 type="button"
@@ -137,7 +307,40 @@ export default function AdminLoginPage() {
             {submitting ? 'Verifying Credentials...' : 'Sign In'}
           </button>
         </form>
+
+        {/* 🗺️ Dynamic Account Creation Navigation Element */}
+        <div className="text-center pt-2">
+          <p className="text-xs text-foreground/60">
+            Don&apos;t have an account?{' '}
+            <Link
+              href={
+                currentParamsString
+                  ? `/signup?${currentParamsString}`
+                  : '/signup'
+              }
+              className="text-primary hover:underline font-semibold transition-colors"
+            >
+              {isInviteContext ? 'Claim Invitation Form' : 'Create workspace'}
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <span className="text-sm text-muted animate-pulse">
+            Loading login gateway...
+          </span>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   )
 }

@@ -778,7 +778,12 @@
 //   )
 // }
 
-// app/(routes)/embed/chat/page.tsx
+
+
+
+
+
+// app/(routes)/embed/chat/page.tsx// app/(routes)/embed/chat/page.tsx
 import ClientChatWrapper from '@/app/(routes)/embed/chat/ClientChatWrapper'
 import { headers } from 'next/headers'
 
@@ -802,7 +807,6 @@ export default async function EmbedPage({
   const headersList = await headers()
   const referer = headersList.get('referer') || ''
 
-  // 1. Perform logic to determine status
   let isAuthorized = false
   let hasConnectionError = false
 
@@ -827,7 +831,6 @@ export default async function EmbedPage({
     hasConnectionError = true
   }
 
-  // 2. Return JSX based on status (Separation of concerns)
   if (hasConnectionError) {
     return <div className="p-4 text-center text-red-500">Connection Error</div>
   }
@@ -840,6 +843,6 @@ export default async function EmbedPage({
     )
   }
 
-  // 3. Only reach here if authorized
-  return <ClientChatWrapper widgetId={widgetId} />
+  // Pass the verified widgetId and referer (origin website property) downstream
+  return <ClientChatWrapper widgetId={widgetId} originWebsite={referer} />
 }

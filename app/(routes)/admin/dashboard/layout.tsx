@@ -1,7 +1,7 @@
+// /app/(routes)/admin/dashboard/layout.tsx
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { LoadingOverlay } from '@mantine/core'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import DashboardShell from '@/app/components/dashboard/DashboardShell'
@@ -11,17 +11,13 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const user = useAuthStore((state) => state.user)
+  const pathname = usePathname()
   const authLoading = useAuthStore((state) => state.loading)
   const hasHydrated = useAuthStore((state) => state._hasHydrated)
 
-  useEffect(() => {
-    if (hasHydrated && !authLoading && !user) {
-      router.replace('/signin')
-    }
-  }, [user, authLoading, hasHydrated, router])
+  const isAcceptInviteRoute = pathname === '/admin/dashboard/accept-invite'
 
+  // Block paint cycle execution completely until client storage engine has finished matching hydration
   if (!hasHydrated || authLoading) {
     return (
       <div className="h-screen w-screen relative bg-background">
@@ -34,8 +30,11 @@ export default function DashboardLayout({
     )
   }
 
-  if (!user) return null
+  // Industrial exception layout style for new operators configuring profiles
+  if (isAcceptInviteRoute) {
+    return <div className="min-h-screen bg-background">{children}</div>
+  }
 
-  // Renders inside the global providers context perfectly
+  // Default layout wrapper injection for secure work views
   return <DashboardShell>{children}</DashboardShell>
 }

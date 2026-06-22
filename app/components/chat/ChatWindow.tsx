@@ -56,6 +56,13 @@ interface MenuItem {
   action: () => void
 }
 
+
+interface ChatWindowProps {
+  onClose: () => void
+  widgetId: string
+  originWebsite: string
+}
+
 // --- HELPER FUNCTION: Define it outside the component ---
 const getGroupDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -111,7 +118,11 @@ const TypingIndicator = () => (
   </div>
 )
 
-export default function ChatWindow({ onClose }: { onClose: () => void }) {
+export default function ChatWindow({
+  onClose,
+  widgetId,
+  originWebsite,
+}: ChatWindowProps) {
   const socketRef = useRef<Socket | null>(null)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -151,28 +162,9 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const initSession = async () => {
       const { _hasHydrated } = useAuthStore.getState()
-
       if (!_hasHydrated) return
 
-      const hostConfig = window.KeilaConfig
-      const params = new URLSearchParams(window.location.search)
-
-      // Prioritize the script-injected ID, fallback to URL search params
-      // const widgetId = hostConfig?.widgetId || params.get('widgetId')
-
-      const TEST_WIDGET_ID = '6b1f81f9-b243-4afd-b670-66c32794d08d'
-
-      // Prioritize hardcoded ID -> script-injected ID -> URL search params
-      const widgetId =
-        TEST_WIDGET_ID || hostConfig?.widgetId || params.get('widgetId')
-
-      if (!widgetId) {
-        console.warn('KeilaChat: No Widget ID found.')
-        // queueMicrotask(() => setIsLoading(false))
-        return
-      }
-
-      // Use widgetId for persistent storage tracking
+      // Completely isolated visitor session storage scoped per unique embedded widget instance
       const visitorId =
         authUser?.id ||
         localStorage.getItem(`keila_visitor_${widgetId}`) ||
@@ -190,14 +182,17 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ widgetId, visitorId }),
+            body: JSON.stringify({
+              widgetId,
+              visitorId,
+              originWebsite, // Passing down origin confirmation to create or find correct Property mapping context
+            }),
             signal: controller.signal,
           },
         )
 
         const resData = await response.json()
 
-        // Update config with the internal propertyId returned by the backend
         if (resData.status === 'success' && resData.data.session) {
           setConfig({
             propertyId: resData.data.session.propertyId,
@@ -210,24 +205,17 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         if (err instanceof Error) {
           if (err.name !== 'AbortError')
             console.error('Session Init Error:', err.message)
-        } else {
-          console.error(
-            'An unexpected error occurred during session initiation',
-          )
         }
-      } finally {
-        // queueMicrotask(() => setIsLoading(false))
       }
     }
 
     initSession()
-  }, [authUser])
+  }, [authUser, widgetId, originWebsite])
 
   // --- 2. Socket Connection & Message Sync ---
   useEffect(() => {
     if (!config?.sessionId) return
 
-    // Fetch message history
     fetch(`${BACKEND_URL}/api/v1/sessions/${config.sessionId}/messages`)
       .then((res) => res.json())
       .then((resData) => {
@@ -235,7 +223,6 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           setMessages(resData.data.messages || [])
       })
 
-    // Initialize Socket with Auth token if available
     const socketInstance = io(BACKEND_URL, {
       auth: { token: authUser?.accessToken || null },
     })
@@ -243,7 +230,11 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     socketRef.current = socketInstance
 
     socketInstance.on('connect', () => {
-      socketInstance.emit('join_chat_session', { sessionId: config.sessionId })
+      // Joining a distinct execution channel specific to this property's isolated conversation session
+      socketInstance.emit('join_chat_session', {
+        sessionId: config.sessionId,
+        propertyId: config.propertyId,
+      })
     })
 
     socketInstance.on('new_message', (payload: MessagePayload) => {
@@ -263,7 +254,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     return () => {
       socketInstance.disconnect()
     }
-  }, [config?.sessionId, authUser?.accessToken])
+  }, [config?.sessionId, config?.propertyId, authUser?.accessToken])
 
   //  useEffect(() => {
   //    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })

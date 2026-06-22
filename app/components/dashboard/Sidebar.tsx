@@ -3,7 +3,7 @@
 'use client'
 
 import { NavLink, Tooltip } from '@mantine/core'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   FiHome,
@@ -41,7 +41,15 @@ const links = [
 
 export default function Sidebar({ isOpened }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter() 
   const logout = useAuthStore((state) => state.logout)
+
+  const handleLogoutClick = async () => {
+    await logout()
+
+    router.replace('/signin')
+    router.refresh()
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between bg-sidebar text-white">
@@ -89,7 +97,7 @@ export default function Sidebar({ isOpened }: SidebarProps) {
 
         <Tooltip label="Logout" disabled={isOpened} position="right" withArrow>
           <NavLink
-            onClick={() => logout()}
+            onClick={handleLogoutClick}
             label={isOpened ? 'Logout' : null}
             leftSection={<FiLogOut size={18} />}
             className="text-red-600! dark:text-red-400! font-medium hover:bg-red-50! dark:hover:bg-red-950/30! rounded-lg transition-all duration-200 py-2.5!"
