@@ -133,10 +133,7 @@ export default function ContactsPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <Group justify="space-between" align="center">
         <div>
-          <Title
-            order={2}
-            className="tracking-tight text-neutral-900 dark:text-neutral-50"
-          >
+          <Title order={2} className="tracking-tight text-foreground">
             Team Operators
           </Title>
           <Text size="sm" c="dimmed">
@@ -213,7 +210,7 @@ export default function ContactsPage() {
       >
         <Table verticalSpacing="sm" highlightOnHover>
           <Table.Thead className="bg-button-hover">
-            <Table.Tr>
+            <Table.Tr className="border border-border!">
               <Table.Th>Name</Table.Th>
               <Table.Th>Email</Table.Th>
               <Table.Th>Role</Table.Th>
@@ -222,10 +219,10 @@ export default function ContactsPage() {
           </Table.Thead>
           <Table.Tbody>
             {operators.length === 0 ? (
-              <Table.Tr className="hover:bg-button-hover!">
+              <Table.Tr className="hover:bg-button-hover! border border-border!">
                 <Table.Td
                   colSpan={4}
-                  className="text-center py-8 text-foreground "
+                  className="text-center py-8 text-foreground"
                 >
                   {loading
                     ? 'Fetching team configuration details...'
@@ -234,7 +231,10 @@ export default function ContactsPage() {
               </Table.Tr>
             ) : (
               operators.map((op) => (
-                <Table.Tr key={op._id} className="hover:bg-button-hover!">
+                <Table.Tr
+                  key={op._id}
+                  className="hover:bg-button-hover! border border-border!"
+                >
                   <Table.Td className="font-medium">
                     <Group gap="xs">
                       <FiUser className="text-foreground" />

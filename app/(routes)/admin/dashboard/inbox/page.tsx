@@ -588,9 +588,15 @@
 //   )
 // }
 
+
+
+
+
+//  /app/(routes)/admin/dashboard/page.tsx
+
+
 'use client'
 
-import ThemeToggle from '@/app/components/ThemeToggle'
 import TypingIndicator from '@/app/components/TypingIndicator'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { useRouter } from 'next/navigation'
@@ -1119,14 +1125,7 @@ export default function AdminInboxPage() {
                   ),
                 )
               })()}
-              {isVisitorTyping && (
-                //  <div className="flex items-center gap-1.5 p-3 bg-background border border-border rounded-xl w-fit shadow-sm">
-                   <TypingIndicator />
-                //    <span className="text-xs text-foreground">
-                //      Visitor is writing
-                //    </span>
-                //  </div>
-               )}
+              {isVisitorTyping && <TypingIndicator />}
               <div ref={feedEndRef} />
             </div>
 
