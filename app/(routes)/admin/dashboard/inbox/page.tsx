@@ -1119,6 +1119,14 @@ export default function AdminInboxPage() {
                   ),
                 )
               })()}
+              {isVisitorTyping && (
+                //  <div className="flex items-center gap-1.5 p-3 bg-background border border-border rounded-xl w-fit shadow-sm">
+                   <TypingIndicator />
+                //    <span className="text-xs text-foreground">
+                //      Visitor is writing
+                //    </span>
+                //  </div>
+               )}
               <div ref={feedEndRef} />
             </div>
 
