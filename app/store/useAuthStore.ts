@@ -52,9 +52,9 @@ export const useAuthStore = create<AuthState>()(
           const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 
           // 2. Trigger cross-origin cookie destruction using credentials include
-          await fetch(`${BACKEND_URL}/auth/logout`, {
+          await fetch(`${BACKEND_URL}/api/v1/auth/logout`, {
             method: 'POST',
-            credentials: 'include', 
+            credentials: 'include',
           })
         } catch (err) {
           console.error('Failed to clear backend server session cookie:', err)
