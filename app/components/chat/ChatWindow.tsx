@@ -221,18 +221,10 @@ export default function ChatWindow({
 
     socketRef.current = socketInstance
 
-    // socketInstance.on('connect', () => {
-    //   socketInstance.emit('join_chat_session', {
-    //     sessionId: config.sessionId,
-    //     propertyId: config.propertyId,
-    //     clientType: 'visitor',
-    //     senderName: visitorName,
-    //   })
-    // })
-
     socketInstance.on('connect', () => {
       socketInstance.emit('join_chat_session', {
         sessionId: config.sessionId,
+        propertyId: config.propertyId,
         clientType: 'visitor',
         senderName: visitorName,
       })
@@ -279,8 +271,14 @@ export default function ChatWindow({
 
     socketInstance.on(
       'user_typing',
-      (payload: { senderName: string; isTyping: boolean }) => {
-        setIsOperatorTyping(payload.isTyping)
+      (p: {
+        senderName: string
+        senderType: 'visitor' | 'operator'
+        isTyping: boolean
+      }) => {
+        if (p.senderType === 'operator') {
+          setIsOperatorTyping(p.isTyping)
+        }
       },
     )
 
@@ -315,20 +313,6 @@ export default function ChatWindow({
       senderName: visitorName,
       isTyping,
     })
-  }
-
-
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVisitorInput(e.target.value)
-
-    // Send typing event status true instantly
-    sendTypingStatus(true)
-
-    // Debounce: reset status to false after 2 seconds of silence
-    if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
-    typingTimerRef.current = setTimeout(() => {
-      sendTypingStatus(false)
-    }, 2000)
   }
 
   const handleSend = () => {
@@ -650,18 +634,16 @@ export default function ChatWindow({
                   type="text"
                   placeholder="Type a message..."
                   value={visitorInput}
-                  // onChange={(e) => {
-                  //   setVisitorInput(e.target.value)
-                  //   sendTypingStatus(true)
-                  //   if (typingTimerRef.current)
-                  //     clearTimeout(typingTimerRef.current)
-                  //   typingTimerRef.current = setTimeout(
-                  //     () => sendTypingStatus(false),
-                  //     2000,
-                  //   )
-                  // }}
-
-                  onChange={handleTextareaChange}
+                  onChange={(e) => {
+                    setVisitorInput(e.target.value)
+                    sendTypingStatus(true)
+                    if (typingTimerRef.current)
+                      clearTimeout(typingTimerRef.current)
+                    typingTimerRef.current = setTimeout(
+                      () => sendTypingStatus(false),
+                      2000,
+                    )
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   style={{
                     flex: 1,

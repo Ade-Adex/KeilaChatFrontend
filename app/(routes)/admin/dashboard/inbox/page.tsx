@@ -8,7 +8,7 @@ import TypingIndicator from '@/app/components/TypingIndicator'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { FiArrowLeft, FiBriefcase, FiLogOut, FiSend } from 'react-icons/fi'
+import { FiArrowLeft, FiBriefcase, FiSend } from 'react-icons/fi'
 import { io, Socket } from 'socket.io-client'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
@@ -183,10 +183,23 @@ export default function AdminInboxPage() {
       }
     })
 
+    // currentSocket.on(
+    //   'user_typing',
+    //   (payload: { senderName: string; isTyping: boolean }) => {
+    //     setIsVisitorTyping(payload.isTyping)
+    //   },
+    // )
+
     currentSocket.on(
       'user_typing',
-      (payload: { senderName: string; isTyping: boolean }) => {
-        setIsVisitorTyping(payload.isTyping)
+      (payload: {
+        senderName: string
+        senderType: 'visitor' | 'operator'
+        isTyping: boolean
+      }) => {
+        if (payload.senderType === 'visitor') {
+          setIsVisitorTyping(payload.isTyping)
+        }
       },
     )
 
