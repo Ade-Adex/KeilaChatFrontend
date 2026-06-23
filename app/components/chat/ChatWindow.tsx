@@ -265,21 +265,8 @@ export default function ChatWindow({
       setConfig((prev) => (prev ? { ...prev, status: 'closed' } : null))
     })
 
-    // socketInstance.on('user_typing', (p: { isTyping: boolean }) =>
-    //   setIsOperatorTyping(p.isTyping),
-    // )
-
-    socketInstance.on(
-      'user_typing',
-      (p: {
-        senderName: string
-        senderType: 'visitor' | 'operator'
-        isTyping: boolean
-      }) => {
-        if (p.senderType === 'operator') {
-          setIsOperatorTyping(p.isTyping)
-        }
-      },
+    socketInstance.on('user_typing', (p: { isTyping: boolean }) =>
+      setIsOperatorTyping(p.isTyping),
     )
 
     return () => {

@@ -183,23 +183,10 @@ export default function AdminInboxPage() {
       }
     })
 
-    // currentSocket.on(
-    //   'user_typing',
-    //   (payload: { senderName: string; isTyping: boolean }) => {
-    //     setIsVisitorTyping(payload.isTyping)
-    //   },
-    // )
-
     currentSocket.on(
       'user_typing',
-      (payload: {
-        senderName: string
-        senderType: 'visitor' | 'operator'
-        isTyping: boolean
-      }) => {
-        if (payload.senderType === 'visitor') {
-          setIsVisitorTyping(payload.isTyping)
-        }
+      (payload: { senderName: string; isTyping: boolean }) => {
+        setIsVisitorTyping(payload.isTyping)
       },
     )
 
