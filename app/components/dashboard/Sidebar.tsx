@@ -20,21 +20,21 @@ interface SidebarProps {
 }
 
 const links = [
-  { name: 'Overview', href: '/admin/dashboard', icon: <FiHome size={18} /> },
+  { name: 'Overview', href: '/dashboard', icon: <FiHome size={18} /> },
   {
     name: 'Inbox',
-    href: '/admin/dashboard/inbox',
+    href: '/dashboard/inbox',
     icon: <FiMessageSquare size={18} />,
   },
   {
     name: 'Contacts',
-    href: '/admin/dashboard/contacts',
+    href: '/dashboard/contacts',
     icon: <FiUsers size={18} />,
   },
-  { name: 'Setup', href: '/admin/dashboard/setup', icon: <FiCode size={18} /> },
+  { name: 'Setup', href: '/dashboard/setup', icon: <FiCode size={18} /> },
   {
     name: 'Settings',
-    href: '/admin/dashboard/settings',
+    href: '/dashboard/settings',
     icon: <FiSettings size={18} />,
   },
 ]
@@ -44,12 +44,17 @@ export default function Sidebar({ isOpened }: SidebarProps) {
   const router = useRouter() 
   const logout = useAuthStore((state) => state.logout)
 
-  const handleLogoutClick = async () => {
-    await logout()
+ const handleLogoutClick = async () => {
+   try {
+     await logout()
 
-    router.replace('/signin')
-    router.refresh()
-  }
+     router.replace('/signin')
+
+     router.refresh()
+   } catch (err) {
+     console.error(err)
+   }
+ }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between bg-sidebar text-white">

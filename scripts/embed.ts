@@ -1,151 +1,258 @@
-// // /scripts/embed.ts
-
-// ;(function () {
-//   const scriptTag = document.currentScript as HTMLScriptElement
-//   const widgetId = scriptTag?.getAttribute('data-id')
-//   if (!widgetId) return
-
-//   const BASE_URL = 'https://keila-chat.vercel.app'
-//   const container = document.createElement('div')
-//   const shadow = container.attachShadow({ mode: 'open' })
-//   document.body.appendChild(container)
-
-//   const iframe = document.createElement('iframe')
-//   iframe.src = `${BASE_URL}/embed/chat?widgetId=${widgetId}`
-//   iframe.setAttribute('allowtransparency', 'true')
-
-//   // Initial Style: The "Bubble" state
-//   Object.assign(iframe.style, {
-//     position: 'fixed',
-//     bottom: '20px',
-//     right: '20px',
-//     width: '60px',
-//     height: '60px',
-//     border: 'none',
-//     zIndex: '2147483647',
-//     backgroundColor: 'transparent',
-//     borderRadius: '50%',
-//     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-//     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-//     overflow: 'hidden',
-//     cursor: 'pointer',
-//   })
-
-//   shadow.appendChild(iframe)
-
-//   window.addEventListener('message', (event) => {
-//     if (event.origin !== BASE_URL) return
-
-//     if (event.data.type === 'RESIZE') {
-//       const isOpening = event.data.width !== '60px' // Heuristic: if width is not 80px, it's opening
-
-//       Object.assign(iframe.style, {
-//         width: event.data.width,
-//         height: event.data.height,
-//         top: event.data.top || 'auto',
-//         left: event.data.left || 'auto',
-//         bottom: event.data.bottom || '20px',
-//         right: event.data.right || '20px',
-//         borderRadius: isOpening ? '0px' : '50%',
-//         boxShadow: isOpening ? '0 10px 25px rgba(0,0,0,0.2)' : '0 4px 12px rgba(0,0,0,0.15)'
-//       })
-//     }
-//   })
-// })()
-
-
-
-
-
 // /scripts/embed.ts
 
-
 (async function () {
-  const scriptTag = document.currentScript as HTMLScriptElement
+  const scriptTag = document.currentScript as HTMLScriptElement | null
 
-  // 1. Get values from data attributes, or use production defaults
-  const widgetId = scriptTag?.getAttribute('data-id')
-  const FRONTEND_URL =
-    scriptTag?.getAttribute('data-frontend-url') ||
-    'https://keila-chat.vercel.app'
-  const API_URL =
-    scriptTag?.getAttribute('data-api-url') ||
-    'https://keilachatbackend.onrender.com'
+  if (!scriptTag) {
+    console.warn('[KeilaChat] Script tag not found.')
+    return
+  }
+
+  const widgetId = scriptTag.dataset.id
+
+  const FRONTEND_URL = scriptTag.dataset.frontendUrl ?? '__KEILA_FRONTEND_URL__'
+
+  const API_URL = scriptTag.dataset.apiUrl ?? '__KEILA_API_URL__'
 
   if (!widgetId) {
     console.warn('[KeilaChat] Missing data-id attribute.')
     return
   }
 
-  // 2. Retrieve or Generate Persistent Visitor ID
-  let visitorTrackingId = localStorage.getItem('keila_visitor_id')
-  if (!visitorTrackingId) {
-    visitorTrackingId = crypto.randomUUID()
-    localStorage.setItem('keila_visitor_id', visitorTrackingId)
+  /**
+   * Prevent duplicate widget injection.
+   */
+  if (document.getElementById('keila-chat-widget-root')) {
+    console.warn('[KeilaChat] Widget already initialized.')
+    return
   }
 
+  /**
+   * Generate visitor ID with browser fallback.
+   */
+  const createVisitorId = (): string => {
+    if (
+      typeof crypto !== 'undefined' &&
+      typeof crypto.randomUUID === 'function'
+    ) {
+      return crypto.randomUUID()
+    }
+
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+
+  /**
+   * Used to cancel pending network requests.
+   */
+  const controller = new AbortController()
+
   try {
-    // 3. THE GATEKEEPER
-    const response = await fetch(`${API_URL}/api/v1/widget/init`, {
+    /* -------------------------------------------------- */
+    /* Visitor Identity                                   */
+    /* -------------------------------------------------- */
+
+    let visitorTrackingId = localStorage.getItem('keila_visitor_id')
+
+    if (!visitorTrackingId) {
+      visitorTrackingId = createVisitorId()
+
+      localStorage.setItem('keila_visitor_id', visitorTrackingId)
+    }
+
+    /* -------------------------------------------------- */
+    /* Widget Initialization                              */
+    /* -------------------------------------------------- */
+
+    const initResponse = await fetch(`${API_URL}/api/v1/widget/init`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ widgetId, visitorTrackingId }),
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        widgetId,
+        visitorTrackingId,
+      }),
     })
 
-    if (!response.ok) {
-      console.warn('[KeilaChat] Unauthorized or invalid widget configuration.')
+    if (!initResponse.ok) {
+      let message = 'Widget initialization failed.'
+
+      try {
+        const error = await initResponse.json()
+
+        message = error.message ?? message
+      } catch {
+        // Ignore JSON parse failures
+      }
+
+      console.warn('[KeilaChat]', message)
+
       return
     }
 
-    // 4. Inject UI
-    const container = document.createElement('div')
-    const shadow = container.attachShadow({ mode: 'open' })
-    document.body.appendChild(container)
+    const initData = await initResponse.json()
 
-    const iframe = document.createElement('iframe')
-    iframe.src = `${FRONTEND_URL}/embed/chat?widgetId=${widgetId}`
-    iframe.setAttribute('allowtransparency', 'true')
+    if (initData.status !== 'success') {
+      console.warn('[KeilaChat] Initialization rejected.')
 
-    Object.assign(iframe.style, {
+      return
+    }
+
+    /* -------------------------------------------------- */
+    /* Widget Root Container                              */
+    /* -------------------------------------------------- */
+
+    const host = document.createElement('div')
+
+    host.id = 'keila-chat-widget-root'
+
+    Object.assign(host.style, {
       position: 'fixed',
       bottom: '20px',
       right: '20px',
+      zIndex: '2147483647',
+    })
+
+    document.body.appendChild(host)
+
+    const shadowRoot = host.attachShadow({
+      mode: 'open',
+    })
+
+    /* -------------------------------------------------- */
+    /* Widget Iframe                                      */
+    /* -------------------------------------------------- */
+
+    const iframe = document.createElement('iframe')
+
+    iframe.loading = 'lazy'
+
+    iframe.allow = 'clipboard-read; clipboard-write'
+
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin'
+
+    iframe.sandbox.add(
+      'allow-scripts',
+      'allow-same-origin',
+      'allow-forms',
+      'allow-popups',
+    )
+
+    const params = new URLSearchParams({
+      widgetId,
+      visitorTrackingId,
+    })
+
+    iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
+
+    Object.assign(iframe.style, {
       width: '60px',
       height: '60px',
       border: 'none',
-      zIndex: '2147483647',
-      backgroundColor: 'transparent',
+      background: 'transparent',
       borderRadius: '50%',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
       overflow: 'hidden',
-      cursor: 'pointer',
+      boxShadow: '0 4px 12px rgba(0,0,0,.15)',
+      transition:
+        'width .25s ease,height .25s ease,border-radius .25s ease,box-shadow .25s ease',
     })
 
-    shadow.appendChild(iframe)
+    shadowRoot.appendChild(iframe)
 
-    // 5. Message Handling
-    window.addEventListener('message', (event) => {
-      // Ensure we only listen to messages from our trusted frontend
-      if (event.origin !== FRONTEND_URL) return
+    /* -------------------------------------------------- */
+    /* Message Handler                                    */
+    /* -------------------------------------------------- */
 
-      if (event.data.type === 'RESIZE') {
-        const isOpening = event.data.width !== '60px'
-        Object.assign(iframe.style, {
-          width: event.data.width,
-          height: event.data.height,
-          top: event.data.top || 'auto',
-          left: event.data.left || 'auto',
-          bottom: event.data.bottom || '20px',
-          right: event.data.right || '20px',
-          borderRadius: isOpening ? '0px' : '50%',
-          boxShadow: isOpening
-            ? '0 10px 25px rgba(0,0,0,0.2)'
-            : '0 4px 12px rgba(0,0,0,0.15)',
-        })
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== FRONTEND_URL) {
+        return
       }
-    })
+
+      if (event.source !== iframe.contentWindow) {
+        return
+      }
+
+      const data = event.data
+
+      if (!data || typeof data !== 'object') {
+        return
+      }
+
+      if (typeof data.type !== 'string') {
+        return
+      }
+
+      switch (data.type) {
+        case 'RESIZE': {
+          const width = Math.min(
+            Number.parseInt(data.width ?? '60', 10),
+            window.innerWidth,
+          )
+
+          const height = Math.min(
+            Number.parseInt(data.height ?? '60', 10),
+            window.innerHeight,
+          )
+
+          const expanded = width > 60 || height > 60
+
+          Object.assign(iframe.style, {
+            width: `${width}px`,
+            height: `${height}px`,
+            borderRadius: expanded ? '16px' : '50%',
+            boxShadow: expanded
+              ? '0 15px 35px rgba(0,0,0,.25)'
+              : '0 4px 12px rgba(0,0,0,.15)',
+          })
+
+          break
+        }
+
+        case 'SCROLL_TOP': {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+          })
+
+          break
+        }
+
+        case 'FOCUS': {
+          iframe.focus()
+
+          break
+        }
+
+        default:
+          break
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    /* -------------------------------------------------- */
+    /* Cleanup                                             */
+    /* -------------------------------------------------- */
+
+    const cleanup = () => {
+      controller.abort()
+
+      window.removeEventListener('message', handleMessage)
+
+      if (host.parentNode) {
+        host.remove()
+      }
+    }
+
+    window.addEventListener('beforeunload', cleanup)
+
+    window.addEventListener('pagehide', cleanup)
   } catch (error) {
-    console.error('[KeilaChat] Failed to initialize:', error)
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return
+    }
+
+    console.error('[KeilaChat] Failed to initialize widget:', error)
   }
 })()

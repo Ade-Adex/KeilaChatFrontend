@@ -16,65 +16,81 @@ import {
   Alert,
 } from '@mantine/core'
 import { FiUser, FiLock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
+import { useAcceptInvite } from '@/app/hooks/operators/useAcceptInvite'
 
 function AcceptInviteContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+
   const token = searchParams.get('token')
 
-  // UI State Control
-  const [verifying, setVerifying] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const { verifyToken, activateAccount, verifying, submitting } =
+    useAcceptInvite()
+
   const [errorMsg, setErrorMsg] = useState('')
   const [success, setSuccess] = useState(false)
 
-  // Operator Context State
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('')
 
-  // Form Inputs
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // 1. Verify token validity immediately on mount
+  /**
+   * Avoid calling setState synchronously inside useEffect
+   */
+  const tokenError = !token
+    ? 'No secure invitation token was detected in the request URL.'
+    : ''
+
+  const [loaded, setLoaded] = useState(false)
+
   useEffect(() => {
-    if (!token) {
-      setErrorMsg('No secure invitation token was detected in the request URL.')
-      setVerifying(false)
-      return
-    }
+    if (!token || loaded) return
 
-    const verifyToken = async () => {
+    let mounted = true
+
+    const loadInvite = async () => {
       try {
-        const res = await fetch(
-          `/api/v1/operators/invite/verify?token=${token}`,
-        )
-        const json = await res.json()
+        const res = await verifyToken(token)
 
-        if (res.ok && json.status === 'success') {
-          setEmail(json.data.email)
-          setRole(json.data.role)
-        } else {
-          setErrorMsg(
-            json.message || 'This invitation token is invalid or has expired.',
-          )
-        }
+        if (!mounted) return
+
+        setEmail(res.data.email)
+        setRole(res.data.role)
+        setLoaded(true)
       } catch (err) {
-        setErrorMsg('Network connectivity issue encountered during validation.')
-      } finally {
-        setVerifying(false)
+        if (!mounted) return
+
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : 'This invitation token is invalid or has expired.',
+        )
       }
     }
 
-    verifyToken()
-  }, [token])
+    void loadInvite()
 
-  // 2. Submit password configuration payload
-  const handleActivationSubmit = async (e: React.FormEvent) => {
+    return () => {
+      mounted = false
+    }
+  }, [token, loaded, verifyToken])
+
+
+  const handleActivationSubmit = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault()
+
     setErrorMsg('')
+
+    if (!token) {
+      setErrorMsg('Invitation token missing.')
+      return
+    }
 
     if (password !== confirmPassword) {
       setErrorMsg('Passwords do not match.')
@@ -86,43 +102,30 @@ function AcceptInviteContent() {
       return
     }
 
-    setSubmitting(true)
-
     try {
-      const res = await fetch('/api/v1/operators/invite/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          password,
-        }),
-      })
+      await activateAccount(token, firstName.trim(), lastName.trim(), password)
 
-      const json = await res.json()
+      setSuccess(true)
 
-      if (res.ok && json.status === 'success') {
-        setSuccess(true)
-        // Redirect to workspace login following a quick confirmation delay
-        setTimeout(() => {
-          router.push('/login')
-        }, 3000)
-      } else {
-        setErrorMsg(json.message || 'Failed to complete profile activation.')
-      }
+      setTimeout(() => {
+        router.push('/signin')
+      }, 3000)
     } catch (err) {
-      setErrorMsg('A network error occurred while finalizing setup.')
-    } finally {
-      setSubmitting(false)
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : 'Failed to complete profile activation.',
+      )
     }
   }
+
+  const displayError = tokenError || errorMsg
 
   if (verifying) {
     return (
       <Center className="min-h-screen bg-background text-foreground">
         <Stack align="center" gap="md">
-          <Loader size="lg" color="dark" />
+          <Loader size="lg" color="blue" />
           <Text size="sm" c="dimmed">
             Verifying your team invitation credentials...
           </Text>
@@ -131,8 +134,18 @@ function AcceptInviteContent() {
     )
   }
 
+  const inviteInvalid =
+    !token ||
+    displayError.includes('invalid') ||
+    displayError.includes('expired')
+
+  const inputClassNames = {
+    input:
+      'border border-border! rounded-lg pl-10 pr-10 py-2.5 text-sm outline-none focus:border-primary! transition-colors text-foreground! bg-transparent!',
+  }
+
   return (
-    <Center className="min-h-screen p-4 bg-background text-foreground">
+    <Center className="min-h-screen p-4 pt-20 bg-background text-foreground">
       <Paper
         withBorder
         p="xl"
@@ -140,14 +153,18 @@ function AcceptInviteContent() {
         className="w-full max-w-md shadow-sm border-border! bg-background!"
       >
         {success ? (
-          <Stack align="center" gap="sm" className="py-4 text-center">
+          <Stack
+            align="center"
+            gap="sm"
+            className="py-4 text-center bg-background! text-foreground!"
+          >
             <FiCheckCircle size={48} className="text-emerald-500" />
-            <Title order={3} className="text-neutral-900 dark:text-neutral-50">
+            <Title order={3} className="text-foreground!">
               Profile Activated!
             </Title>
             <Text size="sm" c="dimmed">
               Welcome aboard. Your operator profile is now fully configured.
-              Redirecting you to login...
+              Redirecting you to sign in...
             </Text>
           </Stack>
         ) : (
@@ -156,15 +173,24 @@ function AcceptInviteContent() {
               <div>
                 <Title
                   order={2}
-                  className="tracking-tight text-neutral-900 dark:text-neutral-50 mb-1"
+                  className="tracking-tight bg-card! text-foreground! mb-1"
                 >
                   Complete Setup
                 </Title>
                 <Text size="sm" c="dimmed">
                   You are joining the ecosystem as an{' '}
-                  <strong className="text-foreground">{role}</strong> via{' '}
-                  <strong>{email}</strong>.
+                  <strong className="text-foreground">{role}</strong>.
                 </Text>
+
+                <TextInput
+                  label="Invitation Email"
+                  value={email}
+                  disabled
+                  classNames={{
+                    input:
+                      'border border-border! rounded-lg bg-transparent! text-foreground!',
+                  }}
+                />
               </div>
 
               {errorMsg && (
@@ -178,14 +204,12 @@ function AcceptInviteContent() {
                 </Alert>
               )}
 
-              {!token ||
-              errorMsg.includes('invalid') ||
-              errorMsg.includes('expired') ? (
+              {inviteInvalid ? (
                 <Button
                   variant="subtle"
                   color="gray"
                   fullWidth
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push('/signin')}
                 >
                   Return to Login
                 </Button>
@@ -196,6 +220,7 @@ function AcceptInviteContent() {
                       label="First Name"
                       placeholder="Jane"
                       required
+                      classNames={inputClassNames}
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       leftSection={<FiUser size={14} />}
@@ -204,6 +229,7 @@ function AcceptInviteContent() {
                       label="Last Name"
                       placeholder="Doe"
                       required
+                      classNames={inputClassNames}
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       leftSection={<FiUser size={14} />}
@@ -214,6 +240,7 @@ function AcceptInviteContent() {
                     label="Create Password"
                     placeholder="Minimum 8 characters"
                     required
+                    classNames={inputClassNames}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     leftSection={<FiLock size={14} />}
@@ -223,6 +250,7 @@ function AcceptInviteContent() {
                     label="Confirm Password"
                     placeholder="Repeat chosen password"
                     required
+                    classNames={inputClassNames}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     leftSection={<FiLock size={14} />}
@@ -231,11 +259,14 @@ function AcceptInviteContent() {
                   <Button
                     type="submit"
                     loading={submitting}
+                    disabled={
+                      !firstName || !lastName || !password || !confirmPassword
+                    }
                     fullWidth
                     mt="md"
-                    className="bg-primary hover:bg-button-hover text-white h-10"
+                    className="bg-primary! hover:bg-primary/85! text-white h-10"
                   >
-                    Activate Operator Account
+                    Activate Account
                   </Button>
                 </>
               )}
@@ -253,7 +284,7 @@ export default function AcceptInvitePage() {
     <Suspense
       fallback={
         <Center className="min-h-screen bg-background">
-          <Loader size="lg" color="dark" />
+          <Loader size="lg" color="blue" />
         </Center>
       }
     >

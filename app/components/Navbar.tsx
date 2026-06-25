@@ -24,9 +24,9 @@ export default function Navbar() {
           <ThemeToggle />
           <Link
             href="/signin"
-            className="text-sm font-medium text-foreground transition-colors hover:text-foreground border border-[#0070f3] px-4 py-1.5 rounded-xl"
+            className="text-sm font-medium text-foreground transition-colors hover:text-foreground border border-primary px-4 py-1.5 rounded-xl"
           >
-            Login
+            Signin
           </Link>
 
           {/* A subtle vertical separator */}
@@ -34,7 +34,7 @@ export default function Navbar() {
 
           <Link
             href="/signup"
-            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-lg shadow-primary/20 hover:bg-button-hover hover:shadow-primary/30 active:scale-95"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all shadow-lg shadow-primary/20 hover:bg-primary/85 hover:shadow-primary/30 active:scale-95"
           >
             Add chat to your website
           </Link>
@@ -70,14 +70,14 @@ export default function Navbar() {
           <Link
             href="/signin"
             onClick={close}
-            className="p-2 border border-zinc-700 rounded-lg text-center mt-8"
+            className="p-2 border border-border! rounded-lg text-center mt-8"
           >
-            Login
+            Signin
           </Link>
           <Link
             href="/signup"
             onClick={close}
-            className="p-2 bg-blue-600 text-white rounded-lg text-center"
+            className="p-2 bg-primary hover:bg-primary/85 hover:shadow-primary/30 text-white rounded-lg text-center"
           >
             Add chat to your website
           </Link>

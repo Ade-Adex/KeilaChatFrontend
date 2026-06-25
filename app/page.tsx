@@ -29,7 +29,7 @@ export default function Home() {
         <div className="flex gap-4 justify-center">
           <Link
             href="/embed/chat?propertyId=7e5884eb-1166-4230-a3d4-6d7620873b96"
-            className="px-8 py-4 bg-primary hover:bg-button-hover text-white rounded-xl font-bold transition-all shadow-xl shadow-[#0070f3]/20 flex items-center gap-2 text-sm"
+            className="px-8 py-2.5 bg-primary hover:bg-primary/85 hover:shadow-primary/30 text-white rounded-xl font-bold transition-all shadow-xl shadow-[#0070f3]/20 flex items-center gap-2 text-sm!"
           >
             Start Live Chat <FiMessageSquare />
           </Link>
@@ -72,7 +72,7 @@ export default function Home() {
         ))}
       </section>
 
-            {/* <ChatWidget widgetId="7e5884eb-1166-4230-a3d4-6d7620873b96" /> */} 
+      {/* <ChatWidget widgetId="7e5884eb-1166-4230-a3d4-6d7620873b96" /> */}
     </div>
   )
 }

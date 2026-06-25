@@ -1,331 +1,141 @@
-// //  /app/(auth)/signin/page.tsx
-
-// 'use client'
-
-// import { useAuthStore } from '@/app/store/useAuthStore'
-// import { useRouter, useSearchParams } from 'next/navigation'
-// import { useEffect, useState, Suspense } from 'react'
-// import { FiBriefcase, FiEye, FiEyeOff, FiLock, FiMail } from 'react-icons/fi'
-
-// const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
-
-// function LoginContent() {
-//   const router = useRouter()
-//   const searchParams = useSearchParams()
-
-//   // Dynamic post-login redirect path extraction
-//   const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
-
-//   const login = useAuthStore((state) => state.login)
-
-//   const [email, setEmail] = useState('')
-//   const [password, setPassword] = useState('')
-//   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-//   const [submitting, setSubmitting] = useState(false)
-//   const [showPassword, setShowPassword] = useState(false)
-
-//   useEffect(() => {
-//     if (errorMsg) {
-//       const timer = setTimeout(() => {
-//         setErrorMsg(null)
-//       }, 5000)
-//       return () => clearTimeout(timer)
-//     }
-//   }, [errorMsg])
-
-//   const handleSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault()
-//     if (!email || !password) return
-
-//     setSubmitting(true)
-//     setErrorMsg(null)
-
-//     try {
-//       const response = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ email, password }),
-//         credentials: 'include',
-//       })
-
-//       const resData = await response.json()
-
-//       if (resData.status === 'success') {
-//         await login(resData.token, resData.data.account, resData.data.property)
-//         // Router pushes directly to context intent path
-//         router.push(callbackUrl)
-//       } else {
-//         setErrorMsg(resData.message || 'Invalid credentials provided.')
-//       }
-//     } catch (err) {
-//       setErrorMsg('Network processing failure. Is your backend listening?')
-//     } finally {
-//       setSubmitting(false)
-//     }
-//   }
-
-//   return (
-//     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 font-sans">
-//       <div className="max-w-md w-full space-y-6 bg-card p-8 rounded-xl shadow-2xl">
-//         <div className="text-center space-y-2">
-//           <div className="inline-flex p-3 bg-primary rounded-full text-white mb-2">
-//             <FiBriefcase size={28} />
-//           </div>
-//           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-//             Operator Access Portal
-//           </h1>
-//           <p className="text-xs text-foreground/70">Authenticate session</p>
-//         </div>
-
-//         {errorMsg && (
-//           <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg text-center font-medium">
-//             {errorMsg}
-//           </div>
-//         )}
-
-//         <form onSubmit={handleSubmit} className="space-y-4">
-//           <div className="space-y-1">
-//             <label className="text-xs font-semibold text-foreground block">
-//               Operator Email Address
-//             </label>
-//             <div className="relative">
-//               <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
-//               <input
-//                 type="email"
-//                 required
-//                 value={email}
-//                 onChange={(e) => setEmail(e.target.value)}
-//                 placeholder="operator@company.com"
-//                 className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
-//               />
-//             </div>
-//           </div>
-
-//           <div className="space-y-1">
-//             <label className="text-xs font-semibold text-foreground block">
-//               Security Password Token
-//             </label>
-//             <div className="relative">
-//               <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
-//               <input
-//                 type={showPassword ? 'text' : 'password'}
-//                 required
-//                 value={password}
-//                 onChange={(e) => setPassword(e.target.value)}
-//                 placeholder="••••••••••••"
-//                 className="w-full bg-background border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
-//               />
-//               <button
-//                 type="button"
-//                 onClick={() => setShowPassword(!showPassword)}
-//                 className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors"
-//               >
-//                 {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-//               </button>
-//             </div>
-//           </div>
-
-//           <button
-//             type="submit"
-//             disabled={submitting}
-//             className={`w-full py-2.5 rounded-lg bg-primary hover:bg-button-hover disabled:bg-gray-400 text-white font-medium transition-colors text-center text-sm flex items-center justify-center ${submitting ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-//           >
-//             {submitting ? 'Verifying Credentials...' : 'Sign In'}
-//           </button>
-//         </form>
-//       </div>
-//     </div>
-//   )
-// }
-
-// // Next.js explicitly demands components pulling query search context arrays to be enclosed inside Suspense containers
-// export default function AdminLoginPage() {
-//   return (
-//     <Suspense
-//       fallback={
-//         <div className="min-h-screen bg-background flex items-center justify-center">
-//           <span className="text-sm text-muted animate-pulse">
-//             Loading login gateway...
-//           </span>
-//         </div>
-//       }
-//     >
-//       <LoginContent />
-//     </Suspense>
-//   )
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // /app/(auth)/signin/page.tsx
 'use client'
 
-import { useAuthStore } from '@/app/store/useAuthStore'
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, Suspense } from 'react'
-import { FiBriefcase, FiEye, FiEyeOff, FiLock, FiMail } from 'react-icons/fi'
-import Link from 'next/link' // 👈 Added for parameter-safe navigation
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
+import { FiMail, FiLock } from 'react-icons/fi'
+import Link from 'next/link'
+
+import { InputField } from '@/app/components/auth/InputField'
+import { loginOperator } from '@/app/lib/api/auth.api'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import { loginSchema, type LoginSchema } from '@/app/lib/validation/auth.schema'
+import { notifications } from '@mantine/notifications'
 
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Dynamic post-login redirect path extraction
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
+  const setAuth = useAuthStore((s) => s.login)
 
-  const login = useAuthStore((state) => state.login)
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+const {
+  register,
+  handleSubmit,
+  formState: { errors, isSubmitting, isValid },
+} = useForm<LoginSchema>({
+  resolver: zodResolver(loginSchema),
+  mode: 'onChange',
 
-  useEffect(() => {
-    if (errorMsg) {
-      const timer = setTimeout(() => {
-        setErrorMsg(null)
-      }, 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [errorMsg])
+  defaultValues: {
+    email: '',
+    password: '',
+    rememberMe: false,
+  },
+})
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !password) return
+ const onSubmit = async (data: LoginSchema) => {
+   try {
+     const res = await loginOperator(data)
 
-    setSubmitting(true)
-    setErrorMsg(null)
+     const { account, operator } = res.data
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-      })
+     setAuth(account, operator)
 
-      const resData = await response.json()
+     router.push(callbackUrl)
+   } catch (err) {
+     notifications.show({
+       title: 'Login Failed',
+       message: err instanceof Error ? err.message : 'Invalid credentials',
+       color: 'red',
+     })
+   }
+ }
 
-      if (resData.status === 'success') {
-        await login(resData.token, resData.data.account, resData.data.property)
-        router.push(callbackUrl)
-
-        console.log('callbackUrl', callbackUrl)
-      } else {
-        setErrorMsg(resData.message || 'Invalid credentials provided.')
-      }
-    } catch (err) {
-      setErrorMsg('Network processing failure. Is your backend listening?')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // Helper to determine if the redirected context implies an incoming team invite
-  const currentParamsString = searchParams.toString()
-  const isInviteContext = currentParamsString.includes('token=') || currentParamsString.includes('accept-invite')
+  const isInviteContext =
+    searchParams.toString().includes('token=') ||
+    searchParams.toString().includes('accept-invite')
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 font-sans">
-      <div className="max-w-md w-full space-y-6 bg-card p-8 rounded-xl shadow-2xl">
+    <div className="flex items-center justify-center min-h-screen bg-background px-4">
+      <div className="w-full max-w-md bg-card p-8 rounded-xl shadow-2xl space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-primary rounded-full text-white mb-2">
-            <FiBriefcase size={28} />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Operator Access Portal
-          </h1>
-          <p className="text-xs text-foreground/70">Authenticate session</p>
+          <h1 className="text-2xl font-bold">Operator Sign In</h1>
+          <p className="text-xs text-gray-500">Authenticate your session</p>
         </div>
 
-        {errorMsg && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg text-center font-medium">
-            {errorMsg}
-          </div>
-        )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* EMAIL */}
+          <InputField
+            label="Email"
+            type="email"
+            icon={<FiMail />}
+            placeholder="operator@company.com"
+            {...register('email')}
+            error={errors.email?.message}
+          />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground block">
-              Operator Email Address
-            </label>
-            <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
+          {/* PASSWORD */}
+          <InputField
+            label="Password"
+            type="password"
+            icon={<FiLock />}
+            placeholder="••••••••"
+            {...register('password')}
+            error={errors.password?.message}
+          />
+
+          {/* Remember me + Forgot password */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="operator@company.com"
-                className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
+                type="checkbox"
+                {...register('rememberMe')}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
-            </div>
-          </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground block">
-              Security Password Token
+              <span className="text-sm text-muted-foreground">Remember me</span>
             </label>
-            <div className="relative">
-              <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground text-sm" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-background border border-border rounded-lg pl-10 pr-10 py-2.5 text-sm text-foreground outline-none focus:border-primary transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground transition-colors"
-              >
-                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            </div>
+
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Forgot password?
+            </Link>
           </div>
 
+          {/* SUBMIT */}
           <button
             type="submit"
-            disabled={submitting}
-            className={`w-full py-2.5 rounded-lg bg-primary hover:bg-button-hover disabled:bg-gray-400 text-white font-medium transition-colors text-center text-sm flex items-center justify-center ${submitting ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            disabled={!isValid || isSubmitting}
+            className={`w-full py-2.5 rounded-lg font-medium transition
+      ${
+        !isValid || isSubmitting
+          ? 'bg-gray-400 cursor-not-allowed'
+          : 'bg-primary text-white hover:opacity-90 cursor-pointer'
+      }`}
           >
-            {submitting ? 'Verifying Credentials...' : 'Sign In'}
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        {/* 🗺️ Dynamic Account Creation Navigation Element */}
-        <div className="text-center pt-2">
-          <p className="text-xs text-foreground/60">
-            Don&apos;t have an account?{' '}
-            <Link
-              href={
-                currentParamsString
-                  ? `/signup?${currentParamsString}`
-                  : '/signup'
-              }
-              className="text-primary hover:underline font-semibold transition-colors"
-            >
-              {isInviteContext ? 'Claim Invitation Form' : 'Create workspace'}
-            </Link>
-          </p>
-        </div>
+        {/* FOOTER */}
+        <p className="text-xs text-center text-gray-500">
+          Don&apos;t have an account?{' '}
+          <Link
+            href={
+              isInviteContext ? `/signup?${searchParams.toString()}` : '/signup'
+            }
+            className="text-primary font-medium"
+          >
+            {isInviteContext ? 'Accept Invitation' : 'Create workspace'}
+          </Link>
+        </p>
       </div>
     </div>
   )
@@ -333,15 +143,7 @@ function LoginContent() {
 
 export default function AdminLoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <span className="text-sm text-muted animate-pulse">
-            Loading login gateway...
-          </span>
-        </div>
-      }
-    >
+    <Suspense fallback={<div>Loading...</div>}>
       <LoginContent />
     </Suspense>
   )

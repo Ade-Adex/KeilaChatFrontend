@@ -1,0 +1,171 @@
+// /app/components/dashboard/settings/ProfileForm.tsx
+
+'use client'
+
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Avatar,
+  Button,
+  Card,
+  Divider,
+  Group,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core'
+import { FiCamera, FiSave } from 'react-icons/fi'
+
+
+import { useProfile } from '@/app/hooks/settings/useProfile'
+import { ProfileFormValues, profileSchema } from '@/app/lib/validation/settings/settings.schema'
+
+export default function ProfileForm() {
+  const { profile, loading, saving, saveProfile } = useProfile()
+
+  const {
+    register,
+    reset,
+    handleSubmit,
+    formState: { errors, isDirty, isValid },
+  } = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    mode: 'onChange',
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      avatar: '',
+    },
+  })
+
+  const avatar = profile?.avatar
+
+  /**
+   * Load API data into form
+   */
+  useEffect(() => {
+    if (profile) {
+      reset(profile)
+    }
+  }, [profile, reset])
+
+  const onSubmit = async (values: ProfileFormValues) => {
+    await saveProfile(values)
+    reset(values) // mark form clean after save
+  }
+
+  if (loading) {
+    return (
+      <Card className='bg-card! flex justify-center items-center'>
+        <Text>Loading profile...</Text>
+      </Card>
+    )
+  }
+
+  return (
+    <Card
+      radius="lg"
+      shadow="sm"
+      className="bg-card! border border-border! text-foreground!"
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack gap="xl">
+          <div>
+            <Title order={3}>Profile Information</Title>
+            <Text c="dimmed" size="sm" mt={4}>
+              Update your profile information.
+            </Text>
+          </div>
+
+          <Divider className="border-border!" />
+
+          <Group align="flex-start">
+            <Avatar src={avatar || undefined} radius="xl" size={100} />
+
+            <Stack gap={6}>
+              <Button
+                variant="light"
+                className="bg-background! text-foreground! border border-border!"
+                leftSection={<FiCamera />}
+                disabled
+              >
+                Upload Avatar
+              </Button>
+
+              <Text size="xs" c="dimmed">
+                Avatar upload will be enabled later.
+              </Text>
+            </Stack>
+          </Group>
+
+          <Divider className="border-border!" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <TextInput
+              label="First Name"
+              placeholder="John"
+              error={errors.firstName?.message}
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
+              {...register('firstName')}
+            />
+
+            <TextInput
+              label="Last Name"
+              placeholder="Doe"
+              error={errors.lastName?.message}
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
+              {...register('lastName')}
+            />
+
+            <TextInput
+              label="Email Address"
+              placeholder="john@example.com"
+              error={errors.email?.message}
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
+              className="md:col-span-2"
+              {...register('email')}
+            />
+
+            <TextInput
+              label="Avatar URL"
+              placeholder="https://..."
+              error={errors.avatar?.message}
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
+              className="md:col-span-2"
+              {...register('avatar')}
+            />
+          </div>
+
+          <Divider className="border-border!" />
+
+          <Group justify="flex-end">
+            <Button
+              type="submit"
+              leftSection={<FiSave />}
+              loading={saving}
+              disabled={!isDirty || !isValid}
+              className="bg-primary! text-white!"
+            >
+              Save Changes
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Card>
+  )
+}

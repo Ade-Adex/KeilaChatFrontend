@@ -1,4 +1,4 @@
-// /app/(routes)/admin/dashboard/layout.tsx
+// /app/(routes)/dashboard/layout.tsx
 'use client'
 
 import { usePathname } from 'next/navigation'
@@ -13,12 +13,12 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
   const authLoading = useAuthStore((state) => state.loading)
-  const hasHydrated = useAuthStore((state) => state._hasHydrated)
+  // const hasHydrated = useAuthStore((state) => state._hasHydrated)
 
-  const isAcceptInviteRoute = pathname === '/admin/dashboard/accept-invite'
+  const isAcceptInviteRoute = pathname === '/dashboard/accept-invite'
 
   // Block paint cycle execution completely until client storage engine has finished matching hydration
-  if (!hasHydrated || authLoading) {
+  if ( authLoading) {
     return (
       <div className="h-screen w-screen relative bg-background">
         <LoadingOverlay
