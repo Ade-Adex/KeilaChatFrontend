@@ -41,11 +41,12 @@ export default function ClientChatWrapper({
   return (
     <div className="w-full h-full">
       {isWidgetOpen ? (
-        <ChatWindow
-          onClose={() => toggleWidget(false)}
-          widgetId={widgetId}
-          originWebsite={originWebsite}
-        />
+        // <ChatWindow
+        //   onClose={() => toggleWidget(false)}
+        //   widgetId={widgetId}
+        //   originWebsite={originWebsite}
+        // />
+      <></>
       ) : (
         <ChatLauncher onClick={() => toggleWidget(true)} />
       )}
