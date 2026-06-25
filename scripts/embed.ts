@@ -10,9 +10,11 @@
 
   const widgetId = scriptTag.dataset.id
 
-  const FRONTEND_URL = scriptTag.dataset.frontendUrl ?? '__KEILA_FRONTEND_URL__'
+ const FRONTEND_URL =
+   scriptTag.dataset.frontendUrl ?? 'https://keila-chat.vercel.app'
 
-  const API_URL = scriptTag.dataset.apiUrl ?? '__KEILA_API_URL__'
+ const API_URL =
+   scriptTag.dataset.apiUrl ?? 'https://keilachatbackend.onrender.com'
 
   if (!widgetId) {
     console.warn('[KeilaChat] Missing data-id attribute.')
