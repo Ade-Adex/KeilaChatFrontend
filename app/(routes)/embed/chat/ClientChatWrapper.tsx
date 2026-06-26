@@ -1,54 +1,48 @@
-// app/(routes)/embed/chat/ClientChatWrapper.tsx
-
-
 'use client'
 
-import { useState } from 'react'
-import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
-import ChatWindow from '@/app/components/chat/ChatWindow'
+import { useEffect, useState } from 'react'
 
-interface ClientChatWrapperProps {
+import ChatWindow from '@/app/components/chat/ChatWindow'
+import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
+import { WidgetConfig } from '@/app/types/chat'
+
+interface Props {
   widgetId: string
-  originWebsite: string
+  visitorTrackingId: string
+  widget: WidgetConfig
 }
 
 export default function ClientChatWrapper({
   widgetId,
-  originWebsite,
-}: ClientChatWrapperProps) {
-  const [isWidgetOpen, setIsWidgetOpen] = useState(false)
+  visitorTrackingId,
+  widget,
+}: Props) {
+  const [open, setOpen] = useState(false)
 
-  const toggleWidget = (open: boolean) => {
-    setIsWidgetOpen(open)
-    const isMobile = window.innerWidth < 640
-    const DESKTOP_WIDTH = '350px'
-    const DESKTOP_HEIGHT = '500px'
+  useEffect(() => {
+    const mobile = window.innerWidth < 640
 
     window.parent.postMessage(
       {
         type: 'RESIZE',
-        width: open ? (isMobile ? '100vw' : DESKTOP_WIDTH) : '60px',
-        height: open ? (isMobile ? '100dvh' : DESKTOP_HEIGHT) : '60px',
-        top: open && isMobile ? '0' : 'auto',
-        left: open && isMobile ? '0' : 'auto',
-        bottom: '20px',
-        right: '20px',
+        width: open ? (mobile ? window.innerWidth : 380) : 60,
+        height: open ? (mobile ? window.innerHeight : 650) : 60,
       },
-      '*', // Consider replacing '*' with your actual dashboard/API origin for stricter security if applicable
+      '*',
     )
-  }
+  }, [open])
 
   return (
     <div className="w-full h-full">
-      {isWidgetOpen ? (
-        // <ChatWindow
-        //   onClose={() => toggleWidget(false)}
-        //   widgetId={widgetId}
-        //   originWebsite={originWebsite}
-        // />
-      <></>
+      {open ? (
+        <ChatWindow
+          widget={widget}
+          widgetId={widgetId}
+          visitorTrackingId={visitorTrackingId}
+          onClose={() => setOpen(false)}
+        />
       ) : (
-        <ChatLauncher onClick={() => toggleWidget(true)} />
+        <ChatLauncher onClick={() => setOpen(true)} widget={widget} />
       )}
     </div>
   )

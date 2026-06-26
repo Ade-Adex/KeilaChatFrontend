@@ -1,31 +1,39 @@
 // app/(routes)/embed/chat/page.tsx
 
-
-import ClientChatWrapper from '@/app/(routes)/embed/chat/ClientChatWrapper'
+import ClientChatWrapper from './ClientChatWrapper'
 import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EmbedPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ widgetId: string }>
-}) {
-  const { widgetId } = await searchParams
+interface Props {
+  searchParams: Promise<{
+    widgetId?: string
+    visitorTrackingId?: string
+    apiUrl?: string
+    frontendUrl?: string
+  }>
+}
 
-  if (!widgetId) {
+export default async function EmbedPage({ searchParams }: Props) {
+  const params = await searchParams
+
+  const widgetId = params.widgetId
+  const visitorTrackingId = params.visitorTrackingId
+
+  if (!widgetId || !visitorTrackingId) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Invalid Access
+      <div className="flex h-screen items-center justify-center text-sm text-red-500">
+        Invalid Widget Configuration
       </div>
     )
   }
 
-  const headersList = await headers()
-  const referer = headersList.get('referer') || ''
+  const headerStore = await headers()
 
-  let isAuthorized = false
-  let hasConnectionError = false
+  const referer = headerStore.get('referer') ?? ''
+
+  let widget = null
+  let errorMessage: string | null = null
 
   try {
     const response = await fetch(
@@ -34,32 +42,39 @@ export default async function EmbedPage({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          referer: referer,
+          referer,
         },
-        body: JSON.stringify({ widgetId }),
+        body: JSON.stringify({
+          widgetId,
+        }),
+        cache: 'no-store',
       },
     )
 
-    if (response.ok) {
-      isAuthorized = true
+    if (!response.ok) {
+      errorMessage = 'Unauthorized Widget'
+    } else {
+      const result = await response.json()
+      widget = result.data
     }
   } catch (error) {
-    console.error('Verification fetch failed:', error)
-    hasConnectionError = true
+    console.error('Widget verification failed:', error)
+    errorMessage = 'Connection Error'
   }
 
-  if (hasConnectionError) {
-    return <div className="p-4 text-center text-red-500">Connection Error</div>
-  }
-
-  if (!isAuthorized) {
+  if (errorMessage) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-500 font-sans">
-        Unauthorized Widget Deployment
+      <div className="flex h-screen items-center justify-center text-sm text-red-500">
+        {errorMessage}
       </div>
     )
   }
 
-  // Pass the verified widgetId and referer (origin website property) downstream
-  return <ClientChatWrapper widgetId={widgetId} originWebsite={referer} />
+  return (
+    <ClientChatWrapper
+      widgetId={widgetId}
+      visitorTrackingId={visitorTrackingId}
+      widget={widget}
+    />
+  )
 }

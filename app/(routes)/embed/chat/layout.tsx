@@ -1,28 +1,40 @@
 // app/(routes)/embed/chat/layout.tsx
 
-export default function EmbedLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+import type { ReactNode } from 'react'
+
+interface EmbedLayoutProps {
+  children: ReactNode
+}
+
+export default function EmbedLayout({ children }: EmbedLayoutProps) {
   return (
-    <div
-      style={{
-        background: 'transparent',
-        height: '100dvh',
-        width: '100vw',
-        overflow: 'hidden',
-      }}
-    >
+    <>
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        body { background: transparent !important; margin: 0; padding: 0; }
-        html { background: transparent !important; }
-      `,
+            html,
+            body{
+              margin:0;
+              padding:0;
+              width:100%;
+              height:100%;
+              overflow:hidden;
+              background:transparent !important;
+            }
+          `,
         }}
       />
-      {children}
-    </div>
+
+      <div
+        className="
+          w-screen
+          h-screen
+          overflow-hidden
+          bg-transparent
+        "
+      >
+        {children}
+      </div>
+    </>
   )
 }
