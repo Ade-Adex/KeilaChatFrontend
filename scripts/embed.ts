@@ -1,6 +1,6 @@
 // /scripts/embed.ts
 
-(async function () {
+;(async function () {
   const scriptTag = document.currentScript as HTMLScriptElement | null
 
   if (!scriptTag) {
@@ -10,11 +10,11 @@
 
   const widgetId = scriptTag.dataset.id
 
- const FRONTEND_URL =
-   scriptTag.dataset.frontendUrl ?? 'https://keila-chat.vercel.app'
+  const FRONTEND_URL =
+    scriptTag.dataset.frontendUrl ?? 'https://keila-chat.vercel.app'
 
- const API_URL =
-   scriptTag.dataset.apiUrl ?? 'https://keilachatbackend.onrender.com'
+  const API_URL =
+    scriptTag.dataset.apiUrl ?? 'https://keilachatbackend.onrender.com'
 
   if (!widgetId) {
     console.warn('[KeilaChat] Missing data-id attribute.')
@@ -65,7 +65,7 @@
     /* Widget Initialization                              */
     /* -------------------------------------------------- */
 
-    const initResponse = await fetch(`${API_URL}/api/v1/widget/init`, {
+    const initResponse = await fetch(`${API_URL}/api/v1/widget/initialize`, {
       method: 'POST',
       signal: controller.signal,
       headers: {
@@ -97,9 +97,10 @@
 
     if (initData.status !== 'success') {
       console.warn('[KeilaChat] Initialization rejected.')
-
       return
     }
+
+    // const widgetConfig = initData.data
 
     /* -------------------------------------------------- */
     /* Widget Root Container                              */
@@ -128,6 +129,8 @@
 
     const iframe = document.createElement('iframe')
 
+    iframe.title = 'Keila Chat Widget'
+
     iframe.loading = 'lazy'
 
     iframe.allow = 'clipboard-read; clipboard-write'
@@ -144,6 +147,8 @@
     const params = new URLSearchParams({
       widgetId,
       visitorTrackingId,
+      apiUrl: API_URL,
+      frontendUrl: FRONTEND_URL,
     })
 
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
@@ -166,8 +171,10 @@
     /* Message Handler                                    */
     /* -------------------------------------------------- */
 
+    const frontendOrigin = new URL(FRONTEND_URL).origin
+
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== FRONTEND_URL) {
+      if (event.origin !== frontendOrigin) {
         return
       }
 
