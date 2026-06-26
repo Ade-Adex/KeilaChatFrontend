@@ -35,7 +35,6 @@ export interface TypingPayload {
   isTyping: boolean
 }
 
-
 export interface ChatSessionConfig {
   propertyId: string
 
@@ -67,29 +66,49 @@ export interface WidgetConfig {
   }
 }
 
-export interface ChatWindowProps {
-  widgetId: string
-
-  visitorTrackingId: string
-
-  widget: WidgetConfig
-
-  onClose: () => void
-}
-
 export interface SessionConfig {
   sessionId: string
+
   propertyId: string
+
   visitorId: string
-  status: 'queued' | 'active' | 'closed'
+
+  assignedOperatorId?: string | null
+
+  status: 'waiting' | 'queued' | 'active' | 'closed' | 'transferred'
 }
 
-export type MessageSender = 'visitor' | 'operator' | 'system'
+export type MessageSender = 'visitor' | 'operator' | 'ai' | 'system'
+
+
+
+export interface JoinChatPayload {
+  sessionId: string
+
+  propertyId: string
+
+  visitorId?: string
+
+  operatorId?: string
+
+  clientType: 'visitor' | 'operator'
+}
+
+export interface JoinDashboardPayload {
+  propertyId: string
+  operatorId: string
+}
+
+export interface NotificationPayload {
+  propertyId: string
+}
 
 export interface ChatMessage {
   _id?: string
 
   sessionId: string
+
+  propertyId?: string
 
   senderType: MessageSender
 
@@ -99,9 +118,36 @@ export interface ChatMessage {
 
   messageText: string
 
+  messageType?: string
+
+  status?: 'sent' | 'delivered' | 'seen' | 'failed'
+
   createdAt: string
+
+  deliveredAt?: string
+
+  seenAt?: string
 }
 
+
+export interface PresenceNotificationPayload {
+  message: string
+}
+
+export interface MessageDeliveredPayload {
+  messageId: string
+  sessionId: string
+}
+
+export interface MessageErrorPayload {
+  message: string
+}
+
+
+export interface IncomingVisitorAlert {
+  sessionId: string
+  messageText: string
+}
 export interface PresenceNotification {
   _id: string
 
@@ -124,4 +170,30 @@ export interface ChatWindowProps {
   visitorTrackingId: string
 
   onClose: () => void
+}
+
+export interface UserTypingPayload {
+  sessionId: string
+
+  senderName?: string
+
+  isTyping: boolean
+}
+
+export interface SendMessagePayload {
+  sessionId: string
+
+  propertyId: string
+
+  senderType: 'visitor'
+
+  senderId: string
+
+  messageText: string
+}
+
+export interface SessionInitResponse {
+  status: string
+
+  data: SessionConfig
 }

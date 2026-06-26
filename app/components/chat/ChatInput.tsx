@@ -1,11 +1,11 @@
 //  /app/components/chat/ChatInput.tsx
-
 'use client'
 
 import { FiSend } from 'react-icons/fi'
 
-interface Props {
+interface ChatInputProps {
   value: string
+
   disabled?: boolean
 
   onChange: (value: string) => void
@@ -18,7 +18,34 @@ export default function ChatInput({
   disabled = false,
   onChange,
   onSend,
-}: Props) {
+}: ChatInputProps) {
+  const canSend = !disabled && value.trim().length > 0
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter' && canSend) {
+      event.preventDefault()
+
+      onSend()
+    }
+  }
+
+  if (disabled) {
+    return (
+      <div
+        className="
+          border-t
+          bg-card
+          p-4
+          text-center
+          text-sm
+          text-muted-foreground
+        "
+      >
+        This chat session has ended.
+      </div>
+    )
+  }
+
   return (
     <div
       className="
@@ -35,43 +62,46 @@ export default function ChatInput({
         "
       >
         <input
+          type="text"
           value={value}
-          disabled={disabled}
           placeholder="Type a message..."
           onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSend()}
+          onKeyDown={handleKeyDown}
           className="
             flex-1
-            rounded-xl
+            rounded-full
             border
             bg-background
             px-4
             py-3
             text-sm
             outline-none
+            transition
+            focus:border-primary
           "
         />
 
-        {!!value.trim() && (
-          <button
-            onClick={onSend}
-            className="
-              flex
-              h-10
-              w-10
-              items-center
-              justify-center
-              rounded-full
-              bg-blue-600
-              text-white
-              transition
-              hover:scale-105
-              cursor-pointer
-            "
-          >
-            <FiSend />
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={!canSend}
+          onClick={onSend}
+          className="
+            flex
+            h-11
+            w-11
+            items-center
+            justify-center
+            rounded-full
+            bg-blue-600
+            text-white
+            transition
+            hover:bg-blue-500
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+          "
+        >
+          <FiSend size={18} />
+        </button>
       </div>
 
       <div
