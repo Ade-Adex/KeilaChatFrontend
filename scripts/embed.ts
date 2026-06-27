@@ -157,21 +157,25 @@
 
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
 
-    Object.assign(iframe.style, {
-      width: '64px',
-      height: '64px',
+   Object.assign(iframe.style, {
+     width: '64px',
+     height: '64px',
 
-      border: 'none',
-      background: 'transparent',
+     border: 'none',
+     background: 'transparent',
 
-      borderRadius: '999px',
+     borderRadius: '999px',
 
-      overflow: 'hidden',
+     position: 'fixed',
+     right: '20px',
+     bottom: '20px',
 
-      boxShadow: '0 4px 12px rgba(0,0,0,.15)',
+     overflow: 'hidden',
 
-      transition: 'width .25s ease,height .25s ease,border-radius .25s ease',
-    })
+     boxShadow: '0 4px 12px rgba(0,0,0,.15)',
+
+     transition: 'width .25s ease,height .25s ease,border-radius .25s ease',
+   })
 
     shadowRoot.appendChild(iframe)
 
@@ -214,7 +218,7 @@
             window.innerHeight,
           )
 
-          const mobile = window.innerWidth <= 768
+          const mobile = window.screen.width <= 768
 
           const expanded = width > 64 || height > 64
 
@@ -224,11 +228,11 @@
 
             position: 'fixed',
 
-            right: mobile ? '0' : '20px',
+            right: expanded ? (mobile ? '0' : '20px') : '20px',
 
-            bottom: mobile ? '0' : '20px',
+            bottom: expanded ? (mobile ? '0' : '20px') : '20px',
 
-            borderRadius: expanded ? (mobile ? '0' : '16px') : '999px',
+            borderRadius: expanded ? (mobile ? '0' : '18px') : '999px',
 
             boxShadow: expanded
               ? '0 15px 35px rgba(0,0,0,.25)'

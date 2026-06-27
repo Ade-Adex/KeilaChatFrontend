@@ -20,19 +20,26 @@ export default function ClientChatWrapper({
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    //  console.log('OPEN STATE', open)
+    const screenWidth = window.screen.width
+    const screenHeight = window.screen.height
 
-    //  const parentWidth = window.screen.width || 390
+    const mobile = screenWidth <= 768
 
-    //  const parentHeight = window.screen.height || 800
+    const width = open ? (mobile ? screenWidth : 420) : 64
 
-    const mobile = window.innerWidth <= 768
+    const height = open ? (mobile ? screenHeight : 760) : 64
 
-    const width = open ? (mobile ? window.innerWidth : 380) : 64
-
-    const height = open ? (mobile ? window.innerHeight : 700) : 64
-
-    //  console.log('CALCULATED', width, height)
+    console.log(
+      '[CHAT]',
+      'screen:',
+      screenWidth,
+      screenHeight,
+      'mobile:',
+      mobile,
+      'resize:',
+      width,
+      height,
+    )
 
     window.parent.postMessage(
       {
