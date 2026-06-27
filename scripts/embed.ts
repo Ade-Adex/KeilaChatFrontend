@@ -194,6 +194,8 @@
 
       switch (data.type) {
         case 'RESIZE': {
+          console.log('[KeilaChat RESIZE]', data.width, data.height)
+
           const width = Math.min(
             Number.parseInt(data.width ?? '60', 10),
             window.innerWidth,
