@@ -37,16 +37,12 @@ export default async function EmbedPage({ searchParams }: Props) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/widget/verify`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/widget/${widgetId}/verify`,
       {
-        method: 'POST',
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           referer,
         },
-        body: JSON.stringify({
-          widgetId,
-        }),
         cache: 'no-store',
       },
     )
