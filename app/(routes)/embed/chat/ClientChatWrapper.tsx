@@ -20,16 +20,20 @@ export default function ClientChatWrapper({
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
+
+    console.log('OPEN STATE', open)
+
     const mobile = window.innerWidth < 640
 
-    window.parent.postMessage(
-      {
-        type: 'RESIZE',
-        width: open ? (mobile ? window.innerWidth : 380) : 60,
-        height: open ? (mobile ? window.innerHeight : 650) : 60,
-      },
-      '*',
-    )
+    const payload = {
+      type: 'RESIZE',
+      width: open ? (mobile ? window.innerWidth : 380) : 60,
+      height: open ? (mobile ? window.innerHeight : 650) : 60,
+    }
+
+    console.log('[EMBED SEND]', payload)
+
+    window.parent.postMessage(payload, '*')
   }, [open])
 
   return (

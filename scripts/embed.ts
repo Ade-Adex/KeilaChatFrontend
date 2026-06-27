@@ -154,8 +154,8 @@
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
 
     Object.assign(iframe.style, {
-      width: '600px',
-      height: '350px',
+      width: '60px',
+      height: '60px',
       border: 'none',
       background: 'transparent',
       borderRadius: '50%',
@@ -178,9 +178,9 @@
         return
       }
 
-      if (event.source !== iframe.contentWindow) {
-        return
-      }
+      // if (event.source !== iframe.contentWindow) {
+      //   return
+      // }
 
       const data = event.data
 
@@ -216,6 +216,8 @@
               ? '0 15px 35px rgba(0,0,0,.25)'
               : '0 4px 12px rgba(0,0,0,.15)',
           })
+
+          console.log('[IFRAME STYLE]', iframe.style.width, iframe.style.height)
 
           break
         }
