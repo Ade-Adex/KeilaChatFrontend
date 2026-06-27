@@ -154,8 +154,8 @@
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
 
     Object.assign(iframe.style, {
-      width: '60px',
-      height: '60px',
+      width: '600px',
+      height: '350px',
       border: 'none',
       background: 'transparent',
       borderRadius: '50%',
