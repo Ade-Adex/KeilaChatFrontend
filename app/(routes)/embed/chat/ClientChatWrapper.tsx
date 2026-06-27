@@ -23,7 +23,8 @@ export default function ClientChatWrapper({
    console.log('OPEN STATE', open)
    console.log('WINDOW WIDTH', window.innerWidth)
 
-   const mobile = window.innerWidth < 640
+  //  const mobile = window.innerWidth < 640
+  const mobile = window.parent.innerWidth < 640
 
    console.log('IS MOBILE', mobile)
 
