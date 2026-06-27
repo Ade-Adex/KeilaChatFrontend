@@ -277,19 +277,17 @@ export default function ChatWindow({
   return (
     <div
       className="
-      flex
-      w-full
-      h-full
-      flex-col
-      overflow-hidden
-      rounded-2xl
-      bg-background
-      shadow-2xl
-    "
-      style={{
-        width: '100%',
-        height: '100%',
-      }}
+    flex
+    h-screen
+    w-screen
+    flex-col
+    overflow-hidden
+    bg-background
+    shadow-2xl
+    md:h-full
+    md:w-full
+    md:rounded-2xl
+  "
     >
       <ChatHeader
         widget={widget}

@@ -19,34 +19,31 @@ export default function ClientChatWrapper({
 }: Props) {
   const [open, setOpen] = useState(false)
 
- useEffect(() => {
-   console.log('OPEN STATE', open)
+  useEffect(() => {
+    //  console.log('OPEN STATE', open)
 
-   const parentWidth = window.screen.width || 390
+    //  const parentWidth = window.screen.width || 390
 
-   const parentHeight = window.screen.height || 800
+    //  const parentHeight = window.screen.height || 800
 
-   const mobile = parentWidth < 640
+    const mobile = window.innerWidth <= 768
 
-   console.log('SCREEN WIDTH', parentWidth)
-   console.log('IS MOBILE', mobile)
+    const width = open ? (mobile ? window.innerWidth : 380) : 64
 
-   const width = !open ? 60 : mobile ? parentWidth : 380
+    const height = open ? (mobile ? window.innerHeight : 700) : 64
 
-   const height = !open ? 60 : mobile ? parentHeight : 650
+    //  console.log('CALCULATED', width, height)
 
-   console.log('CALCULATED', width, height)
+    window.parent.postMessage(
+      {
+        type: 'RESIZE',
+        width,
+        height,
+      },
+      '*',
+    )
+  }, [open])
 
-   window.parent.postMessage(
-     {
-       type: 'RESIZE',
-       width,
-       height,
-     },
-     '*',
-   )
- }, [open])
-  
   return (
     <div className="w-full h-full">
       {open ? (

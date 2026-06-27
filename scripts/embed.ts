@@ -115,6 +115,10 @@
       bottom: '20px',
       right: '20px',
       zIndex: '2147483647',
+
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'flex-end',
     })
 
     document.body.appendChild(host)
@@ -154,15 +158,19 @@
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
 
     Object.assign(iframe.style, {
-      width: '60px',
-      height: '60px',
+      width: '64px',
+      height: '64px',
+
       border: 'none',
       background: 'transparent',
-      borderRadius: '50%',
+
+      borderRadius: '999px',
+
       overflow: 'hidden',
+
       boxShadow: '0 4px 12px rgba(0,0,0,.15)',
-      transition:
-        'width .25s ease,height .25s ease,border-radius .25s ease,box-shadow .25s ease',
+
+      transition: 'width .25s ease,height .25s ease,border-radius .25s ease',
     })
 
     shadowRoot.appendChild(iframe)
@@ -206,18 +214,26 @@
             window.innerHeight,
           )
 
-          const expanded = width > 60 || height > 60
+          const mobile = window.innerWidth <= 768
+
+          const expanded = width > 64 || height > 64
 
           Object.assign(iframe.style, {
             width: `${width}px`,
             height: `${height}px`,
-            borderRadius: expanded ? '16px' : '50%',
+
+            position: 'fixed',
+
+            right: mobile ? '0' : '20px',
+
+            bottom: mobile ? '0' : '20px',
+
+            borderRadius: expanded ? (mobile ? '0' : '16px') : '999px',
+
             boxShadow: expanded
               ? '0 15px 35px rgba(0,0,0,.25)'
               : '0 4px 12px rgba(0,0,0,.15)',
           })
-
-          console.log('[IFRAME STYLE]', iframe.style.width, iframe.style.height)
 
           break
         }

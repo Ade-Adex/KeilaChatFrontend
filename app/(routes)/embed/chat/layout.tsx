@@ -12,14 +12,23 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
       <style
         dangerouslySetInnerHTML={{
           __html: `
+            *,
+            *::before,
+            *::after {
+              box-sizing: border-box;
+            }
+
             html,
-            body{
-              margin:0;
-              padding:0;
-              width:100%;
-              height:100%;
-              overflow:hidden;
-              background:transparent !important;
+            body,
+            #__next {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100%;
+              min-width: 100%;
+              min-height: 100%;
+              overflow: hidden;
+              background: transparent !important;
             }
           `,
         }}
@@ -27,8 +36,10 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
 
       <div
         style={{
-          width: '100%',
-          height: '100%',
+          position: 'fixed',
+          inset: 0,
+          width: '100vw',
+          height: '100dvh',
           overflow: 'hidden',
           background: 'transparent',
         }}
