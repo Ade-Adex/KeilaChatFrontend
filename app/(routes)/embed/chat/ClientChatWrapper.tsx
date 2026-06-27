@@ -21,16 +21,19 @@ export default function ClientChatWrapper({
 
  useEffect(() => {
    console.log('OPEN STATE', open)
-   console.log('WINDOW WIDTH', window.innerWidth)
 
-  //  const mobile = window.innerWidth < 640
-  const mobile = window.parent.innerWidth < 640
+   const parentWidth = window.screen.width || 390
 
+   const parentHeight = window.screen.height || 800
+
+   const mobile = parentWidth < 640
+
+   console.log('SCREEN WIDTH', parentWidth)
    console.log('IS MOBILE', mobile)
 
-   const width = open ? (mobile ? window.innerWidth : 380) : 60
+   const width = !open ? 60 : mobile ? parentWidth : 380
 
-   const height = open ? (mobile ? window.innerHeight : 650) : 60
+   const height = !open ? 60 : mobile ? parentHeight : 650
 
    console.log('CALCULATED', width, height)
 
@@ -43,6 +46,7 @@ export default function ClientChatWrapper({
      '*',
    )
  }, [open])
+  
   return (
     <div className="w-full h-full">
       {open ? (

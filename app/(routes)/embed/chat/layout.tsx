@@ -26,12 +26,12 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
       />
 
       <div
-        className="
-          w-screen
-          h-screen
-          overflow-hidden
-          bg-transparent
-        "
+        style={{
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          background: 'transparent',
+        }}
       >
         {children}
       </div>
