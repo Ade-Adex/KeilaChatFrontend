@@ -18,10 +18,10 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
 
-  const [loading, setLoading] = useState(true)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    const verify = async () => {
+    async function verify() {
       const authenticated = await checkAuth()
 
       if (!authenticated) {
@@ -29,13 +29,13 @@ export default function DashboardLayout({
         return
       }
 
-      setLoading(false)
+      setChecking(false)
     }
 
     verify()
   }, [pathname, router])
 
-  if (loading) {
+  if (checking) {
     return (
       <div className="h-screen w-screen relative">
         <LoadingOverlay visible />

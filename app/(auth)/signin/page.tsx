@@ -1,7 +1,7 @@
 // /app/(auth)/signin/page.tsx
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -15,6 +15,8 @@ import { useAuthStore } from '@/app/store/useAuthStore'
 import { loginSchema, type LoginSchema } from '@/app/lib/validation/auth.schema'
 import { notifications } from '@mantine/notifications'
 
+import { checkAuth } from '@/app/lib/auth/checkAuth'
+
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -22,6 +24,19 @@ function LoginContent() {
   const setAuth = useAuthStore((s) => s.login)
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+
+
+  useEffect(() => {
+    async function verify() {
+      const authenticated = await checkAuth()
+
+      if (authenticated) {
+        router.replace('/dashboard')
+      }
+    }
+
+    verify()
+  }, [router])
 
 const {
   register,

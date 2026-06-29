@@ -9,7 +9,11 @@ export async function checkAuth() {
       credentials: 'include',
     })
 
-    return response.ok
+    if (!response.ok) {
+      return false
+    }
+
+    return true
   } catch {
     return false
   }
