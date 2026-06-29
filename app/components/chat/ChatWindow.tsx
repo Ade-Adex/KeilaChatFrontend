@@ -111,17 +111,19 @@ export default function ChatWindow({
    */
   useEffect(() => {
     if (!session) return
-
-    socket.connect()
-
     /*
      * Join chat session
      */
-    socket.emit('join_chat_session', {
-      sessionId: session.sessionId,
-      propertyId: session.propertyId,
-      visitorId: session.visitorId,
-      clientType: 'visitor',
+
+    socket.connect()
+
+    socket.once('connect', () => {
+      socket.emit('join_chat_session', {
+        sessionId: session.sessionId,
+        propertyId: session.propertyId,
+        visitorId: session.visitorId,
+        clientType: 'visitor',
+      })
     })
 
     /*
