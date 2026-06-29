@@ -16,68 +16,56 @@ import type { OperatorConversation } from '@/app/types/dashboard'
 interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
   onSelect: (conversation: OperatorConversation) => void
+  refreshKey?: number
 }
 
 export default function ConversationSidebar({
   selectedConversation,
   onSelect,
+  refreshKey = 0,
 }: ConversationSidebarProps) {
   const [queuedChats, setQueuedChats] = useState<OperatorConversation[]>([])
   const [activeChats, setActiveChats] = useState<OperatorConversation[]>([])
   const [myChats, setMyChats] = useState<OperatorConversation[]>([])
-
   const [loading, setLoading] = useState(false)
 
-useEffect(() => {
-  let mounted = true
+  useEffect(() => {
+    let mounted = true
 
-  const fetchConversations = async () => {
-    try {
-      setLoading(true)
+    const fetchConversations = async () => {
+      try {
+        // Only set loading screen on structural initial bootmount to avoid flash jarring flickering
+        if (refreshKey === 0) setLoading(true)
 
-      const workspace = await getWorkspace()
+        const workspace = await getWorkspace()
+        const propertyId = workspace.data.account.defaultProperty
 
-      const propertyId = workspace.data.account.defaultProperty
+        if (!propertyId) return
 
-      if (!propertyId) {
-        return
-      }
+        const [queued, active, mine] = await Promise.all([
+          getQueuedSessions(propertyId),
+          getActiveSessions(propertyId),
+          getMySessions(),
+        ])
 
-      const [queued, active, mine] = await Promise.all([
-        getQueuedSessions(propertyId),
+        if (!mounted) return
 
-        getActiveSessions(propertyId),
-
-        getMySessions(),
-      ])
-
-      if (!mounted) {
-        return
-      }
-
-      setQueuedChats((queued.data ?? []) as OperatorConversation[])
-
-      setActiveChats((active.data ?? []) as OperatorConversation[])
-
-      setMyChats((mine.data ?? []) as OperatorConversation[])
-    } catch (error) {
-      if (mounted) {
-        console.error(error)
-      }
-    } finally {
-      if (mounted) {
-        setLoading(false)
+        setQueuedChats((queued.data ?? []) as OperatorConversation[])
+        setActiveChats((active.data ?? []) as OperatorConversation[])
+        setMyChats((mine.data ?? []) as OperatorConversation[])
+      } catch (error) {
+        if (mounted) console.error(error)
+      } finally {
+        if (mounted) setLoading(false)
       }
     }
-  }
 
-  void fetchConversations()
+    void fetchConversations()
 
-  return () => {
-    mounted = false
-  }
-}, [])
-
+    return () => {
+      mounted = false
+    }
+  }, [refreshKey]) // <--- Re-fetch and sync interface automatically whenever socket sends trigger
   if (loading) {
     return <div className="p-6">Loading conversations...</div>
   }

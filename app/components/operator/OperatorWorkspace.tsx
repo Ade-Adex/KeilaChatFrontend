@@ -112,19 +112,11 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
-      console.log('OPERATOR RECEIVED:', message)
-
-      if (message.sessionId !== session._id) {
-        return
-      }
+      console.log('Workspace matched focus window frame processing:', message)
+      if (message.sessionId !== session._id) return
 
       setMessages((prev) => {
-        const exists = prev.some((m) => m._id === message._id)
-
-        if (exists) {
-          return prev
-        }
-
+        if (prev.some((m) => m._id === message._id)) return prev
         return [...prev, message]
       })
     }
@@ -134,7 +126,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     return () => {
       socket.off('new_message', handleMessage)
     }
-  }, [session._id, socket])
+  }, [session._id, socket]) // Safe now due to explicit key tracking mounts!
 
   /* ---------------------------------------------------- */
   /* visitor typing                                       */
