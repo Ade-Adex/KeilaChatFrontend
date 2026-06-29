@@ -15,7 +15,6 @@ export interface StatCardProps {
   progress?: number
 }
 
-
 export interface DashboardConversationChartItem {
   label: string
   conversations: number
@@ -134,4 +133,125 @@ export interface DashboardRecentConversation {
 
 export interface RecentConversationsProps {
   conversations: DashboardRecentConversation[]
+}
+
+export interface ChatAttachment {
+  fileUrl: string
+  fileType: string
+  fileName: string
+}
+
+export interface ChatMessage {
+  _id: string
+
+  sessionId: string
+
+  senderType: 'visitor' | 'operator' | 'ai' | 'system'
+
+  senderId: string
+
+  messageText: string
+
+  messageType:
+    | 'text'
+    | 'image'
+    | 'video'
+    | 'audio'
+    | 'file'
+    | 'system'
+    | 'event'
+    | 'note'
+    | 'ai_suggestion'
+
+  status: 'sent' | 'delivered' | 'seen' | 'failed'
+
+  isFromAI: boolean
+
+  createdAt: string
+
+  updatedAt?: string
+
+  attachments?: ChatAttachment[]
+}
+
+export type OperatorMessage = ChatMessage
+
+export interface OperatorVisitorMetadata {
+  country?: string
+  city?: string
+  browser?: string
+  operatingSystem?: string
+  deviceType?: 'mobile' | 'desktop' | 'tablet'
+  timezone?: string
+}
+
+export interface OperatorVisitor {
+  _id: string
+  name?: string
+  email?: string
+  currentPage?: string
+  referrer?: string
+  pageViews?: number
+  chatOpened?: boolean
+  lastSeen?: string
+  notes?: string
+  tags?: string[]
+  metadata?: OperatorVisitorMetadata
+}
+
+export interface OperatorConversation {
+  _id: string
+
+  status: 'queued' | 'active' | 'waiting' | 'closed' | 'transferred'
+
+  priority: 'low' | 'normal' | 'high'
+
+  channel: 'widget' | 'api'
+
+  aiHandled: boolean
+
+  unreadOperator: number
+
+  lastMessage?: string
+
+  lastMessageAt?: string
+
+  assignedOperatorId?: string
+
+  visitorId?: OperatorVisitor
+
+  propertyId?: {
+    _id: string
+    name?: string
+    domain?: string
+  }
+
+  startedAt?: string
+
+  createdAt?: string
+
+  updatedAt?: string
+}
+
+export interface OperatorProfile {
+  operator: {
+    _id: string
+
+    firstName?: string
+    lastName?: string
+
+    email: string
+
+    avatar?: string
+
+    role: 'admin' | 'supervisor' | 'agent'
+
+    availabilityStatus: 'online' | 'away' | 'busy' | 'offline'
+
+    activeChatsCount: number
+  }
+
+  account?: {
+    name: string
+  }
 }
