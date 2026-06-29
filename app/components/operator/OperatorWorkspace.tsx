@@ -9,6 +9,7 @@ import TypingIndicator from './TypingIndicator'
 import OperatorInput from './OperatorInput'
 
 import { getSessionMessages } from '@/app/lib/api/chat.api'
+import { getChatSocket } from '@/app/hooks/useChatSocket'
 
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
@@ -25,8 +26,20 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
 
+  const socket = getChatSocket()
+
   /* ---------------------------------------------------- */
-  /* cleanup typing timeout                               */
+  /* socket connect                                       */
+  /* ---------------------------------------------------- */
+
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect()
+    }
+  }, [socket])
+
+  /* ---------------------------------------------------- */
+  /* cleanup                                              */
   /* ---------------------------------------------------- */
 
   useEffect(() => {
@@ -50,15 +63,11 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
         const result = await getSessionMessages(session._id)
 
-        if (!mounted) {
-          return
-        }
+        if (!mounted) return
 
         setMessages(Array.isArray(result.data) ? result.data : [])
       } catch (error) {
-        if (mounted) {
-          console.error(error)
-        }
+        console.error(error)
       } finally {
         if (mounted) {
           setLoading(false)
@@ -74,63 +83,87 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   }, [session._id])
 
   /* ---------------------------------------------------- */
-  /* websocket typing listener                            */
+  /* join chat room                                       */
   /* ---------------------------------------------------- */
 
   useEffect(() => {
-    const socket = (
-      window as typeof window & {
-        operatorSocket?: {
-          on: (
-            event: string,
-            callback: (payload: {
-              sessionId: string
-              actor: string
-              typing: boolean
-            }) => void,
-          ) => void
-
-          off: (event: string) => void
-        }
-      }
-    ).operatorSocket
-
-    if (!socket) {
-      return
+    if (!socket.connected) {
+      socket.connect()
     }
 
+    console.log('OPERATOR JOINING ROOM:', session._id)
+
+    socket.emit('join_chat_session', {
+      sessionId: session._id,
+
+      propertyId: session.propertyId?._id,
+
+      visitorId: session.visitorId?._id,
+
+      operatorId: session.assignedOperatorId,
+
+      clientType: 'operator',
+    })
+  }, [session, socket])
+
+  /* ---------------------------------------------------- */
+  /* receive messages                                     */
+  /* ---------------------------------------------------- */
+
+  useEffect(() => {
+    const handleMessage = (message: ChatMessage) => {
+      console.log('OPERATOR RECEIVED:', message)
+
+      if (message.sessionId !== session._id) {
+        return
+      }
+
+      setMessages((prev) => {
+        const exists = prev.some((m) => m._id === message._id)
+
+        if (exists) {
+          return prev
+        }
+
+        return [...prev, message]
+      })
+    }
+
+    socket.on('new_message', handleMessage)
+
+    return () => {
+      socket.off('new_message', handleMessage)
+    }
+  }, [session._id, socket])
+
+  /* ---------------------------------------------------- */
+  /* visitor typing                                       */
+  /* ---------------------------------------------------- */
+
+  useEffect(() => {
     const handleTyping = (payload: {
-      sessionId: string
-      actor: string
-      typing: boolean
+      senderName?: string
+      isTyping: boolean
     }) => {
-      if (payload.sessionId !== session._id) {
-        return
-      }
-
-      if (payload.actor !== 'visitor') {
-        return
-      }
-
-      setVisitorTyping(payload.typing)
+      setVisitorTyping(payload.isTyping)
 
       if (typingTimeout.current) {
         clearTimeout(typingTimeout.current)
       }
 
-      if (payload.typing) {
+      if (payload.isTyping) {
         typingTimeout.current = setTimeout(() => {
           setVisitorTyping(false)
         }, 2000)
       }
     }
 
-    socket.on('typing', handleTyping)
+    socket.on('user_typing', handleTyping)
 
     return () => {
-      socket.off('typing')
+      socket.off('user_typing', handleTyping)
     }
-  }, [session._id])
+  }, [socket])
 
   /* ---------------------------------------------------- */
   /* loading                                              */
@@ -150,7 +183,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* header */}
       <div className="border-b p-4">
         <h2 className="font-semibold">
           {session.visitorId?.name ?? 'Anonymous Visitor'}
@@ -161,19 +193,16 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         </p>
       </div>
 
-      {/* messages */}
       <div className="flex-1 overflow-y-auto">
         <MessageFeed messages={messages} loading={loading} />
       </div>
 
-      {/* typing */}
       <TypingIndicator
         visible={visitorTyping}
         actor="visitor"
         name={session.visitorId?.name}
       />
 
-      {/* input */}
       <OperatorInput
         sessionId={session._id}
         onMessageSent={(message) => setMessages((prev) => [...prev, message])}
