@@ -3,24 +3,42 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-import type { AccountData, OperatorData, Tokens } from '@/app/types/auth'
+import type { AccountData, OperatorData } from '@/app/types/auth'
+
 import { logoutOperator } from '@/app/lib/api/auth.api'
 
 interface AuthState {
+  /**
+   * UI identity only.
+   * Authentication lives entirely in secure httpOnly cookies.
+   */
   account: AccountData | null
   operator: OperatorData | null
-  tokens: Tokens | null
-  loading: boolean
 
-  login: (account: AccountData, operator: OperatorData, tokens?: Tokens) => void
+  /**
+   * Set authenticated user identity.
+   */
+  login: (account: AccountData, operator: OperatorData) => void
 
+  /**
+   * Clear local identity and backend session.
+   */
   logout: () => Promise<void>
 
-  setLoading: (loading: boolean) => void
-
+  /**
+   * Update operator cache.
+   */
   updateOperator: (operator: Partial<OperatorData>) => void
 
+  /**
+   * Update account cache.
+   */
   updateAccount: (account: Partial<AccountData>) => void
+
+  /**
+   * Clear local state only.
+   */
+  clear: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -28,39 +46,38 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       account: null,
       operator: null,
-      tokens: null,
-      loading: false,
 
-      login: (account, operator, tokens) => {
+      login: (account, operator) => {
         set({
           account,
           operator,
-          tokens: tokens ?? null,
-          loading: false,
         })
       },
 
       logout: async () => {
         try {
+          /**
+           * Clears backend session +
+           * removes httpOnly cookies.
+           */
           await logoutOperator()
         } catch {
-          // ignore network/server errors
+          // ignore network failures
         }
 
         set({
           account: null,
           operator: null,
-          tokens: null,
-          loading: false,
         })
-
-        localStorage.removeItem('keila_auth')
 
         sessionStorage.clear()
       },
 
-      setLoading: (loading) => {
-        set({ loading })
+      clear: () => {
+        set({
+          account: null,
+          operator: null,
+        })
       },
 
       updateOperator: (operator) => {
@@ -86,8 +103,21 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
+      /**
+       * Persist only UI identity.
+       */
       name: 'keila_auth',
+
       storage: createJSONStorage(() => localStorage),
+
+      /**
+       * Explicit whitelist.
+       * Never persist methods.
+       */
+      partialize: (state) => ({
+        account: state.account,
+        operator: state.operator,
+      }),
     },
   ),
 )

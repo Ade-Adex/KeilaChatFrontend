@@ -1,31 +1,41 @@
 // /app/(auth)/signin/page.tsx
+
+
+// /app/(auth)/signin/page.tsx
+
 'use client'
 
 import { Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Link from 'next/link'
 
 import { FiMail, FiLock } from 'react-icons/fi'
-import Link from 'next/link'
+import { notifications } from '@mantine/notifications'
 
 import { InputField } from '@/app/components/auth/InputField'
 import { loginOperator } from '@/app/lib/api/auth.api'
-import { useAuthStore } from '@/app/store/useAuthStore'
-import { loginSchema, type LoginSchema } from '@/app/lib/validation/auth.schema'
-import { notifications } from '@mantine/notifications'
-
 import { checkAuth } from '@/app/lib/auth/checkAuth'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import {
+  loginSchema,
+  type LoginSchema,
+} from '@/app/lib/validation/auth.schema'
 
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const setAuth = useAuthStore((s) => s.login)
+  const setAuth = useAuthStore((state) => state.login)
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const callbackUrl =
+    searchParams.get('callbackUrl') || '/dashboard'
 
-
+  /**
+   * If cookies already exist,
+   * never show login page.
+   */
   useEffect(() => {
     async function verify() {
       const authenticated = await checkAuth()
@@ -38,115 +48,134 @@ function LoginContent() {
     verify()
   }, [router])
 
-const {
-  register,
-  handleSubmit,
-  formState: { errors, isSubmitting, isValid },
-} = useForm<LoginSchema>({
-  resolver: zodResolver(loginSchema),
-  mode: 'onChange',
+  const {
+    register,
+    handleSubmit,
+    formState: {
+      errors,
+      isSubmitting,
+      isValid,
+    },
+  } = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange',
 
-  defaultValues: {
-    email: '',
-    password: '',
-    rememberMe: false,
-  },
-})
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+  })
 
- const onSubmit = async (data: LoginSchema) => {
-   try {
-     const res = await loginOperator(data)
+  const onSubmit = async (data: LoginSchema) => {
+    try {
+      const response = await loginOperator(data)
 
-     const { account, operator } = res.data
+      /**
+       * Store ONLY UI identity.
+       * NEVER store tokens.
+       */
+      setAuth(
+        response.data.account,
+        response.data.operator,
+      )
 
-     setAuth(account, operator)
+      notifications.show({
+        title: 'Success',
+        message: 'Login successful',
+        color: 'green',
+      })
 
-     router.push(callbackUrl)
-   } catch (err) {
-     notifications.show({
-       title: 'Login Failed',
-       message: err instanceof Error ? err.message : 'Invalid credentials',
-       color: 'red',
-     })
-   }
- }
+      router.replace(callbackUrl)
+    } catch (error) {
+      notifications.show({
+        title: 'Login Failed',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Invalid credentials',
+        color: 'red',
+      })
+    }
+  }
 
   const isInviteContext =
     searchParams.toString().includes('token=') ||
     searchParams.toString().includes('accept-invite')
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background px-4">
-      <div className="w-full max-w-md bg-card p-8 rounded-xl shadow-2xl space-y-6">
-        <div className="text-center space-y-2">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-xl bg-card p-8 shadow-2xl">
+        <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold">Operator Sign In</h1>
-          <p className="text-xs text-gray-500">Authenticate your session</p>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Authenticate your workspace session
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* EMAIL */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <InputField
             label="Email"
             type="email"
             icon={<FiMail />}
             placeholder="operator@company.com"
-            {...register('email')}
             error={errors.email?.message}
+            {...register('email')}
           />
 
-          {/* PASSWORD */}
           <InputField
             label="Password"
             type="password"
             icon={<FiLock />}
             placeholder="••••••••"
-            {...register('password')}
             error={errors.password?.message}
+            {...register('password')}
           />
 
-          {/* Remember me + Forgot password */}
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+            <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 {...register('rememberMe')}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="h-4 w-4"
               />
 
-              <span className="text-sm text-muted-foreground">Remember me</span>
+              <span className="text-sm">Remember me</span>
             </label>
 
             <Link
               href="/forgot-password"
-              className="text-sm font-medium text-primary hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               Forgot password?
             </Link>
           </div>
 
-          {/* SUBMIT */}
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className={`w-full py-2.5 rounded-lg font-medium transition
-      ${
-        !isValid || isSubmitting
-          ? 'bg-gray-400 cursor-not-allowed'
-          : 'bg-primary text-white hover:opacity-90 cursor-pointer'
-      }`}
+            className={`
+              w-full rounded-lg py-3
+              font-medium transition
+              ${
+                !isValid || isSubmitting
+                  ? 'cursor-not-allowed bg-gray-400'
+                  : 'bg-primary text-white hover:opacity-90'
+              }
+            `}
           >
             {isSubmitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        {/* FOOTER */}
-        <p className="text-xs text-center text-gray-500">
+        <p className="mt-6 text-center text-xs text-gray-500">
           Don&apos;t have an account?{' '}
           <Link
             href={
               isInviteContext ? `/signup?${searchParams.toString()}` : '/signup'
             }
-            className="text-primary font-medium"
+            className="font-medium text-primary"
           >
             {isInviteContext ? 'Accept Invitation' : 'Create workspace'}
           </Link>
@@ -156,7 +185,7 @@ const {
   )
 }
 
-export default function AdminLoginPage() {
+export default function SignInPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <LoginContent />
