@@ -1,4 +1,5 @@
 // /app/components/dashboard/DashboardShell.tsx
+
 'use client'
 
 import { AppShell, Burger, Group, ScrollArea } from '@mantine/core'
@@ -12,33 +13,33 @@ export default function DashboardShell({
 }: {
   children: React.ReactNode
 }) {
-  const [opened, { toggle }] = useDisclosure(true) // Default true for desktop
+  const [opened, { toggle }] = useDisclosure(true)
 
   return (
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        width: { base: opened ? 250 : 80 }, // Dynamic width for animation
+        width: { base: opened ? 250 : 80 },
         breakpoint: 'md',
-        collapsed: { mobile: !opened }, // Hide on mobile if closed
+        collapsed: { mobile: !opened },
       }}
       padding="md"
-      className="bg-background text-white transition-all duration-300"
+      className="bg-background text-foreground transition-all duration-300"
     >
-      {/* Header utilizing theme color matching variables */}
-      <AppShell.Header className="bg-sidebar! border-b border-border!">
-        <Group h="100%" px="md" justify="space-between">
+      {/* Header Container */}
+      <AppShell.Header className="bg-card border-b border-border px-4 transition-all duration-300">
+        <Group h="100%" justify="space-between">
           <Group>
             <Burger
               opened={opened}
               onClick={toggle}
               size="sm"
-              className="text-white"
+              color="var(--foreground)"
             />
             <Link
               href="/"
-              className={`font-bold text-xl tracking-tight text-white transition-opacity duration-300 ${
-                opened ? 'opacity-100' : 'opacity-0'
+              className={`font-bold text-lg tracking-tight text-foreground transition-opacity duration-300 ${
+                opened ? 'opacity-100' : 'opacity-0 md:opacity-100'
               }`}
             >
               KeilaChat
@@ -48,15 +49,15 @@ export default function DashboardShell({
         </Group>
       </AppShell.Header>
 
-      {/* Navbar explicitly adhering to unified variables */}
-      <AppShell.Navbar className="bg-sidebar! border-r border-border! transition-all duration-300">
+      {/* Navigation Drawer Panel */}
+      <AppShell.Navbar className="bg-card border-r border-border transition-all duration-300">
         <ScrollArea className="h-full">
           <Sidebar isOpened={opened} />
         </ScrollArea>
       </AppShell.Navbar>
 
-      {/* Main viewport pane wrapper */}
-      <AppShell.Main className="bg-background text-foreground min-h-screen">
+      {/* Main Viewport Workspace Wrapper */}
+      <AppShell.Main className="bg-background text-foreground min-h-screen transition-all duration-300">
         {children}
       </AppShell.Main>
     </AppShell>

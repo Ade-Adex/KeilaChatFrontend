@@ -3,14 +3,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-
 import MessageFeed from './MessageFeed'
 import TypingIndicator from './TypingIndicator'
 import OperatorInput from './OperatorInput'
-
 import { getSessionMessages } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
 interface OperatorWorkspaceProps {
@@ -24,175 +21,137 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const socket = getChatSocket()
+  const currentSessionId = session._id
 
-  /* ---------------------------------------------------- */
-  /* socket connect                                       */
-  /* ---------------------------------------------------- */
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect()
-    }
+    if (!socket.connected) socket.connect()
   }, [socket])
 
-  /* ---------------------------------------------------- */
-  /* cleanup                                              */
-  /* ---------------------------------------------------- */
-  useEffect(() => {
-    return () => {
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current)
-      }
-    }
-  }, [])
-
-  /* ---------------------------------------------------- */
-  /* load messages                                        */
-  /* ---------------------------------------------------- */
+  // Load Room Message Thread Logs
   useEffect(() => {
     let mounted = true
-
     const fetchMessages = async () => {
       try {
         setLoading(true)
-        const result = await getSessionMessages(session._id)
+        const result = await getSessionMessages(currentSessionId)
         if (!mounted) return
-
         setMessages(Array.isArray(result.data) ? result.data : [])
       } catch (error) {
-        console.error(error)
+        console.error('❌ Failed fetching thread historical context:', error)
       } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+        if (mounted) setLoading(false)
       }
     }
-
     void fetchMessages()
-
     return () => {
       mounted = false
     }
-  }, [session._id])
+  }, [currentSessionId])
 
-  /* ---------------------------------------------------- */
-  /* join chat room (CORRECTED)                           */
-  /* ---------------------------------------------------- */
+  // Isolate Socket Namespace Room Tunnels
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect()
-    }
+    if (!socket.connected) socket.connect()
 
-    // Direct fix for type mismatch (handling string vs populated object)
-    const exactPropertyId =
+    const propertyId =
       typeof session.propertyId === 'string'
         ? session.propertyId
         : session.propertyId?._id
-
-    const exactVisitorId =
+    const visitorId =
       typeof session.visitorId === 'string'
         ? session.visitorId
         : session.visitorId?._id
 
-    console.log('🔌 OPERATOR SYNC JOIN ROOM:', session._id)
-
     socket.emit('join_chat_session', {
-      sessionId: session._id,
-      propertyId: exactPropertyId,
-      visitorId: exactVisitorId,
+      sessionId: currentSessionId,
+      propertyId,
+      visitorId,
       operatorId: session.assignedOperatorId,
       clientType: 'operator',
     })
-  }, [session, socket])
+  }, [session, currentSessionId, socket])
 
-  /* ---------------------------------------------------- */
-  /* receive messages                                     */
-  /* ---------------------------------------------------- */
+  // Synchronize Inbound Messages & Typing Indicators Real-time
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
-      console.log('Workspace matched focus window frame processing:', message)
-      if (message.sessionId !== session._id) return
+      if (message.sessionId !== currentSessionId) return
+      setMessages((prev) =>
+        prev.some((m) => m._id === message._id) ? prev : [...prev, message],
+      )
+    }
 
-      setMessages((prev) => {
-        if (prev.some((m) => m._id === message._id)) return prev
-        return [...prev, message]
-      })
+    const handleTyping = (payload: {
+      sessionId: string
+      isTyping: boolean
+    }) => {
+      if (payload.sessionId !== currentSessionId) return
+      setVisitorTyping(payload.isTyping)
+
+      if (typingTimeout.current) clearTimeout(typingTimeout.current)
+      if (payload.isTyping) {
+        typingTimeout.current = setTimeout(() => setVisitorTyping(false), 3000)
+      }
     }
 
     socket.on('new_message', handleMessage)
-
-    return () => {
-      socket.off('new_message', handleMessage)
-    }
-  }, [session._id, socket])
-
-  /* ---------------------------------------------------- */
-  /* visitor typing                                       */
-  /* ---------------------------------------------------- */
-  useEffect(() => {
-    const handleTyping = (payload: {
-      senderName?: string
-      isTyping: boolean
-    }) => {
-      setVisitorTyping(payload.isTyping)
-
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current)
-      }
-
-      if (payload.isTyping) {
-        typingTimeout.current = setTimeout(() => {
-          setVisitorTyping(false)
-        }, 2000)
-      }
-    }
-
     socket.on('user_typing', handleTyping)
 
     return () => {
+      socket.off('new_message', handleMessage)
       socket.off('user_typing', handleTyping)
+      if (typingTimeout.current) clearTimeout(typingTimeout.current)
     }
-  }, [socket])
+  }, [currentSessionId, socket])
+
+  const visitorName =
+    typeof session.visitorId === 'object' && session.visitorId?.name
+      ? session.visitorId.name
+      : 'Anonymous Visitor'
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        Loading conversation...
+      <div className="flex h-full flex-col items-center justify-center bg-background/30 space-y-3">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <span className="text-xs font-medium text-muted-foreground tracking-wide">
+          Opening secure chat workspace...
+        </span>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b p-4">
-        <h2 className="font-semibold">
-          {typeof session.visitorId === 'object' && session.visitorId?.name
-            ? session.visitorId.name
-            : 'Anonymous Visitor'}
-        </h2>
-
-        <p className="text-sm capitalize text-muted-foreground">
-          {session.status}
-        </p>
+    <div className="flex h-full flex-col bg-background/40 relative">
+      {/* Workspace Subheader Workspace Meta Section */}
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4 backdrop-blur-sm">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-foreground truncate tracking-tight">
+            {visitorName}
+          </h2>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-medium capitalize text-muted-foreground tracking-wide">
+              {session.status} Thread
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <MessageFeed messages={messages} loading={loading} />
+      {/* Message Feed Canvas Layer */}
+      <div className="flex-1 overflow-hidden relative">
+        <MessageFeed messages={messages} loading={false} />
       </div>
 
-      <TypingIndicator
-        visible={visitorTyping}
-        actor="visitor"
-        name={
-          typeof session.visitorId === 'object'
-            ? session.visitorId?.name
-            : undefined
-        }
-      />
-
-      <OperatorInput
-        sessionId={session._id}
-        onMessageSent={(message) => setMessages((prev) => [...prev, message])}
-      />
+      {/* Interactive Telemetry Feed Footers */}
+      <div className="relative z-10 bg-gradient-to-t from-background via-background/90 to-transparent pt-4">
+        <TypingIndicator
+          visible={visitorTyping}
+          actor="visitor"
+          name={visitorName}
+        />
+        <OperatorInput
+          sessionId={currentSessionId}
+          onMessageSent={(msg) => setMessages((prev) => [...prev, msg])}
+        />
+      </div>
     </div>
   )
 }

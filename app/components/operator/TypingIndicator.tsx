@@ -1,16 +1,12 @@
 // /components/operator/TypingIndicator.tsx
 
-// /components/operator/TypingIndicator.tsx
-
 'use client'
 
 import { FaUser, FaUserTie } from 'react-icons/fa'
 
 export interface TypingIndicatorProps {
   visible: boolean
-
   actor?: 'visitor' | 'operator'
-
   name?: string
 }
 
@@ -19,39 +15,23 @@ export default function TypingIndicator({
   actor = 'visitor',
   name,
 }: TypingIndicatorProps) {
-  if (!visible) {
-    return null
-  }
+  if (!visible) return null
 
-  const label =
-    name ??
-    (actor === 'visitor'
-      ? 'Visitor'
-      : 'Operator')
+  const label = name ?? (actor === 'visitor' ? 'Visitor' : 'Operator')
 
   return (
-    <div className="border-t border-border bg-background px-6 py-3">
-      <div className="flex items-center gap-3">
-        {/* Avatar */}
-        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card">
-          {actor === 'visitor' ? (
-            <FaUser size={12} />
-          ) : (
-            <FaUserTie size={12} />
-          )}
+    <div className="px-4 py-2 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-center gap-2 max-w-max rounded-xl border bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur-md">
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          {actor === 'visitor' ? <FaUser size={9} /> : <FaUserTie size={9} />}
         </div>
-
-        {/* Typing bubble */}
-        <div className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-          <div className="flex gap-1">
-            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-
-            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-
-            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
           </div>
-
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] font-medium text-muted-foreground tracking-wide">
             {label} is typing...
           </span>
         </div>
