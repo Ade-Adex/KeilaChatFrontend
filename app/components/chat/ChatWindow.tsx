@@ -144,11 +144,25 @@ export default function ChatWindow({
     })
 
     /*
-     * Typing
+     * Typing Listener Adjustment
      */
-    socket.on('user_typing', (payload: UserTypingPayload) => {
-      setOperatorTyping(payload.isTyping)
-    })
+    socket.on(
+      'user_typing',
+      (payload: {
+        sessionId: string
+        isTyping: boolean
+        actor?: string
+        senderName?: string
+      }) => {
+        // If the typing notification is from a visitor, ignore it (don't display an indicator for yourself)
+        if (payload.actor === 'visitor') return
+
+        setOperatorTyping(payload.isTyping)
+        if (payload.senderName) {
+          setOperatorName(payload.senderName)
+        }
+      },
+    )
 
     /*
      * Presence

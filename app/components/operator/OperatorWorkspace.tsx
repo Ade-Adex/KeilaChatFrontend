@@ -70,10 +70,9 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     })
   }, [session, currentSessionId, socket])
 
-  // Synchronize Inbound Messages & Typing Indicators Real-time
+
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
-      // Type-safe id checking extraction without matching objects with 'any'
       const incomingSessionId =
         message.sessionId &&
         typeof message.sessionId === 'object' &&
@@ -90,11 +89,9 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
     const handleTyping = (payload: {
       sessionId: string | { _id: string }
-      isTyping?: boolean
-      typing?: boolean
+      isTyping: boolean
       actor?: string
     }) => {
-      // Type-safe session matching comparison
       const incomingSessionId =
         payload.sessionId &&
         typeof payload.sessionId === 'object' &&
@@ -104,16 +101,14 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
       if (incomingSessionId !== currentSessionId) return
 
-      const isTypingActive = payload.isTyping ?? payload.typing ?? false
-
-      // Stop execution loop early if the sender status matches your active operator context
+      // IGNORE if the typing update is from an operator
       if (payload.actor === 'operator') return
 
-      setVisitorTyping(isTypingActive)
+      setVisitorTyping(payload.isTyping)
 
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
-      if (isTypingActive) {
-        typingTimeout.current = setTimeout(() => setVisitorTyping(false), 4000)
+      if (payload.isTyping) {
+        typingTimeout.current = setTimeout(() => setVisitorTyping(false), 3500)
       }
     }
 
