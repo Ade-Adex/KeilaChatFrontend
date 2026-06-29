@@ -9,7 +9,7 @@ import type {
 } from '@/app/types/dashboard'
 
 /* -------------------------------------------------------------------------- */
-/*                                   ACCOUNT                                  */
+/* ACCOUNT                                  */
 /* -------------------------------------------------------------------------- */
 
 export interface WorkspaceResponse {
@@ -25,7 +25,26 @@ export function getWorkspace() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  SESSIONS                                  */
+/* PROPERTIES                                 */
+/* -------------------------------------------------------------------------- */
+
+export interface PropertyItem {
+  _id: string
+  accountId: string
+  name: string
+  domain: string
+}
+
+export interface PropertiesResponse {
+  data: PropertyItem[]
+}
+
+export function getMyProperties() {
+  return apiGet<PropertiesResponse>('/api/v1/properties')
+}
+
+/* -------------------------------------------------------------------------- */
+/* SESSIONS                                  */
 /* -------------------------------------------------------------------------- */
 
 export interface SessionsResponse {
@@ -49,7 +68,7 @@ export function getMySessions() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  PROFILE                                   */
+/* PROFILE                                   */
 /* -------------------------------------------------------------------------- */
 
 export interface OperatorProfileResponse {
@@ -61,7 +80,7 @@ export function getOperatorProfile() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  MESSAGES                                  */
+/* MESSAGES                                  */
 /* -------------------------------------------------------------------------- */
 
 export interface MessagesResponse {

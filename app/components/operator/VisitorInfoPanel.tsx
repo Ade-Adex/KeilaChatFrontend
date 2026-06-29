@@ -1,5 +1,4 @@
 // /components/operator/VisitorInfoPanel.tsx
-
 'use client'
 
 import {
@@ -21,13 +20,19 @@ interface VisitorInfoPanelProps {
 }
 
 export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
-  const visitor: OperatorVisitor | undefined = session.visitorId
+  // Use a type guard to ensure we only treat visitorId as an object if it has proper fields
+  const visitor: OperatorVisitor | null =
+    session.visitorId &&
+    typeof session.visitorId === 'object' &&
+    '_id' in session.visitorId
+      ? (session.visitorId as OperatorVisitor)
+      : null
 
   if (!visitor) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center p-6 text-center">
         <p className="text-sm text-muted-foreground">
-          Visitor information unavailable
+          Detailed visitor information unpopulated or unavailable
         </p>
       </div>
     )
@@ -65,13 +70,11 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <FaLocationDot />
-
               <span className="text-sm">{location || 'Unknown location'}</span>
             </div>
 
             <div className="flex items-center gap-3">
               <FaDesktop />
-
               <span className="text-sm capitalize">
                 {visitor.metadata?.deviceType ?? 'Unknown device'}
               </span>
@@ -79,7 +82,6 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
 
             <div className="flex items-center gap-3">
               <FaGlobe />
-
               <span className="text-sm">
                 {visitor.metadata?.browser ?? 'Unknown browser'}
               </span>
@@ -87,7 +89,6 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
 
             <div className="flex items-center gap-3">
               <FaClock />
-
               <span className="text-sm">{visitor.lastSeen ?? 'Unknown'}</span>
             </div>
           </div>
@@ -96,7 +97,6 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {/* Current Page */}
         <section>
           <h3 className="mb-3 font-medium">Current Page</h3>
-
           <div className="rounded-lg border border-border p-3">
             <p className="break-all text-sm">
               {visitor.currentPage ?? 'No page information'}
@@ -107,10 +107,8 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {/* Referrer */}
         <section>
           <h3 className="mb-3 font-medium">Referrer</h3>
-
           <div className="flex gap-3 rounded-lg border border-border p-3">
             <FaLink className="mt-1 shrink-0" />
-
             <p className="break-all text-sm">
               {visitor.referrer ?? 'Direct visit'}
             </p>
@@ -120,17 +118,14 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {/* Statistics */}
         <section>
           <h3 className="mb-3 font-medium">Statistics</h3>
-
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Page Views</span>
-
               <span className="font-medium">{visitor.pageViews ?? 0}</span>
             </div>
 
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Chat Opened</span>
-
               <span className="font-medium">
                 {visitor.chatOpened ? 'Yes' : 'No'}
               </span>
@@ -142,7 +137,6 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {visitor.tags && visitor.tags.length > 0 && (
           <section>
             <h3 className="mb-3 font-medium">Tags</h3>
-
             <div className="flex flex-wrap gap-2">
               {visitor.tags.map((tag) => (
                 <span
@@ -160,7 +154,6 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {visitor.notes && (
           <section>
             <h3 className="mb-3 font-medium">Notes</h3>
-
             <div className="rounded-lg border border-border p-3 text-sm">
               {visitor.notes}
             </div>

@@ -21,7 +21,7 @@ export default function AppProviders({
   const isExcluded = ['/embed/chat', '/admin/dashboard'].some((path) => pathname.startsWith(path));
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <MantineProvider>
         <Notifications position="bottom-center" />
 

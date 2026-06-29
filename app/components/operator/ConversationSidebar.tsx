@@ -1,5 +1,4 @@
 // /components/operator/ConversationSidebar.tsx
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -7,17 +6,10 @@ import {
   getQueuedSessions,
   getActiveSessions,
   getMySessions,
+  getMyProperties, 
 } from '@/app/lib/api/chat.api'
-import { getWorkspace } from '@/app/lib/api/settings.api'
 
 import type { OperatorConversation } from '@/app/types/dashboard'
-import type { AccountData } from '@/app/types/auth'
-
-// Explicitly extend AccountData to check for valid target identifier keys safely
-interface ExtendedAccountData extends AccountData {
-  defaultProperty?: string
-  _id?: string
-}
 
 interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
@@ -35,50 +27,41 @@ export default function ConversationSidebar({
   const [myChats, setMyChats] = useState<OperatorConversation[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Safe type guard utility to pull the visitor name from the union variant type
+  const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
+    if (visitor && typeof visitor === 'object' && 'name' in visitor) {
+      return visitor.name ?? 'Anonymous Visitor'
+    }
+    return 'Anonymous Visitor'
+  }
+
   useEffect(() => {
     let mounted = true
 
     const fetchConversations = async () => {
       try {
-        // Prevent jarring UI flashes by only setting global loading state on initial load mount
         if (refreshKey === 0) setLoading(true)
 
-        console.log('🔄 Sidebar gathering active workspace info...')
-        const workspace = await getWorkspace()
-        console.log('💼 Sidebar Workspace API Response:', workspace)
+        console.log('🔄 Sidebar fetching true property context from backend...')
 
-        const account = workspace?.data?.account as
-          | ExtendedAccountData
-          | undefined
-
-        // Strictly determine the true property target string
-        let propertyId: string | undefined = undefined
-
-        if (account) {
-          if (
-            typeof account.defaultProperty === 'string' &&
-            account.defaultProperty
-          ) {
-            propertyId = account.defaultProperty
-          } else if (typeof account._id === 'string' && account._id) {
-            propertyId = account._id
-          }
-        }
+        // 1. Ask backend for the real properties array instead of checking the account object
+        const propertiesData = await getMyProperties()
+        const primaryProperty = propertiesData?.data?.[0]
+        const propertyId = primaryProperty?._id
 
         if (!propertyId) {
           console.error(
-            '❌ CRITICAL: No propertyId could be extracted from workspace data.',
-            {
-              receivedAccount: account,
-            },
+            '❌ CRITICAL: Operator account has no valid properties created.',
           )
+          if (mounted) setLoading(false)
           return
         }
 
         console.log(
-          `📡 Fetching session streams for Property ID: ${propertyId}`,
+          `📡 Fetching session streams for validated Property ID: ${propertyId}`,
         )
 
+        // 2. Load the real real-time channels using the true Property ID string context
         const [queued, active, mine] = await Promise.all([
           getQueuedSessions(propertyId),
           getActiveSessions(propertyId),
@@ -87,7 +70,7 @@ export default function ConversationSidebar({
 
         if (!mounted) return
 
-        console.log('📊 Raw Sessions Payload Returned:', {
+        console.log('📊 Real-time Streams Payload:', {
           queued: queued.data,
           active: active.data,
           mine: mine.data,
@@ -147,7 +130,7 @@ export default function ConversationSidebar({
                     : 'hover:bg-muted text-foreground'
                 }`}
               >
-                {chat.visitorId?.name ?? 'Anonymous Visitor'}
+                {getVisitorName(chat.visitorId)}
               </button>
             ))}
           </div>
@@ -177,7 +160,7 @@ export default function ConversationSidebar({
                     : 'hover:bg-muted text-foreground'
                 }`}
               >
-                {chat.visitorId?.name ?? 'Incoming Visitor'}
+                {getVisitorName(chat.visitorId)}
               </button>
             ))}
           </div>
@@ -207,7 +190,7 @@ export default function ConversationSidebar({
                     : 'hover:bg-muted text-foreground'
                 }`}
               >
-                {chat.visitorId?.name ?? 'Active Visitor'}
+                {getVisitorName(chat.visitorId)}
               </button>
             ))}
           </div>

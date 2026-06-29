@@ -199,6 +199,8 @@ export interface OperatorVisitor {
   metadata?: OperatorVisitorMetadata
 }
 
+// Add or replace these lines in your /app/types/dashboard.ts layout
+
 export interface OperatorConversation {
   _id: string
 
@@ -218,9 +220,11 @@ export interface OperatorConversation {
 
   assignedOperatorId?: string
 
-  visitorId?: OperatorVisitor
+  // Can be a raw string ID from unpopulated MongoDB documents, or a rich object document block
+  visitorId?: string | OperatorVisitor
 
-  propertyId?: {
+  // Union type safely prevents runtime properties extraction errors
+  propertyId?: string | {
     _id: string
     name?: string
     domain?: string

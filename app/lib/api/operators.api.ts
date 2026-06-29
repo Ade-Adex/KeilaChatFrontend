@@ -4,17 +4,14 @@ import { apiGet, apiPost } from '@/app/lib/api/apiClient'
 
 export interface OperatorData {
   _id: string
-
+  accountId: string
+  email: string
+  role: 'admin' | 'supervisor' | 'agent'
+  status: 'active' | 'invited' | 'suspended'
   firstName?: string
   lastName?: string
-
-  email: string
-
-  role: 'admin' | 'supervisor' | 'agent'
-
+  avatar?: string
   isOnline: boolean
-
-  status: 'active' | 'invited'
 }
 
 export interface OperatorsResponse {
