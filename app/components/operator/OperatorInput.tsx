@@ -26,14 +26,16 @@ export default function OperatorInput({
 
   const operator = useAuthStore((state) => state.operator)
 
-  // CRITICAL FIX: Safe client mount hydration trigger loop restored
-  useEffect(() => {
-  return () => {
-    if (typingTimeout.current) {
-      clearTimeout(typingTimeout.current)
-    }
-  }
-}, [])
+//   // CRITICAL FIX: Safe client mount hydration trigger loop restored
+//   useEffect(() => {
+//   return () => {
+//     if (typingTimeout.current) {
+//       clearTimeout(typingTimeout.current)
+//     }
+//   }
+// }, [])
+
+
 
   const sendMessage = async () => {
     const trimmed = message.trim()

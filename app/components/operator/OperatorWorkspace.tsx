@@ -1,5 +1,4 @@
 // /components/operator/OperatorWorkspace.tsx
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -56,6 +55,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       typeof session.propertyId === 'string'
         ? session.propertyId
         : session.propertyId?._id
+
     const visitorId =
       typeof session.visitorId === 'string'
         ? session.visitorId
@@ -73,22 +73,47 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   // Synchronize Inbound Messages & Typing Indicators Real-time
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
-      if (message.sessionId !== currentSessionId) return
+      // Type-safe id checking extraction without matching objects with 'any'
+      const incomingSessionId =
+        message.sessionId &&
+        typeof message.sessionId === 'object' &&
+        '_id' in message.sessionId
+          ? (message.sessionId as { _id: string })._id
+          : (message.sessionId as string)
+
+      if (incomingSessionId !== currentSessionId) return
+
       setMessages((prev) =>
         prev.some((m) => m._id === message._id) ? prev : [...prev, message],
       )
     }
 
     const handleTyping = (payload: {
-      sessionId: string
-      isTyping: boolean
+      sessionId: string | { _id: string }
+      isTyping?: boolean
+      typing?: boolean
+      actor?: string
     }) => {
-      if (payload.sessionId !== currentSessionId) return
-      setVisitorTyping(payload.isTyping)
+      // Type-safe session matching comparison
+      const incomingSessionId =
+        payload.sessionId &&
+        typeof payload.sessionId === 'object' &&
+        '_id' in payload.sessionId
+          ? (payload.sessionId as { _id: string })._id
+          : (payload.sessionId as string)
+
+      if (incomingSessionId !== currentSessionId) return
+
+      const isTypingActive = payload.isTyping ?? payload.typing ?? false
+
+      // Stop execution loop early if the sender status matches your active operator context
+      if (payload.actor === 'operator') return
+
+      setVisitorTyping(isTypingActive)
 
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
-      if (payload.isTyping) {
-        typingTimeout.current = setTimeout(() => setVisitorTyping(false), 3000)
+      if (isTypingActive) {
+        typingTimeout.current = setTimeout(() => setVisitorTyping(false), 4000)
       }
     }
 

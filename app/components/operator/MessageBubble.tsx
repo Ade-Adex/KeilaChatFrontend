@@ -5,13 +5,7 @@
 import Image from 'next/image'
 import { memo } from 'react'
 
-import {
-  FaRobot,
-  FaUser,
-  FaUserTie,
-  FaFile,
-  FaMusic,
-} from 'react-icons/fa'
+import { FaRobot, FaUser, FaUserTie, FaFile, FaMusic } from 'react-icons/fa'
 
 import type { ChatMessage } from '@/app/types/dashboard'
 
@@ -19,14 +13,10 @@ export interface MessageBubbleProps {
   message: ChatMessage
 }
 
-
 function MessageBubble({ message }: MessageBubbleProps) {
   const isVisitor = message.senderType === 'visitor'
-
   const isOperator = message.senderType === 'operator'
-
   const isAI = message.senderType === 'ai'
-
   const isSystem = message.senderType === 'system'
 
   const formattedTime = message.createdAt
@@ -36,11 +26,10 @@ function MessageBubble({ message }: MessageBubbleProps) {
       })
     : ''
 
-  // SYSTEM EVENTS
   if (isSystem) {
     return (
-      <div className="flex justify-center">
-        <div className="rounded-full bg-muted px-4 py-2 text-xs text-muted-foreground">
+      <div className="flex justify-center my-1 animate-in fade-in duration-200">
+        <div className="rounded-full bg-muted/60 border border-border/40 px-4 py-1.5 text-[11px] text-muted-foreground shadow-sm">
           {message.messageText || 'System event'}
         </div>
       </div>
@@ -48,111 +37,129 @@ function MessageBubble({ message }: MessageBubbleProps) {
   }
 
   return (
-    <div className={`flex ${isOperator ? 'justify-end' : 'justify-start'}`}>
+    <div
+      className={`flex w-full mb-1 ${isOperator ? 'justify-end' : 'justify-start'}`}
+    >
       <div
-        className={`flex max-w-[75%] gap-3 ${
+        className={`flex max-w-[85%] sm:max-w-[75%] gap-2.5 ${
           isOperator ? 'flex-row-reverse' : ''
         }`}
       >
-        {/* avatar */}
-        <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-card">
-          {isVisitor && <FaUser size={14} />}
-
-          {isOperator && <FaUserTie size={14} />}
-
-          {isAI && <FaRobot size={14} className="text-blue-500" />}
+        {/* Avatar badge graphic frame elements */}
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card shadow-sm text-muted-foreground/80">
+          {isVisitor && <FaUser size={11} />}
+          {isOperator && <FaUserTie size={11} />}
+          {isAI && (
+            <FaRobot size={12} className="text-blue-500 animate-pulse" />
+          )}
         </div>
 
-        {/* bubble */}
-        <div className="space-y-1">
+        {/* Bubble Text Wrapper Content Canvas block */}
+        <div
+          className={`space-y-1 flex flex-col ${isOperator ? 'items-end' : 'items-start'}`}
+        >
           <div
-            className={`rounded-2xl px-4 py-3 ${
-              isOperator
-                ? 'bg-primary text-primary-foreground'
-                : isAI
-                  ? 'border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
-                  : 'bg-muted'
-            }`}
+            className={`rounded-2xl px-3.5 py-2.5 shadow-sm text-xs leading-relaxed transition-all
+              ${
+                isOperator
+                  ? 'bg-primary text-primary-foreground rounded-tr-none'
+                  : isAI
+                    ? 'border border-blue-100/80 bg-blue-50/50 dark:border-blue-950/50 dark:bg-blue-950/30 rounded-tl-none'
+                    : 'bg-muted/70 text-foreground rounded-tl-none'
+              }`}
           >
-            {/* text */}
             {message.messageText && (
-              <p className="mb-2 whitespace-pre-wrap break-words text-sm">
+              <p className="whitespace-pre-wrap break-words">
                 {message.messageText}
               </p>
             )}
 
-            {/* attachments */}
-            {message.attachments?.map((attachment, index) => {
-              // image
-              if (attachment.fileType.startsWith('image/')) {
-                return (
-                  <div key={index} className="mt-2">
-                    <Image
-                      src={attachment.fileUrl}
-                      alt={attachment.fileName}
-                      width={300}
-                      height={200}
-                      className="rounded-lg object-cover"
-                      unoptimized
-                    />
-                  </div>
-                )
-              }
+            {/* Attachments rendering processing streams */}
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="space-y-2 mt-2">
+                {message.attachments.map((attachment, index) => {
+                  if (attachment.fileType.startsWith('image/')) {
+                    return (
+                      <div
+                        key={index}
+                        className="overflow-hidden rounded-lg border border-border/40 shadow-sm bg-background/20 max-w-xs"
+                      >
+                        <Image
+                          src={attachment.fileUrl}
+                          alt={attachment.fileName}
+                          width={300}
+                          height={200}
+                          className="object-cover max-w-full h-auto hover:scale-[1.02] transition-transform duration-200"
+                          unoptimized
+                        />
+                      </div>
+                    )
+                  }
 
-              // video
-              if (attachment.fileType.startsWith('video/')) {
-                return (
-                  <div key={index} className="mt-2">
-                    <video controls className="max-w-full rounded-lg">
-                      <source src={attachment.fileUrl} />
-                    </video>
-                  </div>
-                )
-              }
+                  if (attachment.fileType.startsWith('video/')) {
+                    return (
+                      <div key={index} className="mt-1.5 max-w-xs">
+                        <video
+                          controls
+                          className="max-w-full rounded-lg border border-border/40 shadow-sm"
+                        >
+                          <source src={attachment.fileUrl} />
+                        </video>
+                      </div>
+                    )
+                  }
 
-              // audio
-              if (attachment.fileType.startsWith('audio/')) {
-                return (
-                  <div key={index} className="mt-2 flex items-center gap-2">
-                    <FaMusic />
+                  if (attachment.fileType.startsWith('audio/')) {
+                    return (
+                      <div
+                        key={index}
+                        className="mt-1.5 flex items-center gap-2 bg-background/40 p-1.5 rounded-lg border border-border/30"
+                      >
+                        <FaMusic
+                          className="text-muted-foreground/80"
+                          size={12}
+                        />
+                        <audio controls className="h-7 max-w-full">
+                          <source src={attachment.fileUrl} />
+                        </audio>
+                      </div>
+                    )
+                  }
 
-                    <audio controls>
-                      <source src={attachment.fileUrl} />
-                    </audio>
-                  </div>
-                )
-              }
-
-              // generic file
-              return (
-                <a
-                  key={index}
-                  href={attachment.fileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 flex items-center gap-2 rounded-lg border p-3 text-sm hover:bg-background"
-                >
-                  <FaFile />
-
-                  <span>{attachment.fileName}</span>
-                </a>
-              )
-            })}
+                  return (
+                    <a
+                      key={index}
+                      href={attachment.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-[11px] font-medium text-foreground hover:bg-muted transition-colors max-w-xs truncate"
+                    >
+                      <FaFile
+                        className="text-muted-foreground shrink-0"
+                        size={12}
+                      />
+                      <span className="truncate">{attachment.fileName}</span>
+                    </a>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
-          {/* footer */}
-          <div
-            className={`flex items-center gap-2 px-2 text-xs text-muted-foreground ${
-              isOperator ? 'justify-end' : ''
-            }`}
-          >
+          {/* Timestamp details */}
+          <div className="flex items-center gap-1.5 px-1 text-[10px] font-medium text-muted-foreground/70">
             <span>{formattedTime}</span>
-
             {isOperator && message.status && (
-              <span className="capitalize">{message.status}</span>
+              <>
+                <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+                <span className="capitalize">{message.status}</span>
+              </>
             )}
-
-            {isAI && <span className="text-blue-500">AI</span>}
+            {isAI && (
+              <span className="bg-blue-500/10 text-blue-500 px-1 rounded font-bold text-[9px] tracking-wide">
+                AI
+              </span>
+            )}
           </div>
         </div>
       </div>
