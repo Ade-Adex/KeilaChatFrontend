@@ -1,40 +1,47 @@
 // /app/(routes)/dashboard/layout.tsx
+
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+
 import { LoadingOverlay } from '@mantine/core'
-import { useAuthStore } from '@/app/store/useAuthStore'
+
 import DashboardShell from '@/app/components/dashboard/DashboardShell'
+import { checkAuth } from '@/app/lib/auth/checkAuth'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
   const pathname = usePathname()
-  const authLoading = useAuthStore((state) => state.loading)
-  // const hasHydrated = useAuthStore((state) => state._hasHydrated)
 
-  const isAcceptInviteRoute = pathname === '/dashboard/accept-invite'
+  const [loading, setLoading] = useState(true)
 
-  // Block paint cycle execution completely until client storage engine has finished matching hydration
-  if ( authLoading) {
+  useEffect(() => {
+    const verify = async () => {
+      const authenticated = await checkAuth()
+
+      if (!authenticated) {
+        router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
+        return
+      }
+
+      setLoading(false)
+    }
+
+    verify()
+  }, [pathname, router])
+
+  if (loading) {
     return (
-      <div className="h-screen w-screen relative bg-background">
-        <LoadingOverlay
-          visible
-          overlayProps={{ radius: 'sm', blur: 2 }}
-          loaderProps={{ color: 'var(--primary)', type: 'bars' }}
-        />
+      <div className="h-screen w-screen relative">
+        <LoadingOverlay visible />
       </div>
     )
   }
 
-  // Industrial exception layout style for new operators configuring profiles
-  if (isAcceptInviteRoute) {
-    return <div className="min-h-screen bg-background">{children}</div>
-  }
-
-  // Default layout wrapper injection for secure work views
   return <DashboardShell>{children}</DashboardShell>
 }
