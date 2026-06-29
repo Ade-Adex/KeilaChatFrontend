@@ -19,11 +19,8 @@ interface OperatorWorkspaceProps {
 
 export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-
   const [loading, setLoading] = useState(true)
-
   const [visitorTyping, setVisitorTyping] = useState(false)
-
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const socket = getChatSocket()
@@ -31,7 +28,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   /* ---------------------------------------------------- */
   /* socket connect                                       */
   /* ---------------------------------------------------- */
-
   useEffect(() => {
     if (!socket.connected) {
       socket.connect()
@@ -41,7 +37,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   /* ---------------------------------------------------- */
   /* cleanup                                              */
   /* ---------------------------------------------------- */
-
   useEffect(() => {
     return () => {
       if (typingTimeout.current) {
@@ -53,16 +48,13 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   /* ---------------------------------------------------- */
   /* load messages                                        */
   /* ---------------------------------------------------- */
-
   useEffect(() => {
     let mounted = true
 
     const fetchMessages = async () => {
       try {
         setLoading(true)
-
         const result = await getSessionMessages(session._id)
-
         if (!mounted) return
 
         setMessages(Array.isArray(result.data) ? result.data : [])
@@ -83,25 +75,31 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   }, [session._id])
 
   /* ---------------------------------------------------- */
-  /* join chat room                                       */
+  /* join chat room (CORRECTED)                           */
   /* ---------------------------------------------------- */
-
   useEffect(() => {
     if (!socket.connected) {
       socket.connect()
     }
 
-    console.log('OPERATOR JOINING ROOM:', session._id)
+    // Direct fix for type mismatch (handling string vs populated object)
+    const exactPropertyId =
+      typeof session.propertyId === 'string'
+        ? session.propertyId
+        : session.propertyId?._id
+
+    const exactVisitorId =
+      typeof session.visitorId === 'string'
+        ? session.visitorId
+        : session.visitorId?._id
+
+    console.log('🔌 OPERATOR SYNC JOIN ROOM:', session._id)
 
     socket.emit('join_chat_session', {
       sessionId: session._id,
-
-      propertyId: session.propertyId?._id,
-
-      visitorId: session.visitorId?._id,
-
+      propertyId: exactPropertyId,
+      visitorId: exactVisitorId,
       operatorId: session.assignedOperatorId,
-
       clientType: 'operator',
     })
   }, [session, socket])
@@ -109,7 +107,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   /* ---------------------------------------------------- */
   /* receive messages                                     */
   /* ---------------------------------------------------- */
-
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
       console.log('Workspace matched focus window frame processing:', message)
@@ -126,12 +123,11 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     return () => {
       socket.off('new_message', handleMessage)
     }
-  }, [session._id, socket]) // Safe now due to explicit key tracking mounts!
+  }, [session._id, socket])
 
   /* ---------------------------------------------------- */
   /* visitor typing                                       */
   /* ---------------------------------------------------- */
-
   useEffect(() => {
     const handleTyping = (payload: {
       senderName?: string
@@ -157,10 +153,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     }
   }, [socket])
 
-  /* ---------------------------------------------------- */
-  /* loading                                              */
-  /* ---------------------------------------------------- */
-
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -169,15 +161,13 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     )
   }
 
-  /* ---------------------------------------------------- */
-  /* ui                                                   */
-  /* ---------------------------------------------------- */
-
   return (
     <div className="flex h-full flex-col">
       <div className="border-b p-4">
         <h2 className="font-semibold">
-          {session.visitorId?.name ?? 'Anonymous Visitor'}
+          {typeof session.visitorId === 'object' && session.visitorId?.name
+            ? session.visitorId.name
+            : 'Anonymous Visitor'}
         </h2>
 
         <p className="text-sm capitalize text-muted-foreground">
@@ -192,7 +182,11 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       <TypingIndicator
         visible={visitorTyping}
         actor="visitor"
-        name={session.visitorId?.name}
+        name={
+          typeof session.visitorId === 'object'
+            ? session.visitorId?.name
+            : undefined
+        }
       />
 
       <OperatorInput

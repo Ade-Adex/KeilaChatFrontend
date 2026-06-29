@@ -15,38 +15,46 @@ import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 export default function OperatorDashboard() {
   const [selectedConversation, setSelectedConversation] =
     useState<OperatorConversation | null>(null)
-
-  // Refresh tracking key to force state sync propagation down to sidebar collections
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
 
   useEffect(() => {
     const socket = getChatSocket()
-
     if (!socket.connected) {
       socket.connect()
     }
 
-    // Capture global messages across all properties to sync counters
-    const handleGlobalIncomingMessage = (message: ChatMessage) => {
-      console.log('Dashboard intercepted stream message:', message)
+    const currentPropertyId = selectedConversation
+      ? typeof selectedConversation.propertyId === 'string'
+        ? selectedConversation.propertyId
+        : selectedConversation.propertyId?._id
+      : null
 
-      // Fire state propagation trigger down to child panels to force rest api sync loops
-      setRefreshTrigger((prev) => prev + 1)
-
-      // Live-update current open panel reference if applicable
-      if (
-        selectedConversation &&
-        message.sessionId === selectedConversation._id
-      ) {
-        // Handled inside local component synchronization frame hook arrays
-      }
+    if (currentPropertyId) {
+      console.log(
+        `📊 Dashboard synchronization active for property: ${currentPropertyId}`,
+      )
+      // Notice: No operatorId passed here. The backend resolves it securely via cookies/sessions.
+      socket.emit('join_property_dashboard', {
+        propertyId: currentPropertyId,
+      })
     }
 
-    socket.on('new_message', handleGlobalIncomingMessage)
+    const handleDashboardUpdate = (payload: {
+      sessionId: string
+      message: ChatMessage
+    }) => {
+      setRefreshTrigger((prev) => prev + 1)
+    }
+
+    socket.on('dashboard_message_update', handleDashboardUpdate)
+    socket.on('incoming_visitor_alert', () =>
+      setRefreshTrigger((prev) => prev + 1),
+    )
     socket.on('chat_assigned', () => setRefreshTrigger((prev) => prev + 1))
 
     return () => {
-      socket.off('new_message', handleGlobalIncomingMessage)
+      socket.off('dashboard_message_update', handleDashboardUpdate)
+      socket.off('incoming_visitor_alert')
       socket.off('chat_assigned')
     }
   }, [selectedConversation])
@@ -54,7 +62,6 @@ export default function OperatorDashboard() {
   return (
     <div className="flex h-screen flex-col bg-background">
       <OperatorHeader />
-
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-[340px] border-r border-border bg-card">
           <ConversationSidebar
