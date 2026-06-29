@@ -54,7 +54,7 @@ export default function OperatorHeader() {
       </div>
 
       {/* search */}
-      <div className="hidden w-[400px] items-center rounded-lg border bg-background px-3 md:flex">
+      <div className="hidden w-100 items-center rounded-lg border bg-background px-3 md:flex">
         <FaSearch className="text-muted-foreground" />
 
         <input
@@ -66,10 +66,6 @@ export default function OperatorHeader() {
 
       {/* right */}
       <div className="flex items-center gap-5">
-        {/* theme */}
-        <button type="button" className="text-lg">
-          <FaMoon />
-        </button>
 
         {/* notifications */}
         <button
