@@ -362,6 +362,8 @@
 
     const initData = await initResponse.json()
 
+    console.log('[KeilaChat Debug Log] Full Init Data:', initData)
+
     // 🎯 FIX: Updated the nested paths to match your buildWidgetResponse structure
     if (initData.status !== 'success' || !initData.data?.visitor?.trackingId) {
       console.warn(
