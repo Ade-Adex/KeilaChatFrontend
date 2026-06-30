@@ -2,7 +2,13 @@
 
 'use client'
 
-import { FiX, FiMoreVertical, FiLogOut, FiEdit2 } from 'react-icons/fi'
+import {
+  FiX,
+  FiMoreVertical,
+  FiLogOut,
+  FiEdit2,
+  FiPlusCircle,
+} from 'react-icons/fi'
 import { Menu, ActionIcon } from '@mantine/core'
 import type { WidgetConfig } from '@/app/types/chat'
 
@@ -11,6 +17,7 @@ interface ChatHeaderProps {
   operatorName?: string
   isSessionActive: boolean
   onOpenEndModal: () => void
+  onStartNewChat: () => void
   onClose: () => void
 }
 
@@ -19,23 +26,14 @@ export default function ChatHeader({
   operatorName,
   isSessionActive,
   onOpenEndModal,
+  onStartNewChat,
   onClose,
 }: ChatHeaderProps) {
-  console.log('operatorName in Header:', operatorName)
-
   return (
     <>
       {/* Main Header */}
       <div
-        className="
-          flex
-          items-center
-          justify-between
-          px-4
-          py-4
-          text-white
-          shadow-sm
-        "
+        className="flex items-center justify-between px-4 py-4 text-white shadow-sm"
         style={{
           background: widget.theme?.primaryColor ?? '#2563eb',
         }}
@@ -44,12 +42,12 @@ export default function ChatHeader({
           <h2 className="text-sm font-semibold">
             {widget.name ?? 'Live Support'}
           </h2>
-
-          <p className="text-xs opacity-80">We&apos;re online</p>
+          <p className="text-xs opacity-80">
+            {isSessionActive ? "We're online" : 'Conversation Closed'}
+          </p>
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Action Menu Dropdown Container */}
           <Menu shadow="md" width={180} position="bottom-end" withinPortal>
             <Menu.Target>
               <ActionIcon
@@ -64,7 +62,17 @@ export default function ChatHeader({
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>Settings</Menu.Label>
+              <Menu.Label>Options</Menu.Label>
+
+              {/* 🎯 Requirement Satisfied: Start New Conversation target always active or contextually available */}
+              <Menu.Item
+                leftSection={<FiPlusCircle size={14} />}
+                onClick={onStartNewChat}
+                className="cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-700"
+              >
+                Start New Chat
+              </Menu.Item>
+
               <Menu.Item
                 leftSection={<FiEdit2 size={14} />}
                 onClick={() => alert('Change profile name placeholder')}
@@ -92,13 +100,7 @@ export default function ChatHeader({
           <button
             onClick={onClose}
             aria-label="Close chat"
-            className="
-              rounded-full
-              p-2
-              transition
-              hover:bg-white/10
-              cursor-pointer
-            "
+            className="rounded-full p-2 transition hover:bg-white/10 cursor-pointer"
           >
             <FiX size={18} />
           </button>
@@ -106,30 +108,9 @@ export default function ChatHeader({
       </div>
 
       {/* Operator Presence Header banner */}
-      {operatorName && (
-        <div
-          className="
-            flex
-            items-center
-            gap-2
-            border-b
-            border-border
-            bg-card
-            px-4
-            py-2
-            text-xs
-            text-foreground
-          "
-        >
-          <div
-            className="
-              h-2
-              w-2
-              rounded-full
-              bg-green-500
-              animate-pulse
-            "
-          />
+      {isSessionActive && operatorName && (
+        <div className="flex items-center gap-2 border-b border-border bg-card px-4 py-2 text-xs text-foreground">
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           <span>
             {operatorName === 'Support Agent' ? (
               <>An agent is heading to your chat</>

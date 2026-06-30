@@ -72,33 +72,44 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * CREATE / RESUME CONVERSATION
+   * CREATE / RESUME CONVERSATION SYSTEM
    ****************************************
    */
-  useEffect(() => {
-    async function initialize() {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ widgetId, visitorTrackingId }),
-          },
-        )
+  async function initializeConversation(forceNew = false) {
+    setLoading(true)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            widgetId,
+            visitorTrackingId,
+            createNew: forceNew, // 🎯 Signals backend to bypass active checks and generate a brand new session
+          }),
+        },
+      )
 
-        const result: SessionInitResponse = await response.json()
-        if (result.status === 'success' && result.data) {
-          setSession(result.data)
+      const result: SessionInitResponse = await response.json()
+      if (result.status === 'success' && result.data) {
+        setSession(result.data)
+        // Clear message log historical array instantly if explicitly starting fresh
+        if (forceNew) {
+          setMessages([])
+          setSocketOperatorName(undefined)
         }
-      } catch (error) {
-        console.error('Session initialization failed', error)
-      } finally {
-        setLoading(false)
       }
+    } catch (error) {
+      console.error('Session initialization failed', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    initialize()
+  // Handle initialization on mount
+  useEffect(() => {
+    initializeConversation(false)
   }, [widgetId, visitorTrackingId])
 
   /*
@@ -107,7 +118,7 @@ export default function ChatWindow({
    ****************************************
    */
   useEffect(() => {
-    if (!session?.sessionId) return
+    if (!session?.sessionId || session.status === 'closed') return
 
     async function fetchHistory() {
       try {
@@ -129,7 +140,7 @@ export default function ChatWindow({
     }
 
     fetchHistory()
-  }, [session?.sessionId])
+  }, [session?.sessionId, session?.status])
 
   /*
    ****************************************
@@ -239,12 +250,19 @@ export default function ChatWindow({
       if (result.status === 'success') {
         setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
         setConfirmModalOpen(false)
+
+        // 🎯 Requirement Satisfied: Close the widget container frame automatically on ending conversation thread
+        onClose()
       }
     } catch (error) {
       console.error('Error closing conversation thread:', error)
     } finally {
       setIsClosing(false)
     }
+  }
+
+  function handleStartNewChat() {
+    initializeConversation(true)
   }
 
   function sendTyping(typing: boolean) {
@@ -291,16 +309,17 @@ export default function ChatWindow({
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
       <ChatHeader
         widget={widget}
-        operatorName={operatorName}
+        operatorName={session?.status === 'closed' ? undefined : operatorName}
         isSessionActive={session?.status !== 'closed'}
         onOpenEndModal={() => setConfirmModalOpen(true)}
+        onStartNewChat={handleStartNewChat}
         onClose={onClose}
       />
 
       <ChatMessages
         widget={widget}
         messages={messages}
-        operatorTyping={operatorTyping}
+        operatorTyping={session?.status === 'closed' ? false : operatorTyping}
       />
 
       <ChatInput
@@ -310,7 +329,6 @@ export default function ChatWindow({
         onSend={sendMessage}
       />
 
-      {/* Professional Pop-up Modal with clean Backdrop Loader */}
       <Modal
         opened={confirmModalOpen}
         onClose={() => !isClosing && setConfirmModalOpen(false)}
@@ -327,7 +345,6 @@ export default function ChatWindow({
           header: { minHeight: 'auto', paddingBottom: '12px' },
         }}
       >
-        {/* Absolute loader overlay that locks interaction during execution */}
         <LoadingOverlay
           visible={isClosing}
           zIndex={1000}
@@ -340,8 +357,8 @@ export default function ChatWindow({
           className="text-muted-foreground leading-normal"
           mb="lg"
         >
-          Are you sure you want to end this chat session? Once closed, you will
-          no longer be able to pass text sequences to the active agent group.
+          Are you sure you want to end this chat session? Once closed, this
+          window will shut down and a fresh conversation can be created.
         </Text>
 
         <Group justify="flex-end" gap="xs">
