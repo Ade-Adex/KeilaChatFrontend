@@ -42,6 +42,9 @@ export default function ChatWindow({
    */
   let operatorName = socketOperatorName
 
+
+  console.log('socketOperatorName', socketOperatorName)
+
   if (
     operatorName &&
     (operatorName.toLowerCase() === 'operator' ||
@@ -270,7 +273,7 @@ export default function ChatWindow({
   }
 
   function handleStartNewChat() {
-    setLoading(true) // 🎯 Safe to call here because it handles a manual button click event sequence!
+    setLoading(true) 
     initializeConversation(true)
   }
 
