@@ -65,28 +65,22 @@ export default function ChatWindow({
       const castedOp =
         session.assignedOperatorId as unknown as PopulatedOperator
 
-      const companyName = castedOp.accountId?.name || ''
-      const humanName = castedOp.firstName
-        ? `${castedOp.firstName} ${castedOp.lastName || ''}`.trim()
-        : 'Agent'
-
-      if (companyName) {
-        // Keep structured wrapper string so ChatHeader parsing hook functions correctly
-        operatorName = `${companyName} (${humanName})`
-      } else {
-        operatorName = humanName
+      // Extract the human first name directly
+      if (castedOp.firstName) {
+        operatorName = castedOp.firstName.trim()
       }
-    } else {
-      // 3. Fallback: Check message array data for a human name
-      const lastOperatorMsg = [...messages]
-        .reverse()
-        .find(
-          (m) =>
-            m.senderType === 'operator' &&
-            m.senderName &&
-            m.senderName.toLowerCase() !== 'operator' &&
-            m.senderName.toLowerCase() !== 'support agent',
-        )
+    }
+
+    // 3. Fallback: Check message array data for a human name
+    if (!operatorName) {
+      const lastOperatorMsg = [...messages].reverse().find(
+        (m) =>
+          m.senderType === 'operator' &&
+          m.senderName &&
+          m.senderName.toLowerCase() !== 'operator' &&
+          m.senderName.toLowerCase() !== 'support agent' &&
+          m.senderName !== 'Above Great Support', // Filter out the account name leak
+      )
 
       if (lastOperatorMsg?.senderName) {
         operatorName = lastOperatorMsg.senderName
@@ -94,7 +88,7 @@ export default function ChatWindow({
     }
   }
 
-  // 4. Fallback placeholder if no session details are active yet
+  // 4. Fallback placeholder if no human agent is actively handling the chat yet
   if (!operatorName) {
     operatorName = widget?.name ? `${widget.name} Support` : 'Support Team'
   }

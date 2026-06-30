@@ -16,30 +16,7 @@ export default function ChatHeader({
   operatorName,
   onClose,
 }: ChatHeaderProps) {
-  console.log('operatorName', operatorName)
-
-  // Custom parser to extract and render only the standalone Operator Name
-  const renderOperatorText = () => {
-    if (!operatorName) return null
-
-    // Look for format "Company Name (FirstName)"
-    const match = operatorName.match(/^(.*?)\s*\((.*?)\)$/)
-
-    if (match) {
-      const firstName = match[2]
-      return (
-        <span>
-          Chatting with <strong>{firstName}</strong>
-        </span>
-      )
-    }
-
-    return (
-      <span>
-        Chatting with <strong>{operatorName}</strong>
-      </span>
-    )
-  }
+  console.log('operatorName in Header:', operatorName)
 
   return (
     <>
@@ -106,7 +83,9 @@ export default function ChatHeader({
               animate-pulse
             "
           />
-          {renderOperatorText()}
+          <span>
+            Chatting with <strong>{operatorName}</strong>
+          </span>
         </div>
       )}
     </>
