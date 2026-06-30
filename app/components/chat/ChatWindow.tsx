@@ -3,7 +3,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-
 import type {
   ChatMessage,
   ChatWindowProps,
@@ -13,7 +12,6 @@ import type {
 } from '@/app/types/chat'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-
 import ChatHeader from './ChatHeader'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
@@ -51,36 +49,19 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
-  if (!operatorName) {
-    if (
-      session?.assignedOperatorId &&
-      typeof session.assignedOperatorId === 'object' &&
-      'firstName' in session.assignedOperatorId
-    ) {
-      const castedOp: PopulatedOperator = session.assignedOperatorId
-      if (castedOp.firstName) {
-        operatorName = castedOp.firstName.trim()
-      }
-    }
+ if (!operatorName && session?.assignedOperatorId) {
+   // 🎯 Cast safely through unknown first to avoid index signature mismatches
+   const op = session.assignedOperatorId as unknown as PopulatedOperator
 
-    if (!operatorName) {
-      const lastOperatorMsg = [...messages]
-        .reverse()
-        .find(
-          (m) =>
-            m.senderType === 'operator' &&
-            m.senderName &&
-            m.senderName.toLowerCase() !== 'operator' &&
-            m.senderName.toLowerCase() !== 'support agent' &&
-            m.senderName !== 'Above Great Support' &&
-            !m.senderName.includes('Above Great'),
-        )
-
-      if (lastOperatorMsg?.senderName) {
-        operatorName = lastOperatorMsg.senderName
-      }
-    }
-  }
+   if (
+     op &&
+     typeof op === 'object' &&
+     'firstName' in op &&
+     typeof op.firstName === 'string'
+   ) {
+     operatorName = op.firstName.trim()
+   }
+ }
 
   if (!operatorName) {
     operatorName = 'Support Agent'
@@ -88,7 +69,7 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * CREATE/RESUME SESSION (WITH HISTORY RESCUE)
+   * CREATE / RESUME CONVERSATION
    ****************************************
    */
   useEffect(() => {
@@ -98,19 +79,13 @@ export default function ChatWindow({
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              widgetId,
-              visitorTrackingId,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ widgetId, visitorTrackingId }),
           },
         )
 
         const result: SessionInitResponse = await response.json()
-
-        if (result.status === 'success') {
+        if (result.status === 'success' && result.data) {
           setSession(result.data)
         }
       } catch (error) {
@@ -125,21 +100,19 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * LOAD OLD MESSAGES
+   * FETCH HISTORICAL MESSAGES (NOW ACCESSIBLE)
    ****************************************
    */
   useEffect(() => {
-    async function fetchHistory() {
-      if (!session?.sessionId) return
+    if (!session?.sessionId) return
 
+    async function fetchHistory() {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session.sessionId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session?.sessionId}`,
           {
             method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
           },
         )
         const result = await response.json()
@@ -157,11 +130,11 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * SOCKET CONNECTION & MESSAGE LISTENER
+   * SOCKET PIPELINE LISTENERS
    ****************************************
    */
   useEffect(() => {
-    if (!session) return
+    if (!session?.sessionId) return
 
     if (!socket.connected) {
       socket.connect()
@@ -177,16 +150,13 @@ export default function ChatWindow({
     const handleNewMessage = (payload: ChatMessage) => {
       setMessages((prev) => {
         if (!payload._id) return [...prev, payload]
-        const exists = prev.some((m) => m._id === payload._id)
-        if (exists) return prev
+        if (prev.some((m) => m._id === payload._id)) return prev
         return [...prev, payload]
       })
 
       if (payload.senderType === 'operator') {
         setOperatorTyping(false)
-        if (payload.senderName) {
-          setSocketOperatorName(payload.senderName)
-        }
+        if (payload.senderName) setSocketOperatorName(payload.senderName)
       }
     }
 
@@ -206,11 +176,8 @@ export default function ChatWindow({
       senderName?: string
     }) => {
       if (payload.actor === 'visitor') return
-
       setOperatorTyping(payload.isTyping)
-      if (payload.senderName) {
-        setSocketOperatorName(payload.senderName)
-      }
+      if (payload.senderName) setSocketOperatorName(payload.senderName)
     }
 
     const handlePresence = (payload: { message: string }) => {
@@ -228,9 +195,7 @@ export default function ChatWindow({
     }
 
     const handleSessionClosed = () => {
-      setSession((prev) =>
-        prev ? { ...prev, status: 'closed' as const } : null,
-      )
+      setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
     }
 
     socket.on('new_message', handleNewMessage)
@@ -250,38 +215,36 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * VISITOR INITIATED CHAT END ACTION
+   * END CHAT SYSTEM ACTION (VISITOR MANIPULATION)
    ****************************************
    */
-  async function endSession() {
+  async function handleEndChat() {
     if (!session?.sessionId) return
-    if (!window.confirm('Are you sure you want to end this conversation?'))
+    if (!window.confirm('Are you sure you want to end this chat session?'))
       return
 
     try {
+      // Points exactly to your defined App Router path matching layout: /api/v1/chat/:sessionId/close
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/session/${session.sessionId}/close`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/${session.sessionId}/close`,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ closedBy: 'visitor' }),
         },
       )
+
       const result = await response.json()
       if (result.status === 'success') {
         setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-        socket.emit('end_chat_session', { sessionId: session.sessionId })
       }
-    } catch (err) {
-      console.error('Error closing session context:', err)
+    } catch (error) {
+      console.error('Error closing conversation thread:', error)
     }
   }
 
   function sendTyping(typing: boolean) {
     if (!session || !socket.connected || session.status === 'closed') return
-
     socket.emit('typing', {
       sessionId: session.sessionId,
       senderName: 'Visitor',
@@ -302,23 +265,14 @@ export default function ChatWindow({
 
     setMessage('')
     sendTyping(false)
-
-    if (typingTimer.current) {
-      clearTimeout(typingTimer.current)
-    }
+    if (typingTimer.current) clearTimeout(typingTimer.current)
   }
 
   function handleInput(value: string) {
     setMessage(value)
     sendTyping(true)
-
-    if (typingTimer.current) {
-      clearTimeout(typingTimer.current)
-    }
-
-    typingTimer.current = setTimeout(() => {
-      sendTyping(false)
-    }, 1500)
+    if (typingTimer.current) clearTimeout(typingTimer.current)
+    typingTimer.current = setTimeout(() => sendTyping(false), 1500)
   }
 
   if (loading) {
@@ -337,11 +291,10 @@ export default function ChatWindow({
         onClose={onClose}
       />
 
-      {/* End Chat Button Area */}
       {session && session.status !== 'closed' && (
-        <div className="bg-muted/30 px-4 py-1.5 flex justify-end border-b border-border">
+        <div className="bg-muted/40 border-b border-border px-4 py-1.5 flex justify-end">
           <button
-            onClick={endSession}
+            onClick={handleEndChat}
             className="text-[11px] text-destructive hover:underline font-medium cursor-pointer"
           >
             End Conversation
