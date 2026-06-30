@@ -10,6 +10,7 @@ import type {
   SessionConfig,
   ChatWindowProps,
   SessionInitResponse,
+  PopulatedOperator,
 } from '@/app/types/chat'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
@@ -76,8 +77,7 @@ export default function ChatWindow({
 
     initialize()
   }, [widgetId, visitorTrackingId])
-
-  /*
+/*
    ****************************************
    * LOAD OLD MESSAGES
    ****************************************
@@ -91,11 +91,26 @@ export default function ChatWindow({
       const result = await response.json()
       if (result.status === 'success') {
         setMessages(result.data)
+
+        // Ensure assignedOperatorId is populated as an object before parsing fields
+        if (
+          session.assignedOperatorId &&
+          typeof session.assignedOperatorId === 'object'
+        ) {
+          const castedOp = session.assignedOperatorId as unknown as PopulatedOperator
+          const companyName = castedOp.accountId?.name || ''
+          const firstName = castedOp.firstName || ''
+          
+          if (companyName || firstName) {
+            setOperatorName(`${companyName} (${firstName})`.trim())
+          }
+        }
       }
     } catch (error) {
       console.error(error)
     }
   })
+
 
   useEffect(() => {
     if (session?.sessionId) {
@@ -134,8 +149,10 @@ export default function ChatWindow({
       })
 
       if (payload.senderType === 'operator') {
+        // If your payload contains nested schema updates, build it.
+        // Otherwise use the senderName fallback gracefully
         setOperatorName(payload.senderName ?? 'Support Agent')
-        setOperatorTyping(false) // Kill tracking animation once real text arrives
+        setOperatorTyping(false)
       }
     }
 

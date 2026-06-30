@@ -80,8 +80,6 @@ export interface SessionConfig {
 
 export type MessageSender = 'visitor' | 'operator' | 'ai' | 'system'
 
-
-
 export interface JoinChatPayload {
   sessionId: string
 
@@ -129,7 +127,6 @@ export interface ChatMessage {
   seenAt?: string
 }
 
-
 export interface PresenceNotificationPayload {
   message: string
 }
@@ -142,7 +139,6 @@ export interface MessageDeliveredPayload {
 export interface MessageErrorPayload {
   message: string
 }
-
 
 export interface IncomingVisitorAlert {
   sessionId: string
@@ -196,4 +192,23 @@ export interface SessionInitResponse {
   status: string
 
   data: SessionConfig
+}
+
+export interface PopulatedAccount {
+  _id: string
+  name: string
+}
+
+export interface PopulatedOperator {
+  _id: string
+  firstName?: string
+  lastName?: string
+  email: string
+  avatar?: string
+  accountId?: PopulatedAccount 
+}
+
+// Update your local configuration typing or inline cast
+export interface SafeSessionConfig extends Omit<SessionConfig, 'assignedOperatorId'> {
+  assignedOperatorId?: string | PopulatedOperator
 }

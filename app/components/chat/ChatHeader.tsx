@@ -16,6 +16,29 @@ export default function ChatHeader({
   operatorName,
   onClose,
 }: ChatHeaderProps) {
+  // Custom parser to split "Company Name (FirstName)" into styled HTML elements
+  const renderOperatorText = () => {
+    if (!operatorName) return null
+
+    const match = operatorName.match(/^(.*?)\s*\((.*?)\)$/)
+
+    if (match) {
+      const companyName = match[1]
+      const firstName = match[2]
+      return (
+        <span>
+          Chatting with <strong>{companyName}</strong> ({firstName})
+        </span>
+      )
+    }
+
+    return (
+      <span>
+        Chatting with <strong>{operatorName}</strong>
+      </span>
+    )
+  }
+
   return (
     <>
       {/* Main Header */}
@@ -56,7 +79,7 @@ export default function ChatHeader({
         </button>
       </div>
 
-      {/* Operator Presence */}
+      {/* Operator Presence Header banner */}
       {operatorName && (
         <div
           className="
@@ -69,6 +92,7 @@ export default function ChatHeader({
             px-4
             py-2
             text-xs
+            text-foreground
           "
         >
           <div
@@ -77,12 +101,10 @@ export default function ChatHeader({
               w-2
               rounded-full
               bg-green-500
+              animate-pulse
             "
           />
-
-          <span>
-            Chatting with <strong>{operatorName}</strong>
-          </span>
+          {renderOperatorText()}
         </div>
       )}
     </>
