@@ -2,6 +2,7 @@
 
 'use client'
 
+import { useState } from 'react'
 import {
   FiX,
   FiMoreVertical,
@@ -9,29 +10,87 @@ import {
   FiEdit2,
   FiPlusCircle,
 } from 'react-icons/fi'
-import { Menu, ActionIcon } from '@mantine/core'
+import {
+  Menu,
+  ActionIcon,
+  Modal,
+  TextInput,
+  Button,
+  Stack,
+} from '@mantine/core'
 import type { WidgetConfig } from '@/app/types/chat'
 import Image from 'next/image'
 
 interface ChatHeaderProps {
   widget: WidgetConfig
+  propertyId?: string
+  visitorTrackingId?: string
   operatorName?: string
   operatorAvatar?: string
   isSessionActive: boolean
   onOpenEndModal: () => void
   onStartNewChat: () => void
   onClose: () => void
+  onVisitorProfileUpdated?: (name: string, email: string) => void
 }
 
 export default function ChatHeader({
   widget,
+  propertyId,
+  visitorTrackingId,
   operatorName,
   operatorAvatar,
   isSessionActive,
   onOpenEndModal,
   onStartNewChat,
   onClose,
+  onVisitorProfileUpdated,
 }: ChatHeaderProps) {
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [visitorName, setVisitorName] = useState('')
+  const [visitorEmail, setVisitorEmail] = useState('')
+  const [updating, setUpdating] = useState(false)
+
+  async function handleUpdateProfile(e: React.FormEvent) {
+    e.preventDefault()
+    if (
+      !visitorName.trim() ||
+      !visitorEmail.trim() ||
+      !propertyId ||
+      !visitorTrackingId
+    )
+      return
+
+    setUpdating(true)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/visitors/profile`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            propertyId,
+            visitorTrackingId,
+            name: visitorName,
+            email: visitorEmail,
+          }),
+        },
+      )
+
+      const result = await response.json()
+      if (result.status === 'success') {
+        setProfileModalOpen(false)
+        if (onVisitorProfileUpdated) {
+          onVisitorProfileUpdated(visitorName, visitorEmail)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update visitor profile details:', err)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
   return (
     <>
       {/* Main Header */}
@@ -77,10 +136,10 @@ export default function ChatHeader({
 
               <Menu.Item
                 leftSection={<FiEdit2 size={14} />}
-                onClick={() => alert('Change profile name placeholder')}
+                onClick={() => setProfileModalOpen(true)}
                 className="cursor-pointer text-xs"
               >
-                Change Name
+                Change Name / Email
               </Menu.Item>
 
               {isSessionActive && (
@@ -112,7 +171,6 @@ export default function ChatHeader({
       {/* Operator Presence Header banner */}
       {isSessionActive && operatorName && (
         <div className="flex items-center gap-2.5 border-b border-border bg-card px-4 py-2 text-xs text-foreground">
-          {/* 🎯 FIX: Using HTML <img> element instead of Next.js <Image> to natively render dynamic backend URLs without width/height crashes */}
           {operatorAvatar && operatorName !== 'Support Agent' ? (
             <Image
               src={operatorAvatar}
@@ -137,6 +195,46 @@ export default function ChatHeader({
           </span>
         </div>
       )}
+
+      {/* Profile Setup Modal */}
+      <Modal
+        opened={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        title="Introduce Yourself"
+        centered
+        size="sm"
+      >
+        <form onSubmit={handleUpdateProfile}>
+          <Stack gap="md">
+            <TextInput
+              label="Your Name"
+              placeholder="John Doe"
+              value={visitorName}
+              onChange={(e) => setVisitorName(e.currentTarget.value)}
+              required
+              size="xs"
+            />
+            <TextInput
+              label="Email Address"
+              placeholder="john@example.com"
+              type="email"
+              value={visitorEmail}
+              onChange={(e) => setVisitorEmail(e.currentTarget.value)}
+              required
+              size="xs"
+            />
+            <Button
+              type="submit"
+              size="xs"
+              fullWidth
+              loading={updating}
+              style={{ background: widget.theme?.primaryColor ?? '#2563eb' }}
+            >
+              Save Profile
+            </Button>
+          </Stack>
+        </form>
+      </Modal>
     </>
   )
 }
