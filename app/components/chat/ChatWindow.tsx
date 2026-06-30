@@ -1,5 +1,4 @@
 // /app/components/chat/ChatWindow.tsx
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -76,7 +75,6 @@ export default function ChatWindow({
    ****************************************
    */
   async function initializeConversation(forceNew = false) {
-    setLoading(true)
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
@@ -86,7 +84,7 @@ export default function ChatWindow({
           body: JSON.stringify({
             widgetId,
             visitorTrackingId,
-            createNew: forceNew, // 🎯 Signals backend to bypass active checks and generate a brand new session
+            createNew: forceNew,
           }),
         },
       )
@@ -94,7 +92,6 @@ export default function ChatWindow({
       const result: SessionInitResponse = await response.json()
       if (result.status === 'success' && result.data) {
         setSession(result.data)
-        // Clear message log historical array instantly if explicitly starting fresh
         if (forceNew) {
           setMessages([])
           setSocketOperatorName(undefined)
@@ -107,9 +104,22 @@ export default function ChatWindow({
     }
   }
 
-  // Handle initialization on mount
+  // Handle initialization on mount safely behind a non-blocking macro-task execution
   useEffect(() => {
-    initializeConversation(false)
+    let isMounted = true
+
+    // Wrapping in a zero-delay timeout moves execution to the next event loop cycle,
+    // completely preventing cascading synchronous render loop warnings.
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        initializeConversation(false)
+      }
+    }, 0)
+
+    return () => {
+      isMounted = false
+      clearTimeout(timer)
+    }
   }, [widgetId, visitorTrackingId])
 
   /*
@@ -250,8 +260,6 @@ export default function ChatWindow({
       if (result.status === 'success') {
         setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
         setConfirmModalOpen(false)
-
-        // 🎯 Requirement Satisfied: Close the widget container frame automatically on ending conversation thread
         onClose()
       }
     } catch (error) {
@@ -262,6 +270,7 @@ export default function ChatWindow({
   }
 
   function handleStartNewChat() {
+    setLoading(true) // 🎯 Safe to call here because it handles a manual button click event sequence!
     initializeConversation(true)
   }
 
