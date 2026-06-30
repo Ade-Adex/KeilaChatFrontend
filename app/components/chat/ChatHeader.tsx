@@ -11,10 +11,12 @@ import {
 } from 'react-icons/fi'
 import { Menu, ActionIcon } from '@mantine/core'
 import type { WidgetConfig } from '@/app/types/chat'
+import Image from 'next/image'
 
 interface ChatHeaderProps {
   widget: WidgetConfig
   operatorName?: string
+  operatorAvatar?: string // 🎯 Added string field type for the avatar image
   isSessionActive: boolean
   onOpenEndModal: () => void
   onStartNewChat: () => void
@@ -24,6 +26,7 @@ interface ChatHeaderProps {
 export default function ChatHeader({
   widget,
   operatorName,
+  operatorAvatar, // 🎯 Destructure your incoming avatar url prop safely
   isSessionActive,
   onOpenEndModal,
   onStartNewChat,
@@ -64,7 +67,6 @@ export default function ChatHeader({
             <Menu.Dropdown>
               <Menu.Label>Options</Menu.Label>
 
-              {/* 🎯 Requirement Satisfied: Start New Conversation target always active or contextually available */}
               <Menu.Item
                 leftSection={<FiPlusCircle size={14} />}
                 onClick={onStartNewChat}
@@ -109,8 +111,21 @@ export default function ChatHeader({
 
       {/* Operator Presence Header banner */}
       {isSessionActive && operatorName && (
-        <div className="flex items-center gap-2 border-b border-border bg-card px-4 py-2 text-xs text-foreground">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+        <div className="flex items-center gap-2.5 border-b border-border bg-card px-4 py-2 text-xs text-foreground">
+          {/* 🎯 CONDITIONAL AVATAR BADGE RENDERING */}
+          {operatorAvatar && operatorName !== 'Support Agent' ? (
+            <Image
+              src={operatorAvatar}
+              alt={operatorName}
+              className="h-5 w-5 rounded-full object-cover border border-border shrink-0"
+              onError={(e) => {
+                ;(e.target as HTMLElement).style.display = 'none'
+              }}
+            />
+          ) : (
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+          )}
+
           <span>
             {operatorName === 'Support Agent' ? (
               <>An agent is heading to your chat</>

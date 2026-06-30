@@ -37,13 +37,11 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * DERIVED STATE: OPERATOR NAME CALCULATION
+   * DERIVED STATE: OPERATOR NAME & AVATAR CALCULATION
    ****************************************
    */
   let operatorName = socketOperatorName
-
-
-  console.log('socketOperatorName', socketOperatorName)
+  let operatorAvatar: string | undefined = undefined // 🎯 FIX B: Local tracking flag
 
   if (
     operatorName &&
@@ -55,16 +53,21 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
-  if (!operatorName && session?.assignedOperatorId) {
+  // Safely extract firstName and avatar properties out of the session state structure
+  if (session?.assignedOperatorId) {
     const op = session.assignedOperatorId as unknown as PopulatedOperator
 
-    if (
-      op &&
-      typeof op === 'object' &&
-      'firstName' in op &&
-      typeof op.firstName === 'string'
-    ) {
-      operatorName = op.firstName.trim()
+    if (op && typeof op === 'object') {
+      if (
+        !operatorName &&
+        'firstName' in op &&
+        typeof op.firstName === 'string'
+      ) {
+        operatorName = op.firstName.trim()
+      }
+      if ('avatar' in op && typeof op.avatar === 'string') {
+        operatorAvatar = op.avatar
+      }
     }
   }
 
@@ -221,23 +224,37 @@ export default function ChatWindow({
       ])
     }
 
-    const handleSessionClosed = () => {
-      setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-    }
+   const handleSessionClosed = () => {
+     setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+   }
 
-    socket.on('new_message', handleNewMessage)
-    socket.on('dashboard_message_update', handleDashboardMessageUpdate)
-    socket.on('user_typing', handleTyping)
-    socket.on('presence_notification', handlePresence)
-    socket.on('session_closed', handleSessionClosed)
+   // 🎯 FIX A: Handle instant operator assignments dynamically in real-time
+   const handleChatAssigned = (payload: {
+     sessionId: string
+     operator: PopulatedOperator
+   }) => {
+     if (payload.sessionId === session.sessionId) {
+       setSession((prev) =>
+         prev ? { ...prev, assignedOperatorId: payload.operator } : null,
+       )
+     }
+   }
 
-    return () => {
-      socket.off('new_message', handleNewMessage)
-      socket.off('dashboard_message_update', handleDashboardMessageUpdate)
-      socket.off('user_typing', handleTyping)
-      socket.off('presence_notification', handlePresence)
-      socket.off('session_closed', handleSessionClosed)
-    }
+   socket.on('new_message', handleNewMessage)
+   socket.on('dashboard_message_update', handleDashboardMessageUpdate)
+   socket.on('user_typing', handleTyping)
+   socket.on('presence_notification', handlePresence)
+   socket.on('session_closed', handleSessionClosed)
+   socket.on('chat_assigned', handleChatAssigned) // 🎯 Bind event
+
+   return () => {
+     socket.off('new_message', handleNewMessage)
+     socket.off('dashboard_message_update', handleDashboardMessageUpdate)
+     socket.off('user_typing', handleTyping)
+     socket.off('presence_notification', handlePresence)
+     socket.off('session_closed', handleSessionClosed)
+     socket.off('chat_assigned', handleChatAssigned) // 🎯 Unbind event
+   }
   }, [session, socket])
 
   /*
@@ -273,7 +290,7 @@ export default function ChatWindow({
   }
 
   function handleStartNewChat() {
-    setLoading(true) 
+    setLoading(true)
     initializeConversation(true)
   }
 
@@ -322,6 +339,9 @@ export default function ChatWindow({
       <ChatHeader
         widget={widget}
         operatorName={session?.status === 'closed' ? undefined : operatorName}
+        operatorAvatar={
+          session?.status === 'closed' ? undefined : operatorAvatar
+        } 
         isSessionActive={session?.status !== 'closed'}
         onOpenEndModal={() => setConfirmModalOpen(true)}
         onStartNewChat={handleStartNewChat}
