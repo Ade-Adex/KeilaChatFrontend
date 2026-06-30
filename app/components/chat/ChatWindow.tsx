@@ -136,31 +136,37 @@ export default function ChatWindow({
   }, [widgetId, visitorTrackingId])
 
   /*
+  /*
    ****************************************
    * LOAD OLD MESSAGES
    ****************************************
    */
-  const loadMessages = useRef(async () => {
-    if (!session?.sessionId) return
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session.sessionId}`,
-      )
-      const result = await response.json()
-      if (result.status === 'success') {
-        setMessages(result.data)
-      }
-    } catch (error) {
-      console.error(error)
-    }
-  })
-
   useEffect(() => {
-    if (session?.sessionId) {
-      void loadMessages.current()
-    }
-  }, [session])
+    async function fetchHistory() {
+      if (!session?.sessionId) return
 
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session.sessionId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+        const result = await response.json()
+
+        if (result.status === 'success' && Array.isArray(result.data)) {
+          setMessages(result.data)
+        }
+      } catch (error) {
+        console.error('Failed to load previous chat history:', error)
+      }
+    }
+
+    fetchHistory()
+  }, [session?.sessionId])
   /*
    ****************************************
    * SOCKET CONNECTION & MESSAGE LISTENER
