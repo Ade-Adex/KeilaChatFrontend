@@ -3,7 +3,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Modal, Button, Group, Text } from '@mantine/core'
+import { Modal, Button, Group, Text, LoadingOverlay } from '@mantine/core'
 import type {
   ChatMessage,
   ChatWindowProps,
@@ -35,6 +35,7 @@ export default function ChatWindow({
 
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+
   /*
    ****************************************
    * DERIVED STATE: OPERATOR NAME CALCULATION
@@ -53,7 +54,6 @@ export default function ChatWindow({
   }
 
   if (!operatorName && session?.assignedOperatorId) {
-    // 🎯 Cast safely through unknown first to avoid index signature mismatches
     const op = session.assignedOperatorId as unknown as PopulatedOperator
 
     if (
@@ -103,7 +103,7 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * FETCH HISTORICAL MESSAGES (NOW ACCESSIBLE)
+   * FETCH HISTORICAL MESSAGES
    ****************************************
    */
   useEffect(() => {
@@ -218,7 +218,7 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * END CHAT SYSTEM ACTION (VISITOR MANIPULATION)
+   * END CHAT SYSTEM ACTION
    ****************************************
    */
   async function handleEndChat() {
@@ -297,17 +297,6 @@ export default function ChatWindow({
         onClose={onClose}
       />
 
-      {session && session.status !== 'closed' && (
-        <div className="bg-muted/40 border-b border-border px-4 py-1.5 flex justify-end">
-          <button
-            onClick={handleEndChat}
-            className="text-[11px] text-destructive hover:underline font-medium cursor-pointer"
-          >
-            End Conversation
-          </button>
-        </div>
-      )}
-
       <ChatMessages
         widget={widget}
         messages={messages}
@@ -320,6 +309,62 @@ export default function ChatWindow({
         onChange={handleInput}
         onSend={sendMessage}
       />
+
+      {/* Professional Pop-up Modal with clean Backdrop Loader */}
+      <Modal
+        opened={confirmModalOpen}
+        onClose={() => !isClosing && setConfirmModalOpen(false)}
+        title={<Text className="font-semibold text-sm">End Conversation</Text>}
+        centered
+        size="sm"
+        padding="md"
+        radius="md"
+        withCloseButton={!isClosing}
+        closeOnClickOutside={!isClosing}
+        closeOnEscape={!isClosing}
+        styles={{
+          content: { position: 'relative', overflow: 'hidden' },
+          header: { minHeight: 'auto', paddingBottom: '12px' },
+        }}
+      >
+        {/* Absolute loader overlay that locks interaction during execution */}
+        <LoadingOverlay
+          visible={isClosing}
+          zIndex={1000}
+          overlayProps={{ radius: 'md', blur: 1.5 }}
+          loaderProps={{ size: 'sm', type: 'bars' }}
+        />
+
+        <Text
+          size="xs"
+          className="text-muted-foreground leading-normal"
+          mb="lg"
+        >
+          Are you sure you want to end this chat session? Once closed, you will
+          no longer be able to pass text sequences to the active agent group.
+        </Text>
+
+        <Group justify="flex-end" gap="xs">
+          <Button
+            variant="subtle"
+            color="gray"
+            size="xs"
+            disabled={isClosing}
+            onClick={() => setConfirmModalOpen(false)}
+            className="text-[11px] font-medium"
+          >
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            size="xs"
+            onClick={handleEndChat}
+            className="text-[11px] font-medium px-4"
+          >
+            End Chat
+          </Button>
+        </Group>
+      </Modal>
     </div>
   )
 }
