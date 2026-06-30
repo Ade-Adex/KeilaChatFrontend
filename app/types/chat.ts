@@ -52,6 +52,19 @@ export interface WidgetTheme {
   backgroundColor?: string
 }
 
+// 🎯 NEW: Define the complete structure of widgetSettings matching the service layer
+export interface WidgetSettingsConfig {
+  launcherPosition: string
+  launcherIcon?: string
+  welcomeMessage: string
+  offlineMessage: string
+  showAgentPhoto: boolean
+  soundEnabled: boolean
+  allowFileUpload: boolean
+  allowEmoji: boolean
+  allowScreenshots: boolean
+}
+
 export interface WidgetConfig {
   _id: string
   name: string
@@ -59,11 +72,16 @@ export interface WidgetConfig {
 
   theme?: WidgetTheme
 
+  // 🎯 UPDATE: Change settings structure or match backend's top-level layout
   settings?: {
     position?: 'left' | 'right'
     welcomeMessage?: string
     offlineMessage?: string
+    onlineStatus?: boolean
   }
+
+  // 🎯 NEW: Add the missing configuration object property to fix the compiler error
+  widgetSettings?: WidgetSettingsConfig
 }
 
 export interface SessionConfig {

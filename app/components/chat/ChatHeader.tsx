@@ -139,7 +139,7 @@ export default function ChatHeader({
                 onClick={() => setProfileModalOpen(true)}
                 className="cursor-pointer text-xs"
               >
-                Change Name / Email
+                Change Name
               </Menu.Item>
 
               {isSessionActive && (
