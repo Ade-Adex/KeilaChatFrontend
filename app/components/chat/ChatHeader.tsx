@@ -16,7 +16,7 @@ import Image from 'next/image'
 interface ChatHeaderProps {
   widget: WidgetConfig
   operatorName?: string
-  operatorAvatar?: string 
+  operatorAvatar?: string
   isSessionActive: boolean
   onOpenEndModal: () => void
   onStartNewChat: () => void
@@ -26,7 +26,7 @@ interface ChatHeaderProps {
 export default function ChatHeader({
   widget,
   operatorName,
-  operatorAvatar, // 🎯 Destructure your incoming avatar url prop safely
+  operatorAvatar,
   isSessionActive,
   onOpenEndModal,
   onStartNewChat,
@@ -112,14 +112,14 @@ export default function ChatHeader({
       {/* Operator Presence Header banner */}
       {isSessionActive && operatorName && (
         <div className="flex items-center gap-2.5 border-b border-border bg-card px-4 py-2 text-xs text-foreground">
-          {/* 🎯 CONDITIONAL AVATAR BADGE RENDERING */}
+          {/* 🎯 FIX: Using HTML <img> element instead of Next.js <Image> to natively render dynamic backend URLs without width/height crashes */}
           {operatorAvatar && operatorName !== 'Support Agent' ? (
             <Image
               src={operatorAvatar}
               alt={operatorName}
               className="h-5 w-5 rounded-full object-cover border border-border shrink-0"
               onError={(e) => {
-                ;(e.target as HTMLElement).style.display = 'none'
+                ;(e.currentTarget as HTMLElement).style.display = 'none'
               }}
             />
           ) : (

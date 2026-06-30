@@ -1,4 +1,5 @@
 // /app/components/chat/ChatWindow.tsx
+
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -30,6 +31,7 @@ export default function ChatWindow({
   const [message, setMessage] = useState('')
   const [operatorTyping, setOperatorTyping] = useState(false)
   const [socketOperatorName, setSocketOperatorName] = useState<string>()
+  const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>() // 🎯 Track dynamic socket avatar strings
   const [loading, setLoading] = useState(true)
 
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
@@ -41,10 +43,7 @@ export default function ChatWindow({
    ****************************************
    */
   let operatorName = socketOperatorName
-  let operatorAvatar: string | undefined = undefined 
-
-
-  console.log('socketOperatorName', socketOperatorName)
+  let operatorAvatar = socketOperatorAvatar
 
   if (
     operatorName &&
@@ -56,7 +55,7 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
-  // Safely extract firstName and avatar properties out of the session state structure
+  // Fallback to session data properties if socket variables are empty
   if (session?.assignedOperatorId) {
     const op = session.assignedOperatorId as unknown as PopulatedOperator
 
@@ -68,7 +67,7 @@ export default function ChatWindow({
       ) {
         operatorName = op.firstName.trim()
       }
-      if ('avatar' in op && typeof op.avatar === 'string') {
+      if (!operatorAvatar && 'avatar' in op && typeof op.avatar === 'string') {
         operatorAvatar = op.avatar
       }
     }
@@ -104,6 +103,7 @@ export default function ChatWindow({
         if (forceNew) {
           setMessages([])
           setSocketOperatorName(undefined)
+          setSocketOperatorAvatar(undefined)
         }
       }
     } catch (error) {
@@ -113,12 +113,9 @@ export default function ChatWindow({
     }
   }
 
-  // Handle initialization on mount safely behind a non-blocking macro-task execution
   useEffect(() => {
     let isMounted = true
 
-    // Wrapping in a zero-delay timeout moves execution to the next event loop cycle,
-    // completely preventing cascading synchronous render loop warnings.
     const timer = setTimeout(() => {
       if (isMounted) {
         initializeConversation(false)
@@ -180,7 +177,9 @@ export default function ChatWindow({
       clientType: 'visitor',
     })
 
-    const handleNewMessage = (payload: ChatMessage) => {
+    const handleNewMessage = (
+      payload: ChatMessage & { senderAvatar?: string },
+    ) => {
       setMessages((prev) => {
         if (!payload._id) return [...prev, payload]
         if (prev.some((m) => m._id === payload._id)) return prev
@@ -189,7 +188,17 @@ export default function ChatWindow({
 
       if (payload.senderType === 'operator') {
         setOperatorTyping(false)
-        if (payload.senderName) setSocketOperatorName(payload.senderName)
+
+        // 🎯 FIX: Only overwrite name and avatar if payload contains a valid personalized operator name
+        if (
+          payload.senderName &&
+          payload.senderName.toLowerCase() !== 'operator'
+        ) {
+          setSocketOperatorName(payload.senderName)
+          if (payload.senderAvatar) {
+            setSocketOperatorAvatar(payload.senderAvatar)
+          }
+        }
       }
     }
 
@@ -210,7 +219,14 @@ export default function ChatWindow({
     }) => {
       if (payload.actor === 'visitor') return
       setOperatorTyping(payload.isTyping)
-      if (payload.senderName) setSocketOperatorName(payload.senderName)
+
+      // 🎯 FIX: Prevent typing state triggers from overriding personalized operator names with "Operator"
+      if (
+        payload.senderName &&
+        payload.senderName.toLowerCase() !== 'operator'
+      ) {
+        setSocketOperatorName(payload.senderName)
+      }
     }
 
     const handlePresence = (payload: { message: string }) => {
@@ -227,37 +243,42 @@ export default function ChatWindow({
       ])
     }
 
-   const handleSessionClosed = () => {
-     setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-   }
+    const handleSessionClosed = () => {
+      setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+    }
 
-   // 🎯 FIX A: Handle instant operator assignments dynamically in real-time
-   const handleChatAssigned = (payload: {
-     sessionId: string
-     operator: PopulatedOperator
-   }) => {
-     if (payload.sessionId === session.sessionId) {
-       setSession((prev) =>
-         prev ? { ...prev, assignedOperatorId: payload.operator } : null,
-       )
-     }
-   }
+    const handleChatAssigned = (payload: {
+      sessionId: string
+      operator: PopulatedOperator
+    }) => {
+      if (payload.sessionId === session.sessionId) {
+        setSession((prev) =>
+          prev ? { ...prev, assignedOperatorId: payload.operator } : null,
+        )
+        if (payload.operator?.firstName) {
+          setSocketOperatorName(payload.operator.firstName)
+        }
+        if (payload.operator?.avatar) {
+          setSocketOperatorAvatar(payload.operator.avatar)
+        }
+      }
+    }
 
-   socket.on('new_message', handleNewMessage)
-   socket.on('dashboard_message_update', handleDashboardMessageUpdate)
-   socket.on('user_typing', handleTyping)
-   socket.on('presence_notification', handlePresence)
-   socket.on('session_closed', handleSessionClosed)
-   socket.on('chat_assigned', handleChatAssigned) // 🎯 Bind event
+    socket.on('new_message', handleNewMessage)
+    socket.on('dashboard_message_update', handleDashboardMessageUpdate)
+    socket.on('user_typing', handleTyping)
+    socket.on('presence_notification', handlePresence)
+    socket.on('session_closed', handleSessionClosed)
+    socket.on('chat_assigned', handleChatAssigned)
 
-   return () => {
-     socket.off('new_message', handleNewMessage)
-     socket.off('dashboard_message_update', handleDashboardMessageUpdate)
-     socket.off('user_typing', handleTyping)
-     socket.off('presence_notification', handlePresence)
-     socket.off('session_closed', handleSessionClosed)
-     socket.off('chat_assigned', handleChatAssigned) // 🎯 Unbind event
-   }
+    return () => {
+      socket.off('new_message', handleNewMessage)
+      socket.off('dashboard_message_update', handleDashboardMessageUpdate)
+      socket.off('user_typing', handleTyping)
+      socket.off('presence_notification', handlePresence)
+      socket.off('session_closed', handleSessionClosed)
+      socket.off('chat_assigned', handleChatAssigned)
+    }
   }, [session, socket])
 
   /*
@@ -329,14 +350,6 @@ export default function ChatWindow({
     typingTimer.current = setTimeout(() => sendTyping(false), 1500)
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground animate-pulse">
-        Connecting live support portal...
-      </div>
-    )
-  }
-
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
       <ChatHeader
@@ -344,74 +357,57 @@ export default function ChatWindow({
         operatorName={session?.status === 'closed' ? undefined : operatorName}
         operatorAvatar={
           session?.status === 'closed' ? undefined : operatorAvatar
-        } 
+        }
         isSessionActive={session?.status !== 'closed'}
         onOpenEndModal={() => setConfirmModalOpen(true)}
         onStartNewChat={handleStartNewChat}
         onClose={onClose}
       />
 
-      <ChatMessages
-        widget={widget}
-        messages={messages}
-        operatorTyping={session?.status === 'closed' ? false : operatorTyping}
-      />
+      <div className="relative flex-1 overflow-y-auto">
+        <LoadingOverlay visible={loading} overlayProps={{ blur: 2 }} />
+        {!loading && (
+          <ChatMessages
+            widget={widget}
+            messages={messages}
+            operatorTyping={operatorTyping}
+          />
+        )}
+      </div>
 
-      <ChatInput
-        disabled={session?.status === 'closed'}
-        value={message}
-        onChange={handleInput}
-        onSend={sendMessage}
-      />
+      {!loading && session?.status !== 'closed' && (
+        <ChatInput
+          value={message}
+          onChange={handleInput}
+          onSend={sendMessage}
+        />
+      )}
 
       <Modal
         opened={confirmModalOpen}
-        onClose={() => !isClosing && setConfirmModalOpen(false)}
-        title={<Text className="font-semibold text-sm">End Conversation</Text>}
+        onClose={() => setConfirmModalOpen(false)}
+        title="End Conversation"
         centered
         size="sm"
-        padding="md"
-        radius="md"
-        withCloseButton={!isClosing}
-        closeOnClickOutside={!isClosing}
-        closeOnEscape={!isClosing}
-        styles={{
-          content: { position: 'relative', overflow: 'hidden' },
-          header: { minHeight: 'auto', paddingBottom: '12px' },
-        }}
       >
-        <LoadingOverlay
-          visible={isClosing}
-          zIndex={1000}
-          overlayProps={{ radius: 'md', blur: 1.5 }}
-          loaderProps={{ size: 'sm', type: 'bars' }}
-        />
-
-        <Text
-          size="xs"
-          className="text-muted-foreground leading-normal"
-          mb="lg"
-        >
-          Are you sure you want to end this chat session? Once closed, this
-          window will shut down and a fresh conversation can be created.
+        <Text size="sm" mb="lg">
+          Are you sure you want to close this support session? Your current chat
+          history will be saved.
         </Text>
-
         <Group justify="flex-end" gap="xs">
           <Button
             variant="subtle"
-            color="gray"
             size="xs"
-            disabled={isClosing}
+            color="gray"
             onClick={() => setConfirmModalOpen(false)}
-            className="text-[11px] font-medium"
           >
             Cancel
           </Button>
           <Button
-            color="red"
             size="xs"
+            color="red"
+            loading={isClosing}
             onClick={handleEndChat}
-            className="text-[11px] font-medium px-4"
           >
             End Chat
           </Button>
