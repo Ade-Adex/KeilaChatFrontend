@@ -23,8 +23,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const socket = getChatSocket()
   const currentSessionId = session._id
 
-    const operator = useAuthStore((state) => state.operator)
-  
+  const operator = useAuthStore((state) => state.operator)
 
   useEffect(() => {
     if (!socket.connected) socket.connect()
@@ -73,7 +72,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       clientType: 'operator',
     })
   }, [session, currentSessionId, socket])
-
 
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
@@ -166,11 +164,8 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
       {/* Interactive Telemetry Feed Footers */}
       <div className="relative z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-4">
-        <TypingIndicator
-          // visible={visitorTyping}
-          // actor={operator?.firstName ||  "operator"}
-          // name={visitorName}
-        />
+        {visitorTyping && <TypingIndicator />}
+
         <OperatorInput
           sessionId={currentSessionId}
           onMessageSent={(msg) => setMessages((prev) => [...prev, msg])}
