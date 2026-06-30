@@ -3,11 +3,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import MessageFeed from './MessageFeed'
-import TypingIndicator from './TypingIndicator'
 import OperatorInput from './OperatorInput'
 import { getSessionMessages } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
+import TypingIndicator from '@/app/components/TypingIndicator'
 
 interface OperatorWorkspaceProps {
   session: OperatorConversation

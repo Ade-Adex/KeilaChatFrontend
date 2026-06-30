@@ -1,6 +1,20 @@
 import React from 'react'
+export interface TypingIndicatorProps {
+  visible: boolean
+  actor?: 'visitor' | 'operator'
+  name?: string
+}
 
-const TypingIndicator = () => {
+export default function TypingIndicator({
+  visible,
+  actor = 'visitor',
+  name,
+}: TypingIndicatorProps) {
+
+  if (!visible) return null
+
+  const label = name ?? (actor === 'visitor' ? 'Visitor' : 'Operator')
+
   return (
     <div
       style={{
@@ -42,4 +56,3 @@ const TypingIndicator = () => {
   )
 }
 
-export default TypingIndicator
