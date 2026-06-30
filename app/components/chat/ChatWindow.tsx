@@ -1,5 +1,4 @@
-// // /app/components/chat/ChatWindow.tsx
-
+// /app/components/chat/ChatWindow.tsx
 
 'use client'
 
@@ -37,9 +36,41 @@ export default function ChatWindow({
 
   const [operatorTyping, setOperatorTyping] = useState(false)
 
-  const [operatorName, setOperatorName] = useState<string>()
+  // We change this state to hold real-time overrides from sockets (like typing notifications)
+  const [socketOperatorName, setSocketOperatorName] = useState<string>()
 
   const [loading, setLoading] = useState(true)
+
+  /*
+   ****************************************
+   * DERIVED STATE: OPERATOR NAME CALCULATION
+   ****************************************
+   */
+  let operatorName = socketOperatorName
+
+  if (!operatorName) {
+    if (
+      session?.assignedOperatorId &&
+      typeof session.assignedOperatorId === 'object'
+    ) {
+      const castedOp =
+        session.assignedOperatorId as unknown as PopulatedOperator
+      const companyName = castedOp.accountId?.name || ''
+      const firstName = castedOp.firstName || ''
+
+      if (companyName || firstName) {
+        operatorName = `${companyName} (${firstName})`.trim()
+      }
+    } else {
+      const lastOperatorMsg = [...messages]
+        .reverse()
+        .find((m) => m.senderType === 'operator' && m.senderName)
+
+      if (lastOperatorMsg?.senderName) {
+        operatorName = lastOperatorMsg.senderName
+      }
+    }
+  }
 
   /*
    ****************************************
@@ -77,7 +108,8 @@ export default function ChatWindow({
 
     initialize()
   }, [widgetId, visitorTrackingId])
-/*
+
+  /*
    ****************************************
    * LOAD OLD MESSAGES
    ****************************************
@@ -91,26 +123,11 @@ export default function ChatWindow({
       const result = await response.json()
       if (result.status === 'success') {
         setMessages(result.data)
-
-        // Ensure assignedOperatorId is populated as an object before parsing fields
-        if (
-          session.assignedOperatorId &&
-          typeof session.assignedOperatorId === 'object'
-        ) {
-          const castedOp = session.assignedOperatorId as unknown as PopulatedOperator
-          const companyName = castedOp.accountId?.name || ''
-          const firstName = castedOp.firstName || ''
-          
-          if (companyName || firstName) {
-            setOperatorName(`${companyName} (${firstName})`.trim())
-          }
-        }
       }
     } catch (error) {
       console.error(error)
     }
   })
-
 
   useEffect(() => {
     if (session?.sessionId) {
@@ -149,10 +166,10 @@ export default function ChatWindow({
       })
 
       if (payload.senderType === 'operator') {
-        // If your payload contains nested schema updates, build it.
-        // Otherwise use the senderName fallback gracefully
-        setOperatorName(payload.senderName ?? 'Support Agent')
         setOperatorTyping(false)
+        if (payload.senderName) {
+          setSocketOperatorName(payload.senderName)
+        }
       }
     }
 
@@ -181,7 +198,7 @@ export default function ChatWindow({
 
       setOperatorTyping(payload.isTyping)
       if (payload.senderName) {
-        setOperatorName(payload.senderName)
+        setSocketOperatorName(payload.senderName)
       }
     }
 
