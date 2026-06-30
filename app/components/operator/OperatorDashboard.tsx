@@ -10,49 +10,62 @@ import EmptyState from './EmptyState'
 import { FiChevronLeft, FiSliders, FiMessageSquare } from 'react-icons/fi'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { getMyProperties } from '@/app/lib/api/chat.api'
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
 export default function OperatorDashboard() {
   const [selectedConversation, setSelectedConversation] =
     useState<OperatorConversation | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
-
-  // Responsive workflow controller: 'sidebar' | 'chat' | 'info'
   const [currentPane, setCurrentPane] = useState<'sidebar' | 'chat' | 'info'>(
     'sidebar',
   )
 
+  // Global property subscription hook layout
   useEffect(() => {
     const socket = getChatSocket()
     if (!socket.connected) socket.connect()
 
-    const currentPropertyId = selectedConversation
-      ? typeof selectedConversation.propertyId === 'string'
-        ? selectedConversation.propertyId
-        : selectedConversation.propertyId?._id
-      : null
+    let activePropertyId: string | null = null
 
-    if (currentPropertyId) {
-      socket.emit('join_property_dashboard', { propertyId: currentPropertyId })
+    async function autoJoinDashboard() {
+      try {
+        // If a chat is active, grab its propertyId. Otherwise, fetch the primary property fallback
+        if (selectedConversation) {
+          activePropertyId =
+            typeof selectedConversation.propertyId === 'string'
+              ? selectedConversation.propertyId
+              : (selectedConversation.propertyId?._id ?? null)
+        } else {
+          const propertiesData = await getMyProperties()
+          activePropertyId = propertiesData?.data?.[0]?._id ?? null
+        }
+
+        if (activePropertyId) {
+          socket.emit('join_property_dashboard', {
+            propertyId: activePropertyId,
+          })
+        }
+      } catch (error) {
+        console.error('❌ Dashboard channel subscription trace error:', error)
+      }
     }
 
-    const handleDashboardUpdate = (payload: {
-      sessionId: string
-      message: ChatMessage
-    }) => {
-      setRefreshTrigger((prev) => prev + 1)
-    }
+    void autoJoinDashboard()
 
-    socket.on('dashboard_message_update', handleDashboardUpdate)
-    socket.on('incoming_visitor_alert', () =>
-      setRefreshTrigger((prev) => prev + 1),
-    )
-    socket.on('chat_assigned', () => setRefreshTrigger((prev) => prev + 1))
+    const triggerUpdate = () => setRefreshTrigger((prev) => prev + 1)
+
+    // Bind real-time tracking streams matching exact backend pipeline strings
+    socket.on('dashboard_message_update', triggerUpdate)
+    socket.on('dashboard_chat_queued', triggerUpdate)
+    socket.on('dashboard_chat_assigned', triggerUpdate)
+    socket.on('chat_assigned', triggerUpdate)
 
     return () => {
-      socket.off('dashboard_message_update', handleDashboardUpdate)
-      socket.off('incoming_visitor_alert')
-      socket.off('chat_assigned')
+      socket.off('dashboard_message_update', triggerUpdate)
+      socket.off('dashboard_chat_queued', triggerUpdate)
+      socket.off('dashboard_chat_assigned', triggerUpdate)
+      socket.off('chat_assigned', triggerUpdate)
     }
   }, [selectedConversation])
 
@@ -63,7 +76,6 @@ export default function OperatorDashboard() {
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative">
-      {/* Pane 1: Chat Threads List */}
       <div
         className={`absolute inset-y-0 left-0 z-20 w-full md:static md:w-72.5 lg:w-[320px] xl:w-87.5 shrink-0 border-r border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
           ${currentPane === 'sidebar' ? 'translate-x-0' : '-translate-x-full'}`}
@@ -75,14 +87,12 @@ export default function OperatorDashboard() {
         />
       </div>
 
-      {/* Pane 2: Primary Thread Canvas Workspace */}
       <div
         className={`absolute inset-0 z-10 flex flex-col md:static md:flex-1 min-w-0 bg-background/40 transition-transform duration-300 md:translate-x-0
           ${currentPane === 'chat' ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}
       >
         {selectedConversation ? (
           <div className="flex flex-col h-full w-full overflow-hidden">
-            {/* Mobile Adaptive Panel Command Ribbon Banner */}
             <div className="md:hidden flex h-14 items-center justify-between border-b border-border bg-card/90 px-4 shrink-0 backdrop-blur-sm">
               <button
                 onClick={() => setCurrentPane('sidebar')}
@@ -114,13 +124,11 @@ export default function OperatorDashboard() {
         )}
       </div>
 
-      {/* Pane 3: Visitor Profile Info Inspector Drawer */}
       {selectedConversation && (
         <div
           className={`absolute inset-y-0 right-0 z-30 w-full sm:w-85 md:static md:w-70 lg:w-[320px] xl:w-85 shrink-0 border-l border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
             ${currentPane === 'info' ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}
         >
-          {/* Mobile Profile View Dimiss Header Bar Banner */}
           <div className="lg:hidden flex h-14 items-center border-b border-border bg-card px-4 shrink-0">
             <button
               onClick={() => setCurrentPane('chat')}

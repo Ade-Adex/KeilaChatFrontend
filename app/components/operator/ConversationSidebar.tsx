@@ -9,8 +9,9 @@ import {
   getMySessions,
   getMyProperties,
 } from '@/app/lib/api/chat.api'
+import { getChatSocket } from '@/app/hooks/useChatSocket'
 import { FiUser, FiActivity, FiLayers } from 'react-icons/fi'
-import type { OperatorConversation } from '@/app/types/dashboard'
+import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
 interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
@@ -28,6 +29,8 @@ export default function ConversationSidebar({
   const [myChats, setMyChats] = useState<OperatorConversation[]>([])
   const [loading, setLoading] = useState(true)
 
+  const socket = getChatSocket()
+
   const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
     if (visitor && typeof visitor === 'object' && 'name' in visitor) {
       return visitor.name ?? 'Anonymous Visitor'
@@ -35,6 +38,7 @@ export default function ConversationSidebar({
     return 'Anonymous Visitor'
   }
 
+  // Effect 1: Core API Synchronizer
   useEffect(() => {
     let mounted = true
     const fetchConversations = async () => {
@@ -70,6 +74,49 @@ export default function ConversationSidebar({
       mounted = false
     }
   }, [refreshKey])
+
+  // Effect 2: Fine-Grained Real-Time Message & Notification Push Mapper
+  useEffect(() => {
+    if (!socket) return
+
+    const handleMessageUpdate = (payload: {
+      sessionId: string
+      message: ChatMessage
+    }) => {
+      const updateList = (list: OperatorConversation[]) => {
+        const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
+        if (targetIndex === -1) return list
+
+        const updatedList = [...list]
+        const targetChat = { ...updatedList[targetIndex] }
+
+        // Update preview metrics dynamically
+        targetChat.lastMessage = payload.message.messageText
+        targetChat.lastMessageAt = payload.message.createdAt
+
+        // Increment unread count if it's an operator viewing an incoming message from a visitor
+        if (
+          payload.message.senderType === 'visitor' &&
+          selectedConversation?._id !== payload.sessionId
+        ) {
+          targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
+        }
+
+        // Pull item forward to top position of array list stack
+        updatedList.splice(targetIndex, 1)
+        return [targetChat, ...updatedList]
+      }
+
+      setMyChats((prev) => updateList(prev))
+      setQueuedChats((prev) => updateList(prev))
+      setActiveChats((prev) => updateList(prev))
+    }
+
+    socket.on('dashboard_message_update', handleMessageUpdate)
+    return () => {
+      socket.off('dashboard_message_update', handleMessageUpdate)
+    }
+  }, [socket, selectedConversation])
 
   if (loading && refreshKey === 0) {
     return (
@@ -111,10 +158,16 @@ export default function ConversationSidebar({
         <div className="space-y-1">
           {chats.map((chat) => {
             const isSelected = selectedConversation?._id === chat._id
+            const hasUnread = (chat.unreadOperator ?? 0) > 0
+
             return (
               <button
                 key={chat._id}
-                onClick={() => onSelect(chat)}
+                onClick={() => {
+                  // Reset local unread flag optimistically when opening thread
+                  chat.unreadOperator = 0
+                  onSelect(chat)
+                }}
                 className={`w-full text-left px-3 py-2.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between
                   ${
                     isSelected
@@ -122,12 +175,28 @@ export default function ConversationSidebar({
                       : 'hover:bg-muted bg-background/30 text-foreground border border-transparent hover:border-border/50'
                   }`}
               >
-                <span className="truncate pr-2">
-                  {getVisitorName(chat.visitorId)}
-                </span>
-                <span
-                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${chat.status === 'queued' ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                />
+                <div className="flex flex-col min-w-0 flex-1 pr-2">
+                  <span className="truncate font-semibold">
+                    {getVisitorName(chat.visitorId)}
+                  </span>
+                  {chat.lastMessage && (
+                    <span
+                      className={`truncate text-[10px] mt-0.5 ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}
+                    >
+                      {chat.lastMessage}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {hasUnread && !isSelected && (
+                    <span className="bg-blue-600 text-white text-[9px] font-bold h-4 min-w-4 px-1 rounded-full flex items-center justify-center">
+                      {chat.unreadOperator}
+                    </span>
+                  )}
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${chat.status === 'queued' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                  />
+                </div>
               </button>
             )
           })}
