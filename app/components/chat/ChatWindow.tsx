@@ -504,13 +504,12 @@ export default function ChatWindow({
             '*',
           )
 
+
           // 2. 🔊 Play the notification sound if enabled in widget settings
           if (widget?.widgetSettings?.soundEnabled) {
             try {
-              // Uses a lightweight, standard notification chime asset
-              const audio = new Audio(
-                'https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav',
-              )
+              // Next.js serves assets inside /public straight from the root '/' path
+              const audio = new Audio('/sound/notification.wav')
               audio.volume = 0.6
               audio.play().catch((err) => {
                 console.log(
@@ -537,7 +536,7 @@ export default function ChatWindow({
         }
       }
     }
-    
+
     const handleTyping = (payload: {
       isTyping: boolean
       actor?: string
