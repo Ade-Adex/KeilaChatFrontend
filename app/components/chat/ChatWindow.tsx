@@ -25,19 +25,13 @@ export default function ChatWindow({
   onClose,
 }: ChatWindowProps) {
   const socket = getChatSocket()
-
   const typingTimer = useRef<NodeJS.Timeout | null>(null)
 
   const [session, setSession] = useState<SafeSessionConfig | null>(null)
-
   const [messages, setMessages] = useState<ChatMessage[]>([])
-
   const [message, setMessage] = useState('')
-
   const [operatorTyping, setOperatorTyping] = useState(false)
-
   const [socketOperatorName, setSocketOperatorName] = useState<string>()
-
   const [loading, setLoading] = useState(true)
 
   /*
@@ -47,7 +41,6 @@ export default function ChatWindow({
    */
   let operatorName = socketOperatorName
 
-  // 1. Filter out generic system or account company string labels coming from sockets
   if (
     operatorName &&
     (operatorName.toLowerCase() === 'operator' ||
@@ -58,7 +51,6 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
-  // 2. If no valid socket name override is active, look at the populated DB session config
   if (!operatorName) {
     if (
       session?.assignedOperatorId &&
@@ -66,14 +58,11 @@ export default function ChatWindow({
       'firstName' in session.assignedOperatorId
     ) {
       const castedOp: PopulatedOperator = session.assignedOperatorId
-
-      // 🎯 FORCE EXTRACT THE HUMAN FIRST NAME DIRECTLY ("adeolu")
       if (castedOp.firstName) {
         operatorName = castedOp.firstName.trim()
       }
     }
 
-    // 3. Fallback: Check message array history data for a human name
     if (!operatorName) {
       const lastOperatorMsg = [...messages]
         .reverse()
@@ -93,14 +82,13 @@ export default function ChatWindow({
     }
   }
 
-  // 4. ✅ FIXED: Clean fallback that never mentions the account/company name
   if (!operatorName) {
     operatorName = 'Support Agent'
   }
 
   /*
    ****************************************
-   * CREATE/RESUME SESSION
+   * CREATE/RESUME SESSION (WITH HISTORY RESCUE)
    ****************************************
    */
   useEffect(() => {
@@ -136,7 +124,6 @@ export default function ChatWindow({
   }, [widgetId, visitorTrackingId])
 
   /*
-  /*
    ****************************************
    * LOAD OLD MESSAGES
    ****************************************
@@ -167,6 +154,7 @@ export default function ChatWindow({
 
     fetchHistory()
   }, [session?.sessionId])
+
   /*
    ****************************************
    * SOCKET CONNECTION & MESSAGE LISTENER
@@ -186,9 +174,6 @@ export default function ChatWindow({
       clientType: 'visitor',
     })
 
-    /*
-     * New message inbound processor
-     */
     const handleNewMessage = (payload: ChatMessage) => {
       setMessages((prev) => {
         if (!payload._id) return [...prev, payload]
@@ -205,9 +190,6 @@ export default function ChatWindow({
       }
     }
 
-    /*
-     * Dashboard Sync fallback alignment
-     */
     const handleDashboardMessageUpdate = (payload: {
       sessionId: string
       message: ChatMessage
@@ -217,9 +199,6 @@ export default function ChatWindow({
       }
     }
 
-    /*
-     * Typing Listener Adjustment
-     */
     const handleTyping = (payload: {
       sessionId: string
       isTyping: boolean
@@ -234,9 +213,6 @@ export default function ChatWindow({
       }
     }
 
-    /*
-     * Presence Events
-     */
     const handlePresence = (payload: { message: string }) => {
       setMessages((prev) => [
         ...prev,
@@ -257,7 +233,6 @@ export default function ChatWindow({
       )
     }
 
-    // Subscriptions
     socket.on('new_message', handleNewMessage)
     socket.on('dashboard_message_update', handleDashboardMessageUpdate)
     socket.on('user_typing', handleTyping)
@@ -275,11 +250,37 @@ export default function ChatWindow({
 
   /*
    ****************************************
-   * TYPING TRANSMITTER
+   * VISITOR INITIATED CHAT END ACTION
    ****************************************
    */
+  async function endSession() {
+    if (!session?.sessionId) return
+    if (!window.confirm('Are you sure you want to end this conversation?'))
+      return
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/session/${session.sessionId}/close`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ closedBy: 'visitor' }),
+        },
+      )
+      const result = await response.json()
+      if (result.status === 'success') {
+        setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+        socket.emit('end_chat_session', { sessionId: session.sessionId })
+      }
+    } catch (err) {
+      console.error('Error closing session context:', err)
+    }
+  }
+
   function sendTyping(typing: boolean) {
-    if (!session || !socket.connected) return
+    if (!session || !socket.connected || session.status === 'closed') return
 
     socket.emit('typing', {
       sessionId: session.sessionId,
@@ -288,13 +289,8 @@ export default function ChatWindow({
     })
   }
 
-  /*
-   ****************************************
-   * SEND MESSAGE
-   ****************************************
-   */
   function sendMessage() {
-    if (!session || !message.trim()) return
+    if (!session || !message.trim() || session.status === 'closed') return
 
     socket.emit('send_message', {
       sessionId: session.sessionId,
@@ -312,11 +308,6 @@ export default function ChatWindow({
     }
   }
 
-  /*
-   ****************************************
-   * INPUT DEBOUNCER
-   ****************************************
-   */
   function handleInput(value: string) {
     setMessage(value)
     sendTyping(true)
@@ -345,6 +336,18 @@ export default function ChatWindow({
         operatorName={operatorName}
         onClose={onClose}
       />
+
+      {/* End Chat Button Area */}
+      {session && session.status !== 'closed' && (
+        <div className="bg-muted/30 px-4 py-1.5 flex justify-end border-b border-border">
+          <button
+            onClick={endSession}
+            className="text-[11px] text-destructive hover:underline font-medium cursor-pointer"
+          >
+            End Conversation
+          </button>
+        </div>
+      )}
 
       <ChatMessages
         widget={widget}
