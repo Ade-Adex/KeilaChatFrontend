@@ -65,7 +65,7 @@ export default function OperatorDashboard() {
     <div className="flex h-full w-full bg-background overflow-hidden relative">
       {/* Pane 1: Chat Threads List */}
       <div
-        className={`absolute inset-y-0 left-0 z-20 w-full md:static md:w-[290px] lg:w-[320px] xl:w-[350px] shrink-0 border-r border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
+        className={`absolute inset-y-0 left-0 z-20 w-full md:static md:w-72.5 lg:w-[320px] xl:w-87.5 shrink-0 border-r border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
           ${currentPane === 'sidebar' ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <ConversationSidebar
@@ -117,7 +117,7 @@ export default function OperatorDashboard() {
       {/* Pane 3: Visitor Profile Info Inspector Drawer */}
       {selectedConversation && (
         <div
-          className={`absolute inset-y-0 right-0 z-30 w-full sm:w-[340px] md:static md:w-[280px] lg:w-[320px] xl:w-[340px] shrink-0 border-l border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
+          className={`absolute inset-y-0 right-0 z-30 w-full sm:w-85 md:static md:w-70 lg:w-[320px] xl:w-85 shrink-0 border-l border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
             ${currentPane === 'info' ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}
         >
           {/* Mobile Profile View Dimiss Header Bar Banner */}

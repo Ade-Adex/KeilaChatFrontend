@@ -118,7 +118,7 @@ export default function ConversationSidebar({
                 className={`w-full text-left px-3 py-2.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between
                   ${
                     isSelected
-                      ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
+                      ? 'bg-primary text-white shadow-sm shadow-primary/10'
                       : 'hover:bg-muted bg-background/30 text-foreground border border-transparent hover:border-border/50'
                   }`}
               >

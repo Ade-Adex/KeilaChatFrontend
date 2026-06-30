@@ -35,7 +35,7 @@ export default function MessageFeed({
   if (messages.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-center bg-background/10">
-        <p className="text-xs text-muted-foreground/60 max-w-[200px] leading-relaxed italic border border-dashed border-border/50 rounded-2xl p-4 bg-card/20">
+        <p className="text-xs text-muted-foreground/60 max-w-50 leading-relaxed italic border border-dashed border-border/50 rounded-2xl p-4 bg-card/20">
           No dispatch transactions verified on this channel thread.
         </p>
       </div>

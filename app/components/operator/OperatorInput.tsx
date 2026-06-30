@@ -8,8 +8,8 @@ import { FaFaceSmile, FaPaperPlane } from 'react-icons/fa6'
 
 import { sendOperatorMessage, sendTypingStatus } from '@/app/lib/api/chat.api'
 import { useAuthStore } from '@/app/store/useAuthStore'
+import { getChatSocket } from '@/app/hooks/useChatSocket'
 import type { ChatMessage } from '@/app/types/dashboard'
-
 
 export interface OperatorInputProps {
   sessionId: string
@@ -23,19 +23,19 @@ export default function OperatorInput({
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
+  const isCurrentlyTyping = useRef(false)
 
   const operator = useAuthStore((state) => state.operator)
+  const socket = getChatSocket()
 
-//   // CRITICAL FIX: Safe client mount hydration trigger loop restored
-//   useEffect(() => {
-//   return () => {
-//     if (typingTimeout.current) {
-//       clearTimeout(typingTimeout.current)
-//     }
-//   }
-// }, [])
-
-
+  // Clean up typing timeouts and reset local state on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current)
+      }
+    }
+  }, [])
 
   const sendMessage = async () => {
     const trimmed = message.trim()
@@ -49,6 +49,11 @@ export default function OperatorInput({
 
     try {
       setSending(true)
+
+      // Stop typing immediately when sending a message
+      if (typingTimeout.current) clearTimeout(typingTimeout.current)
+      await sendTyping(false)
+
       const result = await sendOperatorMessage({
         sessionId,
         senderType: 'operator',
@@ -71,16 +76,31 @@ export default function OperatorInput({
   }
 
   const sendTyping = async (typing: boolean) => {
+    isCurrentlyTyping.current = typing
     try {
+      // 1. Keeps your existing backend database/log collection up to date via HTTP API
       await sendTypingStatus(sessionId, { actor: 'operator', typing })
+
+      // 2. CRITICAL FIX: Direct Socket Broadcast to immediately alert the visitor's channel
+      if (socket && socket.connected) {
+        socket.emit('typing', {
+          sessionId,
+          senderName: 'Operator',
+          isTyping: typing,
+        })
+      }
     } catch (error) {
-      console.error(error)
+      console.error('❌ Failed to emit typing tracking payload data:', error)
     }
   }
 
   const handleChange = (value: string) => {
     setMessage(value)
-    void sendTyping(true)
+
+    // Only emit typing = true if the flag isn't already active to eliminate network spam
+    if (!isCurrentlyTyping.current) {
+      void sendTyping(true)
+    }
 
     if (typingTimeout.current) clearTimeout(typingTimeout.current)
     typingTimeout.current = setTimeout(() => {
@@ -94,7 +114,6 @@ export default function OperatorInput({
       void sendMessage()
     }
   }
-
 
   return (
     <div className="border-t border-border bg-card/80 p-3 md:p-4 backdrop-blur-md">
@@ -126,7 +145,7 @@ export default function OperatorInput({
                 : 'Authenticating authorization credentials...'
             }
             disabled={!operator}
-            className="w-full max-h-32 min-h-[38px] py-2 bg-transparent text-xs outline-none resize-none disabled:opacity-50 text-foreground custom-scrollbar leading-relaxed"
+            className="w-full max-h-32 min-h-9.5 py-2 bg-transparent text-xs outline-none resize-none disabled:opacity-50 text-foreground custom-scrollbar leading-relaxed"
           />
         </div>
 
@@ -134,7 +153,7 @@ export default function OperatorInput({
           type="button"
           onClick={() => void sendMessage()}
           disabled={sending || !message.trim() || !operator}
-          className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/15 transition hover:opacity-90 disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/15 transition hover:opacity-90 disabled:opacity-40"
         >
           <FaPaperPlane size={14} />
         </button>

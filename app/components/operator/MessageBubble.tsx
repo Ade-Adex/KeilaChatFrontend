@@ -62,14 +62,14 @@ function MessageBubble({ message }: MessageBubbleProps) {
             className={`rounded-2xl px-3.5 py-2.5 shadow-sm text-xs leading-relaxed transition-all
               ${
                 isOperator
-                  ? 'bg-primary text-primary-foreground rounded-tr-none'
+                  ? 'bg-primary text-white rounded-tr-none'
                   : isAI
                     ? 'border border-blue-100/80 bg-blue-50/50 dark:border-blue-950/50 dark:bg-blue-950/30 rounded-tl-none'
                     : 'bg-muted/70 text-foreground rounded-tl-none'
               }`}
           >
             {message.messageText && (
-              <p className="whitespace-pre-wrap break-words">
+              <p className="whitespace-pre-wrap wrap-break-word">
                 {message.messageText}
               </p>
             )}

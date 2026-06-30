@@ -161,7 +161,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       </div>
 
       {/* Interactive Telemetry Feed Footers */}
-      <div className="relative z-10 bg-gradient-to-t from-background via-background/90 to-transparent pt-4">
+      <div className="relative z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-4">
         <TypingIndicator
           visible={visitorTyping}
           actor="visitor"
