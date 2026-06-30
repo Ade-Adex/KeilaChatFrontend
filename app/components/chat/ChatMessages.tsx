@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react'
 import type { ChatMessage, WidgetConfig } from '@/app/types/chat'
 
 import MessageBubble from './MessageBubble'
-import TypingIndicator from './TypingIndicator'
+import TypingIndicator from '@/app/components/TypingIndicator'
 
 interface Props {
   widget: WidgetConfig

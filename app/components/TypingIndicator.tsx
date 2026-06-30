@@ -1,58 +1,51 @@
-import React from 'react'
+// /app/components/chat/TypingIndicator.tsx
+
+'use client'
+
 export interface TypingIndicatorProps {
   visible: boolean
   actor?: 'visitor' | 'operator'
-  name?: string
+  name?: string | undefined
 }
 
-export default function TypingIndicator({
+export default function TypingIndicator(/* {
   visible,
   actor = 'visitor',
   name,
-}: TypingIndicatorProps) {
+}: TypingIndicatorProps */) {
+  // if (!visible) return null
 
-  if (!visible) return null
-
-  const label = name ?? (actor === 'visitor' ? 'Visitor' : 'Operator')
-
+  // const label = name ?? (actor === 'visitor' ? 'Visitor' : 'Operator')
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: '4px',
-        padding: '10px 14px',
-        backgroundColor: '#333',
-        borderRadius: '12px 12px 12px 0',
-        width: 'fit-content',
-        alignSelf: 'flex-start',
-      }}
-    >
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          style={{
-            width: '6px',
-            height: '6px',
-            backgroundColor: '#888',
-            borderRadius: '50%',
-            animation: 'bounce 1.4s infinite ease-in-out both',
-            animationDelay: `${i * 0.16}s`,
-          }}
-        />
-      ))}
-      <style jsx>{`
-        @keyframes bounce {
-          0%,
-          80%,
-          100% {
-            transform: scale(0);
-          }
-          40% {
-            transform: scale(1);
-          }
-        }
-      `}</style>
+    <div className="flex items-start">
+      <div
+        className="
+          flex
+          gap-1
+          rounded-2xl
+          rounded-bl-sm
+          bg-card
+          px-4
+          py-3
+          shadow-sm
+        "
+      >
+        {[0, 1, 2].map((dot) => (
+          <span
+            key={dot}
+            className="
+              h-2
+              w-2
+              animate-bounce
+              rounded-full
+              bg-gray-600
+            "
+            style={{
+              animationDelay: `${dot * 0.15}s`,
+            }}
+          />
+        ))}
+      </div>
     </div>
   )
 }
-

@@ -8,6 +8,7 @@ import { getSessionMessages } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 import TypingIndicator from '@/app/components/TypingIndicator'
+import { useAuthStore } from '@/app/store/useAuthStore'
 
 interface OperatorWorkspaceProps {
   session: OperatorConversation
@@ -21,6 +22,9 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
   const socket = getChatSocket()
   const currentSessionId = session._id
+
+    const operator = useAuthStore((state) => state.operator)
+  
 
   useEffect(() => {
     if (!socket.connected) socket.connect()
@@ -163,9 +167,9 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       {/* Interactive Telemetry Feed Footers */}
       <div className="relative z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-4">
         <TypingIndicator
-          visible={visitorTyping}
-          actor="visitor"
-          name={visitorName}
+          // visible={visitorTyping}
+          // actor={operator?.firstName ||  "operator"}
+          // name={visitorName}
         />
         <OperatorInput
           sessionId={currentSessionId}
