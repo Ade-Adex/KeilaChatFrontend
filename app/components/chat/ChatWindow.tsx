@@ -48,8 +48,14 @@ export default function ChatWindow({
    */
   let operatorName = socketOperatorName
 
-  console.log('socketOperatorName', socketOperatorName)
-  console.log('!operatorName in chatwindow', !operatorName)
+  // CORRECTION: Filter out generic system placeholder strings
+  if (
+    operatorName &&
+    (operatorName.toLowerCase() === 'operator' ||
+      operatorName.toLowerCase() === 'support agent')
+  ) {
+    operatorName = undefined
+  }
 
   if (!operatorName) {
     if (
@@ -67,7 +73,13 @@ export default function ChatWindow({
     } else {
       const lastOperatorMsg = [...messages]
         .reverse()
-        .find((m) => m.senderType === 'operator' && m.senderName)
+        .find(
+          (m) =>
+            m.senderType === 'operator' &&
+            m.senderName &&
+            m.senderName.toLowerCase() !== 'operator' &&
+            m.senderName.toLowerCase() !== 'support agent',
+        )
 
       if (lastOperatorMsg?.senderName) {
         operatorName = lastOperatorMsg.senderName
