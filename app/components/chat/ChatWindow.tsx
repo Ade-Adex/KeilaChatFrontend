@@ -56,7 +56,7 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
-  // 2. If no socket name override is active, process the session configuration
+  // 2. If no socket name override is active, parse the populated session config
   if (!operatorName) {
     if (
       session?.assignedOperatorId &&
@@ -64,11 +64,17 @@ export default function ChatWindow({
     ) {
       const castedOp =
         session.assignedOperatorId as unknown as PopulatedOperator
-      const companyName = castedOp.accountId?.name || ''
-      const firstName = castedOp.firstName || ''
 
-      if (companyName || firstName) {
-        operatorName = `${companyName} (${firstName})`.trim()
+      const companyName = castedOp.accountId?.name || ''
+      // Fallback chain for the operator's actual name
+      const humanName = castedOp.firstName
+        ? `${castedOp.firstName} ${castedOp.lastName || ''}`.trim()
+        : 'Agent'
+
+      if (companyName) {
+        operatorName = `${companyName} (${humanName})`
+      } else {
+        operatorName = humanName
       }
     } else {
       // 3. Fallback: Check message array data for a human name
@@ -88,7 +94,7 @@ export default function ChatWindow({
     }
   }
 
-  // 4. CRITICAL CORRECTION: Fallback placeholder if no human operator is assigned yet
+  // 4. Fallback placeholder if no session details are active yet
   if (!operatorName) {
     operatorName = widget?.name ? `${widget.name} Support` : 'Support Team'
   }
