@@ -246,7 +246,6 @@
 
 
 
-
 ;(async function () {
   const scriptTag = document.currentScript as HTMLScriptElement | null
 
@@ -332,7 +331,7 @@
     const iframe = document.createElement('iframe')
     iframe.title = 'Keila Chat Widget'
     iframe.loading = 'lazy'
-    iframe.allow = 'clipboard-read; clipboard-write'
+    iframe.allow = 'clipboard-read; clipboard-write; autoplay' // 🎯 Added autoplay permissions explicitly for cross-domain frames
     iframe.referrerPolicy = 'strict-origin-when-cross-origin'
 
     iframe.sandbox.add(
@@ -347,6 +346,7 @@
       visitorTrackingId: visitorTrackingId!,
       apiUrl: API_URL,
       frontendUrl: FRONTEND_URL,
+      minimized: 'true', // 🎯 Started as minimized by default
     })
 
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
@@ -366,7 +366,6 @@
       zIndex: '1',
     })
 
-    // 🎯 Create the dynamic HTML badge inside the shadow root alongside the iframe container
     const badge = document.createElement('div')
     badge.id = 'keila-chat-badge'
     Object.assign(badge.style, {
@@ -381,14 +380,14 @@
       height: '20px',
       minWidth: '20px',
       borderRadius: '10px',
-      display: 'none', // hidden by default
+      display: 'none',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '0 6px',
       boxSizing: 'border-box',
       boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
       zIndex: '2',
-      pointerEvents: 'none', // clicks pass straight through into the iframe bubble launch sequence
+      pointerEvents: 'none',
     })
 
     shadowRoot.appendChild(iframe)
@@ -403,16 +402,14 @@
       if (!data || typeof data !== 'object') return
 
       switch (data.type) {
-        // 🎯 Handle increment notifications
         case 'UNREAD_UPDATE': {
-          if (iframe.style.width === '64px') {
+          if (iframe.style.width === '64px' || iframe.getAttribute('data-state') === 'minimized') {
             badge.innerText = data.count.toString()
             badge.style.display = 'flex'
           }
           break
         }
 
-        // 🎯 Handle resetting notifications
         case 'UNREAD_RESET': {
           badge.style.display = 'none'
           break
@@ -434,6 +431,9 @@
           const mobile = window.screen.width <= 768
           const expanded = width > 64 || height > 64
 
+          // 🎯 Keep state track on element attribute to avoid race conditions with frame size checks
+          iframe.setAttribute('data-state', expanded ? 'expanded' : 'minimized')
+
           Object.assign(iframe.style, {
             width: `${width}px`,
             height: `${height}px`,
@@ -447,7 +447,6 @@
             overflow: expanded ? 'hidden' : 'visible',
           })
 
-          // Clear out the badge if the frame expands manually
           if (expanded) {
             badge.style.display = 'none'
           }

@@ -341,8 +341,9 @@ export default function ChatWindow({
 }: ChatWindowProps) {
   const socket = getChatSocket()
 
-  // 🎯 Track unread messages internally without triggering compilation errors or unused state warnings
   const currentUnreadRef = useRef<number>(0)
+  // 🎯 Use a state mirror to ensure runtime code references current layout bounds perfectly
+  const [isCurrentlyMinimized, setIsCurrentlyMinimized] = useState(true)
 
   const [session, setSession] = useState<SafeSessionConfig | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -451,18 +452,21 @@ export default function ChatWindow({
     fetchHistory()
   }, [session?.sessionId, session?.status])
 
-  // 🎯 Listens for layout viewport adjustments to auto-clear indicators from the embed script
+  // 🎯 Combined viewport listener to determine layout state accurately
   useEffect(() => {
     const handleResizeCheck = () => {
-      const isExpanded = window.innerWidth > 64 || window.innerHeight > 64
-      if (isExpanded) {
+      // Browsers match small dimensions up to 66px inside standalone widget layouts
+      const minimized = window.innerWidth <= 66 || window.innerHeight <= 66
+      setIsCurrentlyMinimized(minimized)
+
+      if (!minimized) {
         currentUnreadRef.current = 0
         window.parent.postMessage({ type: 'UNREAD_RESET' }, '*')
       }
     }
 
     window.addEventListener('resize', handleResizeCheck)
-    handleResizeCheck() // Run once on hook initialization
+    handleResizeCheck()
 
     return () => window.removeEventListener('resize', handleResizeCheck)
   }, [])
@@ -493,33 +497,34 @@ export default function ChatWindow({
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
         setOperatorTyping(false)
 
-        // 🎯 Check if the layout is minimized
-        const isMinimized = window.innerWidth <= 64 || window.innerHeight <= 64
-        if (isMinimized) {
+        // 🎯 Evaluates state from the synchronized state variable instead of direct window size operations
+        if (isCurrentlyMinimized) {
           currentUnreadRef.current += 1
 
-          // 1. Update the outer badge via message passing
+          // 1. Send count value to parent script context
           window.parent.postMessage(
             { type: 'UNREAD_UPDATE', count: currentUnreadRef.current },
             '*',
           )
 
-
-          // 2. 🔊 Play the notification sound if enabled in widget settings
+          // 2. 🔊 Execute sound track playback sequence
           if (widget?.widgetSettings?.soundEnabled) {
             try {
-              // Next.js serves assets inside /public straight from the root '/' path
               const audio = new Audio('/sound/notification.wav')
-              audio.volume = 0.6
-              audio.play().catch((err) => {
-                console.log(
-                  '[KeilaChat] Audio autoplay blocked until user interacts with document:',
-                  err,
-                )
-              })
+              audio.volume = 0.7
+
+              const playPromise = audio.play()
+              if (playPromise !== undefined) {
+                playPromise.catch((err) => {
+                  console.warn(
+                    '[KeilaChat] Audio playback deferred until user engagement:',
+                    err,
+                  )
+                })
+              }
             } catch (audioError) {
               console.error(
-                '[KeilaChat] Failed to play notification sound:',
+                '[KeilaChat] HTML5 Audio runtime issue:',
                 audioError,
               )
             }
@@ -559,7 +564,7 @@ export default function ChatWindow({
       socket.off('new_message', handleNewMessage)
       socket.off('user_typing', handleTyping)
     }
-  }, [session, socket])
+  }, [session, socket, isCurrentlyMinimized, widget]) // 🎯 Added dependencies to ensure effect re-binds on layout adjustments
 
   async function handleEndChat() {
     if (!session?.sessionId) return
