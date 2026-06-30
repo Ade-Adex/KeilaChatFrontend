@@ -9,17 +9,12 @@ import { FaFaceSmile, FaPaperPlane } from 'react-icons/fa6'
 import { sendOperatorMessage, sendTypingStatus } from '@/app/lib/api/chat.api'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-import type { ChatMessage } from '@/app/types/dashboard'
 
 export interface OperatorInputProps {
   sessionId: string
-  onMessageSent?: (message: ChatMessage) => void
 }
 
-export default function OperatorInput({
-  sessionId,
-  onMessageSent,
-}: OperatorInputProps) {
+export default function OperatorInput({ sessionId }: OperatorInputProps) {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -28,12 +23,9 @@ export default function OperatorInput({
   const operator = useAuthStore((state) => state.operator)
   const socket = getChatSocket()
 
-  // Clean up typing timeouts and reset local state on unmount
   useEffect(() => {
     return () => {
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current)
-      }
+      if (typingTimeout.current) clearTimeout(typingTimeout.current)
     }
   }, [])
 
@@ -50,11 +42,11 @@ export default function OperatorInput({
     try {
       setSending(true)
 
-      // Stop typing immediately when sending a message
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
       await sendTyping(false)
 
-      const result = await sendOperatorMessage({
+      // 🎯 API resolves backend database operations, Socket handler streams message automatically
+      await sendOperatorMessage({
         sessionId,
         senderType: 'operator',
         senderId: operatorId,
@@ -63,7 +55,6 @@ export default function OperatorInput({
         isFromAI: false,
       })
 
-      if (result?.data) onMessageSent?.(result.data)
       setMessage('')
     } catch (error) {
       console.error(
@@ -78,10 +69,8 @@ export default function OperatorInput({
   const sendTyping = async (typing: boolean) => {
     isCurrentlyTyping.current = typing
     try {
-      // 1. Keeps your existing backend database/log collection up to date via HTTP API
       await sendTypingStatus(sessionId, { actor: 'operator', typing })
 
-      // 2. CRITICAL FIX: Direct Socket Broadcast to immediately alert the visitor's channel
       if (socket && socket.connected) {
         socket.emit('typing', {
           sessionId,
@@ -97,7 +86,6 @@ export default function OperatorInput({
   const handleChange = (value: string) => {
     setMessage(value)
 
-    // Only emit typing = true if the flag isn't already active to eliminate network spam
     if (!isCurrentlyTyping.current) {
       void sendTyping(true)
     }

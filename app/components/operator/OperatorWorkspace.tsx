@@ -1,4 +1,5 @@
 // /components/operator/OperatorWorkspace.tsx
+
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -84,9 +85,19 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
       if (incomingSessionId !== currentSessionId) return
 
-      setMessages((prev) =>
-        prev.some((m) => m._id === message._id) ? prev : [...prev, message],
-      )
+      // Cleanly check for duplicate database IDs or identical message values to avoid doubling up
+      setMessages((prev) => {
+        const isDuplicate = prev.some(
+          (m) =>
+            m._id === message._id ||
+            (m.messageText === message.messageText &&
+              m.senderId === message.senderId &&
+              !m._id),
+        )
+
+        if (isDuplicate) return prev
+        return [...prev, message]
+      })
     }
 
     const handleTyping = (payload: {
@@ -168,7 +179,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
         <OperatorInput
           sessionId={currentSessionId}
-          onMessageSent={(msg) => setMessages((prev) => [...prev, msg])}
         />
       </div>
     </div>
