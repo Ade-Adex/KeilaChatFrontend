@@ -16,7 +16,7 @@ import Image from 'next/image'
 interface ChatHeaderProps {
   widget: WidgetConfig
   operatorName?: string
-  operatorAvatar?: string // 🎯 Added string field type for the avatar image
+  operatorAvatar?: string 
   isSessionActive: boolean
   onOpenEndModal: () => void
   onStartNewChat: () => void

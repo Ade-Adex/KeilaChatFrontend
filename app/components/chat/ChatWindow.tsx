@@ -41,7 +41,10 @@ export default function ChatWindow({
    ****************************************
    */
   let operatorName = socketOperatorName
-  let operatorAvatar: string | undefined = undefined // 🎯 FIX B: Local tracking flag
+  let operatorAvatar: string | undefined = undefined 
+
+
+  console.log('socketOperatorName', socketOperatorName)
 
   if (
     operatorName &&
