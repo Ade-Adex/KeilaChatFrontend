@@ -48,6 +48,9 @@ export default function ChatWindow({
    */
   let operatorName = socketOperatorName
 
+  console.log('socketOperatorName', socketOperatorName)
+  console.log('!operatorName in chatwindow', !operatorName)
+
   if (!operatorName) {
     if (
       session?.assignedOperatorId &&

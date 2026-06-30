@@ -16,6 +16,9 @@ export default function ChatHeader({
   operatorName,
   onClose,
 }: ChatHeaderProps) {
+
+
+  console.log('operatorName', operatorName)
   // Custom parser to split "Company Name (FirstName)" into styled HTML elements
   const renderOperatorText = () => {
     if (!operatorName) return null
