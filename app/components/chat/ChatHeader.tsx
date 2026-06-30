@@ -16,21 +16,20 @@ export default function ChatHeader({
   operatorName,
   onClose,
 }: ChatHeaderProps) {
-
-
   console.log('operatorName', operatorName)
-  // Custom parser to split "Company Name (FirstName)" into styled HTML elements
+
+  // Custom parser to extract and render only the standalone Operator Name
   const renderOperatorText = () => {
     if (!operatorName) return null
 
+    // Look for format "Company Name (FirstName)"
     const match = operatorName.match(/^(.*?)\s*\((.*?)\)$/)
 
     if (match) {
-      const companyName = match[1]
       const firstName = match[2]
       return (
         <span>
-          Chatting with <strong>{companyName}</strong> ({firstName})
+          Chatting with <strong>{firstName}</strong>
         </span>
       )
     }

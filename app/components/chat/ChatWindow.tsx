@@ -66,12 +66,12 @@ export default function ChatWindow({
         session.assignedOperatorId as unknown as PopulatedOperator
 
       const companyName = castedOp.accountId?.name || ''
-      // Fallback chain for the operator's actual name
       const humanName = castedOp.firstName
         ? `${castedOp.firstName} ${castedOp.lastName || ''}`.trim()
         : 'Agent'
 
       if (companyName) {
+        // Keep structured wrapper string so ChatHeader parsing hook functions correctly
         operatorName = `${companyName} (${humanName})`
       } else {
         operatorName = humanName
