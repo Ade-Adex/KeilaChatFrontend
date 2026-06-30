@@ -344,7 +344,7 @@
       },
       body: JSON.stringify({
         widgetId,
-        visitorTrackingId: visitorTrackingId || undefined, // Send existing ID or let the backend generate one
+        visitorTrackingId: visitorTrackingId || undefined, 
       }),
     })
 
@@ -362,13 +362,16 @@
 
     const initData = await initResponse.json()
 
-    if (initData.status !== 'success' || !initData.data?.visitorTrackingId) {
-      console.warn('[KeilaChat] Initialization rejected or missing tracking ID.')
+    // 🎯 FIX: Updated the nested paths to match your buildWidgetResponse structure
+    if (initData.status !== 'success' || !initData.data?.visitor?.trackingId) {
+      console.warn(
+        '[KeilaChat] Initialization rejected or missing tracking ID.',
+      )
       return
     }
 
-    // 🎯 Lock the backend-validated tracking ID securely into client storage
-    visitorTrackingId = initData.data.visitorTrackingId
+    // 🎯 FIX: Pull the string property accurately from the nested visitor object
+    visitorTrackingId = initData.data.visitor.trackingId
     localStorage.setItem('keila_visitor_id', visitorTrackingId!)
 
     /* -------------------------------------------------- */
