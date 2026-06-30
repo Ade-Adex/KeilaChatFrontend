@@ -25,7 +25,7 @@ export default function TypingIndicator() {
               w-2
               animate-bounce
               rounded-full
-              bg-muted-foreground
+              bg-gray-600
             "
             style={{
               animationDelay: `${dot * 0.15}s`,
