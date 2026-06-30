@@ -188,10 +188,14 @@ export interface SendMessagePayload {
   messageText: string
 }
 
+export interface SafeSessionConfig extends Omit<SessionConfig, 'assignedOperatorId'> {
+  assignedOperatorId?: string | PopulatedOperator
+}
+
 export interface SessionInitResponse {
   status: string
 
-  data: SessionConfig
+  data: SafeSessionConfig
 }
 
 export interface PopulatedAccount {
@@ -206,9 +210,4 @@ export interface PopulatedOperator {
   email: string
   avatar?: string
   accountId?: PopulatedAccount 
-}
-
-// Update your local configuration typing or inline cast
-export interface SafeSessionConfig extends Omit<SessionConfig, 'assignedOperatorId'> {
-  assignedOperatorId?: string | PopulatedOperator
 }

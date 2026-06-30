@@ -6,10 +6,10 @@ import { useEffect, useRef, useState } from 'react'
 
 import type {
   ChatMessage,
-  SessionConfig,
   ChatWindowProps,
   SessionInitResponse,
   PopulatedOperator,
+  SafeSessionConfig,
 } from '@/app/types/chat'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
@@ -28,7 +28,7 @@ export default function ChatWindow({
 
   const typingTimer = useRef<NodeJS.Timeout | null>(null)
 
-  const [session, setSession] = useState<SessionConfig | null>(null)
+  const [session, setSession] = useState<SafeSessionConfig | null>(null)
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
 
@@ -36,7 +36,6 @@ export default function ChatWindow({
 
   const [operatorTyping, setOperatorTyping] = useState(false)
 
-  // We change this state to hold real-time overrides from sockets (like typing notifications)
   const [socketOperatorName, setSocketOperatorName] = useState<string>()
 
   const [loading, setLoading] = useState(true)
@@ -48,7 +47,7 @@ export default function ChatWindow({
    */
   let operatorName = socketOperatorName
 
-  // CORRECTION: Filter out generic system placeholder strings
+  // 1. Filter out generic system string placeholders coming from sockets
   if (
     operatorName &&
     (operatorName.toLowerCase() === 'operator' ||
@@ -57,6 +56,7 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
+  // 2. If no socket name override is active, process the session configuration
   if (!operatorName) {
     if (
       session?.assignedOperatorId &&
@@ -71,6 +71,7 @@ export default function ChatWindow({
         operatorName = `${companyName} (${firstName})`.trim()
       }
     } else {
+      // 3. Fallback: Check message array data for a human name
       const lastOperatorMsg = [...messages]
         .reverse()
         .find(
@@ -85,6 +86,11 @@ export default function ChatWindow({
         operatorName = lastOperatorMsg.senderName
       }
     }
+  }
+
+  // 4. CRITICAL CORRECTION: Fallback placeholder if no human operator is assigned yet
+  if (!operatorName) {
+    operatorName = widget?.name ? `${widget.name} Support` : 'Support Team'
   }
 
   /*
