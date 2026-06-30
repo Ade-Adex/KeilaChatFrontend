@@ -38,12 +38,14 @@ export default function ConversationSidebar({
     return 'Anonymous Visitor'
   }
 
-  // Effect 1: Core API Synchronizer
+  // 🎯 FIX 1: Allow re-fetching state whenever refreshKey updates from parent hooks
   useEffect(() => {
     let mounted = true
     const fetchConversations = async () => {
       try {
+        // Only trigger the absolute center layout loader spinner on initial boot lifecycle
         if (refreshKey === 0) setLoading(true)
+
         const propertiesData = await getMyProperties()
         const propertyId = propertiesData?.data?.[0]?._id
 
@@ -73,45 +75,56 @@ export default function ConversationSidebar({
     return () => {
       mounted = false
     }
-  }, [refreshKey])
+  }, [refreshKey]) // Reacting dynamically on each dashboard trigger emit sequence
 
   // Effect 2: Fine-Grained Real-Time Message & Notification Push Mapper
   useEffect(() => {
     if (!socket) return
 
-    const handleMessageUpdate = (payload: {
-      sessionId: string
-      message: ChatMessage
-    }) => {
-      const updateList = (list: OperatorConversation[]) => {
-        const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
-        if (targetIndex === -1) return list
+   const handleMessageUpdate = (payload: {
+     sessionId: string
+     message: ChatMessage
+     sessionContext?: OperatorConversation 
+   }) => {
+     const updateList = (
+       list: OperatorConversation[],
+       type: 'mine' | 'queued' | 'active',
+     ) => {
+       const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
 
-        const updatedList = [...list]
-        const targetChat = { ...updatedList[targetIndex] }
+       // 🎯 If message comes from a newly created session missing from the list,
+       // we append it locally instead of dropping it on the floor.
+       if (targetIndex === -1) {
+         if (payload.sessionContext && payload.sessionContext.status === type) {
+           return [payload.sessionContext, ...list]
+         }
+         return list
+       }
 
-        // Update preview metrics dynamically
-        targetChat.lastMessage = payload.message.messageText
-        targetChat.lastMessageAt = payload.message.createdAt
+       const updatedList = [...list]
+       const targetChat = { ...updatedList[targetIndex] }
 
-        // Increment unread count if it's an operator viewing an incoming message from a visitor
-        if (
-          payload.message.senderType === 'visitor' &&
-          selectedConversation?._id !== payload.sessionId
-        ) {
-          targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
-        }
+       // Update preview metrics dynamically
+       targetChat.lastMessage = payload.message.messageText
+       targetChat.lastMessageAt = payload.message.createdAt
 
-        // Pull item forward to top position of array list stack
-        updatedList.splice(targetIndex, 1)
-        return [targetChat, ...updatedList]
-      }
+       // Increment unread count if it's an operator viewing an incoming message from a visitor
+       if (
+         payload.message.senderType === 'visitor' &&
+         selectedConversation?._id !== payload.sessionId
+       ) {
+         targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
+       }
 
-      setMyChats((prev) => updateList(prev))
-      setQueuedChats((prev) => updateList(prev))
-      setActiveChats((prev) => updateList(prev))
-    }
+       // Pull item forward to top position of array list stack
+       updatedList.splice(targetIndex, 1)
+       return [targetChat, ...updatedList]
+     }
 
+     setMyChats((prev) => updateList(prev, 'mine'))
+     setQueuedChats((prev) => updateList(prev, 'queued'))
+     setActiveChats((prev) => updateList(prev, 'active'))
+   }
     socket.on('dashboard_message_update', handleMessageUpdate)
     return () => {
       socket.off('dashboard_message_update', handleMessageUpdate)
@@ -164,7 +177,6 @@ export default function ConversationSidebar({
               <button
                 key={chat._id}
                 onClick={() => {
-                  // Reset local unread flag optimistically when opening thread
                   chat.unreadOperator = 0
                   onSelect(chat)
                 }}
@@ -194,7 +206,7 @@ export default function ConversationSidebar({
                     </span>
                   )}
                   <span
-                    className={`h-1.5 w-1.5 rounded-full ${chat.status === 'queued' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    className={`h-1.5 w-1.5 rounded-full ${chat.status === 'queued' || chat.status === 'waiting' ? 'bg-amber-500' : 'bg-emerald-500'}`}
                   />
                 </div>
               </button>

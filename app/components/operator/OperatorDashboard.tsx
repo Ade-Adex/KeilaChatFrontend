@@ -11,7 +11,7 @@ import { FiChevronLeft, FiSliders, FiMessageSquare } from 'react-icons/fi'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
 import { getMyProperties } from '@/app/lib/api/chat.api'
-import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
+import type { OperatorConversation } from '@/app/types/dashboard'
 
 export default function OperatorDashboard() {
   const [selectedConversation, setSelectedConversation] =
@@ -21,29 +21,20 @@ export default function OperatorDashboard() {
     'sidebar',
   )
 
-  // Global property subscription hook layout
+  // 🎯 Hook 1: Core Socket Property Room Channel Controller Pipeline
   useEffect(() => {
     const socket = getChatSocket()
     if (!socket.connected) socket.connect()
 
-    let activePropertyId: string | null = null
-
     async function autoJoinDashboard() {
       try {
-        // If a chat is active, grab its propertyId. Otherwise, fetch the primary property fallback
-        if (selectedConversation) {
-          activePropertyId =
-            typeof selectedConversation.propertyId === 'string'
-              ? selectedConversation.propertyId
-              : (selectedConversation.propertyId?._id ?? null)
-        } else {
-          const propertiesData = await getMyProperties()
-          activePropertyId = propertiesData?.data?.[0]?._id ?? null
-        }
+        const propertiesData = await getMyProperties()
+        const primaryPropertyId = propertiesData?.data?.[0]?._id ?? null
 
-        if (activePropertyId) {
+        if (primaryPropertyId) {
+          // Permanently keep dashboard room stream updated for this operator profile context
           socket.emit('join_property_dashboard', {
-            propertyId: activePropertyId,
+            propertyId: primaryPropertyId,
           })
         }
       } catch (error) {
@@ -52,6 +43,11 @@ export default function OperatorDashboard() {
     }
 
     void autoJoinDashboard()
+  }, []) // Intentional empty array: Mount property tracking subscription safely once
+
+  // 🎯 Hook 2: Dynamic Real-time Event Receiver Routing System
+  useEffect(() => {
+    const socket = getChatSocket()
 
     const triggerUpdate = () => setRefreshTrigger((prev) => prev + 1)
 
@@ -67,7 +63,7 @@ export default function OperatorDashboard() {
       socket.off('dashboard_chat_assigned', triggerUpdate)
       socket.off('chat_assigned', triggerUpdate)
     }
-  }, [selectedConversation])
+  }, [])
 
   const handleSelectConversation = (conversation: OperatorConversation) => {
     setSelectedConversation(conversation)
@@ -76,6 +72,7 @@ export default function OperatorDashboard() {
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative">
+      {/* Sidebar Channel Deck */}
       <div
         className={`absolute inset-y-0 left-0 z-20 w-full md:static md:w-72.5 lg:w-[320px] xl:w-87.5 shrink-0 border-r border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
           ${currentPane === 'sidebar' ? 'translate-x-0' : '-translate-x-full'}`}
@@ -87,12 +84,14 @@ export default function OperatorDashboard() {
         />
       </div>
 
+      {/* Primary Communication Workstation Frame */}
       <div
         className={`absolute inset-0 z-10 flex flex-col md:static md:flex-1 min-w-0 bg-background/40 transition-transform duration-300 md:translate-x-0
           ${currentPane === 'chat' ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}
       >
         {selectedConversation ? (
           <div className="flex flex-col h-full w-full overflow-hidden">
+            {/* Mobile Adaptive Top Navigation Ribbon */}
             <div className="md:hidden flex h-14 items-center justify-between border-b border-border bg-card/90 px-4 shrink-0 backdrop-blur-sm">
               <button
                 onClick={() => setCurrentPane('sidebar')}
@@ -124,6 +123,7 @@ export default function OperatorDashboard() {
         )}
       </div>
 
+      {/* Visitor Session Telemetry Deck */}
       {selectedConversation && (
         <div
           className={`absolute inset-y-0 right-0 z-30 w-full sm:w-85 md:static md:w-70 lg:w-[320px] xl:w-85 shrink-0 border-l border-border bg-card transition-transform duration-300 md:translate-x-0 flex flex-col
