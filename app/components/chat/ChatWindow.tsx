@@ -3,6 +3,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Modal, Button, Group, Text } from '@mantine/core'
 import type {
   ChatMessage,
   ChatWindowProps,
@@ -32,6 +33,8 @@ export default function ChatWindow({
   const [socketOperatorName, setSocketOperatorName] = useState<string>()
   const [loading, setLoading] = useState(true)
 
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
   /*
    ****************************************
    * DERIVED STATE: OPERATOR NAME CALCULATION
@@ -49,19 +52,19 @@ export default function ChatWindow({
     operatorName = undefined
   }
 
- if (!operatorName && session?.assignedOperatorId) {
-   // 🎯 Cast safely through unknown first to avoid index signature mismatches
-   const op = session.assignedOperatorId as unknown as PopulatedOperator
+  if (!operatorName && session?.assignedOperatorId) {
+    // 🎯 Cast safely through unknown first to avoid index signature mismatches
+    const op = session.assignedOperatorId as unknown as PopulatedOperator
 
-   if (
-     op &&
-     typeof op === 'object' &&
-     'firstName' in op &&
-     typeof op.firstName === 'string'
-   ) {
-     operatorName = op.firstName.trim()
-   }
- }
+    if (
+      op &&
+      typeof op === 'object' &&
+      'firstName' in op &&
+      typeof op.firstName === 'string'
+    ) {
+      operatorName = op.firstName.trim()
+    }
+  }
 
   if (!operatorName) {
     operatorName = 'Support Agent'
@@ -220,11 +223,9 @@ export default function ChatWindow({
    */
   async function handleEndChat() {
     if (!session?.sessionId) return
-    if (!window.confirm('Are you sure you want to end this chat session?'))
-      return
 
+    setIsClosing(true)
     try {
-      // Points exactly to your defined App Router path matching layout: /api/v1/chat/:sessionId/close
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/${session.sessionId}/close`,
         {
@@ -237,9 +238,12 @@ export default function ChatWindow({
       const result = await response.json()
       if (result.status === 'success') {
         setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+        setConfirmModalOpen(false)
       }
     } catch (error) {
       console.error('Error closing conversation thread:', error)
+    } finally {
+      setIsClosing(false)
     }
   }
 
@@ -288,6 +292,8 @@ export default function ChatWindow({
       <ChatHeader
         widget={widget}
         operatorName={operatorName}
+        isSessionActive={session?.status !== 'closed'}
+        onOpenEndModal={() => setConfirmModalOpen(true)}
         onClose={onClose}
       />
 
