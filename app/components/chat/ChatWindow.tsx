@@ -52,7 +52,8 @@ export default function ChatWindow({
     operatorName &&
     (operatorName.toLowerCase() === 'operator' ||
       operatorName.toLowerCase() === 'support agent' ||
-      operatorName === 'Above Great Support')
+      operatorName === 'Above Great Support' ||
+      operatorName.includes('Above Great'))
   ) {
     operatorName = undefined
   }
@@ -62,7 +63,7 @@ export default function ChatWindow({
     if (
       session?.assignedOperatorId &&
       typeof session.assignedOperatorId === 'object' &&
-      'firstName' in session.assignedOperatorId // ✅ Safe runtime & compile-time property type guard
+      'firstName' in session.assignedOperatorId
     ) {
       const castedOp: PopulatedOperator = session.assignedOperatorId
 
@@ -74,14 +75,17 @@ export default function ChatWindow({
 
     // 3. Fallback: Check message array history data for a human name
     if (!operatorName) {
-      const lastOperatorMsg = [...messages].reverse().find(
-        (m) =>
-          m.senderType === 'operator' &&
-          m.senderName &&
-          m.senderName.toLowerCase() !== 'operator' &&
-          m.senderName.toLowerCase() !== 'support agent' &&
-          m.senderName !== 'Above Great Support', // Skip the hardcoded account layout string
-      )
+      const lastOperatorMsg = [...messages]
+        .reverse()
+        .find(
+          (m) =>
+            m.senderType === 'operator' &&
+            m.senderName &&
+            m.senderName.toLowerCase() !== 'operator' &&
+            m.senderName.toLowerCase() !== 'support agent' &&
+            m.senderName !== 'Above Great Support' &&
+            !m.senderName.includes('Above Great'),
+        )
 
       if (lastOperatorMsg?.senderName) {
         operatorName = lastOperatorMsg.senderName
@@ -89,9 +93,9 @@ export default function ChatWindow({
     }
   }
 
-  // 4. Default baseline banner if no agent is actively assigned to the room yet
+  // 4. ✅ FIXED: Clean fallback that never mentions the account/company name
   if (!operatorName) {
-    operatorName = widget?.name ? `${widget.name} Support` : 'Support Team'
+    operatorName = 'Support Agent'
   }
 
   /*

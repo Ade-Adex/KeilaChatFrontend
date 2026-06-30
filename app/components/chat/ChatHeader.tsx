@@ -84,7 +84,14 @@ export default function ChatHeader({
             "
           />
           <span>
-            Chatting with <strong>{operatorName}</strong>
+            
+            {operatorName === 'Support Agent' ? (
+              <>An agent is heading to your chat</>
+            ) : (
+              <>
+                Chatting with <strong>{operatorName}</strong>
+              </>
+            )}
           </span>
         </div>
       )}
