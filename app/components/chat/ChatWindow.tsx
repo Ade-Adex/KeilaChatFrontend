@@ -47,31 +47,32 @@ export default function ChatWindow({
    */
   let operatorName = socketOperatorName
 
-  // 1. Filter out generic system string placeholders coming from sockets
+  // 1. Filter out generic system or account company string labels coming from sockets
   if (
     operatorName &&
     (operatorName.toLowerCase() === 'operator' ||
-      operatorName.toLowerCase() === 'support agent')
+      operatorName.toLowerCase() === 'support agent' ||
+      operatorName === 'Above Great Support')
   ) {
     operatorName = undefined
   }
 
-  // 2. If no socket name override is active, parse the populated session config
+  // 2. If no valid socket name override is active, look at the populated DB session config
   if (!operatorName) {
     if (
       session?.assignedOperatorId &&
-      typeof session.assignedOperatorId === 'object'
+      typeof session.assignedOperatorId === 'object' &&
+      'firstName' in session.assignedOperatorId // ✅ Safe runtime & compile-time property type guard
     ) {
-      const castedOp =
-        session.assignedOperatorId as unknown as PopulatedOperator
+      const castedOp: PopulatedOperator = session.assignedOperatorId
 
-      // Extract the human first name directly
+      // 🎯 FORCE EXTRACT THE HUMAN FIRST NAME DIRECTLY ("adeolu")
       if (castedOp.firstName) {
         operatorName = castedOp.firstName.trim()
       }
     }
 
-    // 3. Fallback: Check message array data for a human name
+    // 3. Fallback: Check message array history data for a human name
     if (!operatorName) {
       const lastOperatorMsg = [...messages].reverse().find(
         (m) =>
@@ -79,7 +80,7 @@ export default function ChatWindow({
           m.senderName &&
           m.senderName.toLowerCase() !== 'operator' &&
           m.senderName.toLowerCase() !== 'support agent' &&
-          m.senderName !== 'Above Great Support', // Filter out the account name leak
+          m.senderName !== 'Above Great Support', // Skip the hardcoded account layout string
       )
 
       if (lastOperatorMsg?.senderName) {
@@ -88,7 +89,7 @@ export default function ChatWindow({
     }
   }
 
-  // 4. Fallback placeholder if no human agent is actively handling the chat yet
+  // 4. Default baseline banner if no agent is actively assigned to the room yet
   if (!operatorName) {
     operatorName = widget?.name ? `${widget.name} Support` : 'Support Team'
   }
