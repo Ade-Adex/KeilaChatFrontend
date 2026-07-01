@@ -48,6 +48,10 @@ export default function ChatWindow({
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
+
+  console.log('Visitor messages', message)
+
+
   // Parse Operator names and brand filters safely
   let operatorName = socketOperatorName
   let operatorAvatar = socketOperatorAvatar

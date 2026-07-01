@@ -32,6 +32,9 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [visitorTyping, setVisitorTyping] = useState(false)
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
 
+
+  console.log('Operator messages', messages)
+
   const socket = getChatSocket()
   const currentSessionId = session._id
 
