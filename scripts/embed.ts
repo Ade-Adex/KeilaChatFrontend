@@ -246,7 +246,6 @@
 
 // /scripts/embed.ts
 
-
 (async function () {
   const scriptTag = document.currentScript as HTMLScriptElement | null
 
@@ -320,9 +319,6 @@
       bottom: '20px',
       right: '20px',
       zIndex: '2147483647',
-      display: 'flex',
-      justifyContent: 'flex-end',
-      alignItems: 'flex-end',
     })
 
     document.body.appendChild(host)
@@ -332,7 +328,7 @@
     const iframe = document.createElement('iframe')
     iframe.title = 'Keila Chat Widget'
     iframe.loading = 'lazy'
-    iframe.allow = 'clipboard-read; clipboard-write; autoplay' // 🎯 Added autoplay permissions explicitly for cross-domain frames
+    iframe.allow = 'clipboard-read; clipboard-write; autoplay'
     iframe.referrerPolicy = 'strict-origin-when-cross-origin'
 
     iframe.sandbox.add(
@@ -347,10 +343,13 @@
       visitorTrackingId: visitorTrackingId!,
       apiUrl: API_URL,
       frontendUrl: FRONTEND_URL,
-      minimized: 'true', // 🎯 Started as minimized by default
+      minimized: 'true',
     })
 
     iframe.src = `${FRONTEND_URL}/embed/chat?${params.toString()}`
+
+    // 🎯 FIX 1: Explicitly set the initial state attribute right away so it is never null!
+    iframe.setAttribute('data-state', 'minimized')
 
     Object.assign(iframe.style, {
       width: '64px',
@@ -358,21 +357,18 @@
       border: 'none',
       background: 'transparent',
       borderRadius: '999px',
-      position: 'fixed',
-      right: '20px',
-      bottom: '20px',
       overflow: 'hidden',
       boxShadow: '0 4px 12px rgba(0,0,0,.15)',
       transition: 'width .25s ease,height .25s ease,border-radius .25s ease',
-      zIndex: '1',
     })
 
+    // 🎯 FIX 2: Absolute positioning inside the host container ensures it stays attached to the launcher bubble
     const badge = document.createElement('div')
     badge.id = 'keila-chat-badge'
     Object.assign(badge.style, {
-      position: 'fixed',
-      right: '22px',
-      bottom: '62px',
+      position: 'absolute',
+      right: '2px',
+      top: '2px',
       background: '#ef4444',
       color: '#ffffff',
       fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -381,13 +377,13 @@
       height: '20px',
       minWidth: '20px',
       borderRadius: '10px',
-      display: 'none',
+      display: 'none', 
       alignItems: 'center',
       justifyContent: 'center',
       padding: '0 6px',
       boxSizing: 'border-box',
       boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-      zIndex: '2',
+      zIndex: '2147483647',
       pointerEvents: 'none',
     })
 
@@ -395,7 +391,6 @@
     shadowRoot.appendChild(badge)
 
     const frontendOrigin = new URL(FRONTEND_URL).origin
-
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== frontendOrigin) return
@@ -405,8 +400,7 @@
 
       switch (data.type) {
         case 'UNREAD_UPDATE': {
-          // 🎯 FIX: Check the dedicated state data attribute instead of comparing pixel strings directly
-          const currentState = iframe.getAttribute('data-state') || 'minimized'
+          const currentState = iframe.getAttribute('data-state')
           if (currentState === 'minimized') {
             badge.innerText = data.count.toString()
             badge.style.display = 'flex'
@@ -420,8 +414,6 @@
         }
 
         case 'RESIZE': {
-          console.log('[KeilaChat RESIZE]', data.width, data.height)
-
           const width = Math.min(
             Number.parseInt(data.width ?? '60', 10),
             window.innerWidth,
@@ -435,20 +427,24 @@
           const mobile = window.screen.width <= 768
           const expanded = width > 64 || height > 64
 
-          // 🎯 Update the attribute state explicitly
           iframe.setAttribute('data-state', expanded ? 'expanded' : 'minimized')
 
-          Object.assign(iframe.style, {
-            width: `${width}px`,
-            height: `${height}px`,
+          // 🎯 Adjust our container layer properties to let expanded dimensions flow smoothly
+          Object.assign(host.style, {
             position: 'fixed',
             right: expanded ? (mobile ? '0' : '20px') : '20px',
             bottom: expanded ? (mobile ? '0' : '20px') : '20px',
+            width: expanded ? (mobile ? '100%' : `${width}px`) : '64px',
+            height: expanded ? (mobile ? '100%' : `${height}px`) : '64px',
+          })
+
+          Object.assign(iframe.style, {
+            width: expanded ? '100%' : '64px',
+            height: expanded ? '100%' : '64px',
             borderRadius: expanded ? (mobile ? '0' : '18px') : '999px',
             boxShadow: expanded
               ? '0 15px 35px rgba(0,0,0,.25)'
               : '0 4px 12px rgba(0,0,0,.15)',
-            overflow: expanded ? 'hidden' : 'visible',
           })
 
           if (expanded) {
@@ -471,8 +467,6 @@
           break
       }
     }
-
-    // ... (Rest of the script file remains the same)
 
     window.addEventListener('message', handleMessage)
 
