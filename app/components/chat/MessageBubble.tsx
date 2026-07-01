@@ -16,14 +16,14 @@ function MessageStatusTicks({
   switch (status) {
     case 'sent':
       return (
-        <span className="text-white/80 text-[10px] select-none" title="Sent">
+        <span className="text-white/10 text-[10px] select-none" title="Sent">
           ✓
         </span>
       )
     case 'delivered':
       return (
         <span
-          className="text-white/60 text-[10px] tracking-[-3px] pr-1 select-none"
+          className="text-white/10 text-[10px] tracking-[-3px] pr-1 select-none"
           title="Delivered"
         >
           ✓✓
@@ -45,7 +45,7 @@ function MessageStatusTicks({
         </span>
       )
     default:
-      return <span className="text-white/60 text-[10px] select-none">✓</span>
+      return <span className="text-white/10 text-[10px] select-none">✓</span>
   }
 }
 
