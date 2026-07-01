@@ -17,6 +17,7 @@ import {
   Tooltip,
   Card,
   Loader,
+  Button,
 } from '@mantine/core'
 import {
   FiGlobe,
@@ -25,7 +26,11 @@ import {
   FiEyeOff,
   FiInfo,
   FiCode,
+  FiAlertTriangle,
+  FiArrowRight,
+  FiLock,
 } from 'react-icons/fi'
+import Link from 'next/link'
 
 import { usePropertySetup } from '@/app/hooks/settings/usePropertySetup'
 import CodeSnippet from '@/app/components/dashboard/setup/CodeSnippet'
@@ -34,6 +39,10 @@ export default function SetupPage() {
   const { property, loading, error } = usePropertySetup()
 
   const [revealWidgetId, setRevealWidgetId] = useState(false)
+
+  const isNotFoundError = error?.toLowerCase().includes('not found')
+  const isNotRegistered =
+    !property || !property.domain || !property.widgetId || isNotFoundError
 
   /**
    * Safe public Widget ID
@@ -91,7 +100,7 @@ export default function SetupPage() {
   /* Error State                                                 */
   /* ---------------------------------------------------------- */
 
-  if (error) {
+  if (error && !isNotFoundError) {
     return (
       <Alert
         color="red"
@@ -105,6 +114,42 @@ export default function SetupPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-8">
+      {/* ===================================================== */}
+      {/* 🎯 Unregistered Property Banner Warning Notification  */}
+      {/* ===================================================== */}
+      {isNotRegistered && (
+        <Alert
+          color="amber"
+          variant="filled"
+          title="Property Registration Required"
+          icon={<FiAlertTriangle size={20} />}
+          radius="md"
+          className="shadow-md text-foreground!"
+        >
+          <Stack gap="xs">
+            <Text size="sm" className="text-foreground!">
+              You haven&apos;t fully registered or configured a domain profile
+              for this property workspace yet. The integration layout cannot
+              authorize or issue live production snippets until your website
+              domain is authorized.
+            </Text>
+            <Group>
+              <Button
+                component={Link}
+                href="/dashboard/settings"
+                variant="white"
+                color="amber"
+                size="xs"
+                rightSection={<FiArrowRight size={14} />}
+                className="font-semibold cursor-pointer text-white bg-primary!"
+              >
+                Go to Property Settings
+              </Button>
+            </Group>
+          </Stack>
+        </Alert>
+      )}
+
       {/* ===================================================== */}
       {/* Header */}
       {/* ===================================================== */}
@@ -120,8 +165,12 @@ export default function SetupPage() {
           </Text>
         </div>
 
-        <Badge size="md" color="green" variant="light">
-          Production Ready
+        <Badge
+          size="md"
+          color={isNotRegistered ? 'amber' : 'green'}
+          variant="light"
+        >
+          {isNotRegistered ? 'Awaiting Configuration' : 'Production Ready'}
         </Badge>
       </div>
 
@@ -145,8 +194,8 @@ export default function SetupPage() {
               <Text fw={600}>Registered Domain</Text>
             </Group>
 
-            <Badge variant="dot" color="blue">
-              Verified
+            <Badge variant="dot" color={property?.domain ? 'blue' : 'amber'}>
+              {property?.domain ? 'Verified' : 'Missing'}
             </Badge>
           </Group>
 
@@ -154,7 +203,7 @@ export default function SetupPage() {
             block
             className="bg-card! border border-border! text-foreground!"
           >
-            {property?.domain || 'No registered domain'}
+            {property?.domain || 'No registered domain configured'}
           </Code>
 
           <Text size="xs" c="dimmed" mt="sm">
@@ -177,25 +226,33 @@ export default function SetupPage() {
               <Text fw={600}>Public Widget ID</Text>
             </Group>
 
-            <Tooltip
-              withArrow
-              label={revealWidgetId ? 'Hide Widget ID' : 'Show Widget ID'}
-            >
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={() => setRevealWidgetId((prev) => !prev)}
+            {!isNotRegistered && (
+              <Tooltip
+                withArrow
+                label={revealWidgetId ? 'Hide Widget ID' : 'Show Widget ID'}
               >
-                {revealWidgetId ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </ActionIcon>
-            </Tooltip>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => setRevealWidgetId((prev) => !prev)}
+                >
+                  {revealWidgetId ? (
+                    <FiEyeOff size={16} />
+                  ) : (
+                    <FiEye size={16} />
+                  )}
+                </ActionIcon>
+              </Tooltip>
+            )}
           </Group>
 
           <Code
             block
             className="bg-card! border border-border! text-foreground!"
           >
-            {getDisplayId(property?.widgetId)}
+            {property?.widgetId
+              ? getDisplayId(property.widgetId)
+              : 'Not configured'}
           </Code>
 
           <Text size="xs" c="dimmed" mt="sm">
@@ -227,8 +284,41 @@ export default function SetupPage() {
       {/* Installation Tabs */}
       {/* ===================================================== */}
 
-      <Paper withBorder radius="md" p="xl" className="bg-card! border-border!">
-        <Stack gap="lg">
+      <Paper
+        withBorder
+        radius="md"
+        p="xl"
+        className="bg-card! border-border! relative"
+      >
+        {/* 🎯 Blur overlay container blocker if the property has not been registered yet */}
+        {isNotRegistered && (
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-6 rounded-md text-center">
+            <FiLock size={32} className="text-muted-foreground mb-3" />
+            <Title order={4} mb={4}>
+              Snippets Locked
+            </Title>
+            <Text size="sm" c="dimmed" maw={400} mx="auto" mb="md">
+              Please register your website domain details inside your management
+              dashboard configurations to unlock integration script elements.
+            </Text>
+            <Button
+              component={Link}
+              href="/dashboard/settings"
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+            >
+              Configure Settings Property
+            </Button>
+          </div>
+        )}
+
+        <Stack
+          gap="lg"
+          className={
+            isNotRegistered ? 'opacity-30 pointer-events-none select-none' : ''
+          }
+        >
           <Text fw={600} className="flex items-center gap-2">
             <FiCode className="text-emerald-500" />
             Installation Snippets
