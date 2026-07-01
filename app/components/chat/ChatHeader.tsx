@@ -174,23 +174,23 @@ export default function ChatHeader({
               </ActionIcon>
             </Menu.Target>
 
-            <Menu.Dropdown className='bg-card! border border-border! text-foreground!'>
+            <Menu.Dropdown className="bg-card! border border-border! text-foreground!">
               <Menu.Label>Options</Menu.Label>
 
               {!isSessionActive && (
-              <Menu.Item
-                leftSection={<FiPlusCircle size={14} />}
-                onClick={onStartNewChat}
-                className="cursor-pointer text-xs font-medium text-blue-600 hover:text-blue-700"
-              >
-                Start New Chat
-              </Menu.Item>
+                <Menu.Item
+                  leftSection={<FiPlusCircle size={14} />}
+                  onClick={onStartNewChat}
+                  className="cursor-pointer text-xs font-medium text-foreground!"
+                >
+                  Start New Chat
+                </Menu.Item>
               )}
 
               <Menu.Item
                 leftSection={<FiEdit2 size={14} />}
                 onClick={() => setProfileModalOpen(true)}
-                className="cursor-pointer text-xs"
+                className="cursor-pointer text-xs text-foreground!"
               >
                 Change Name
               </Menu.Item>
