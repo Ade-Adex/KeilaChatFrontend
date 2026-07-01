@@ -396,6 +396,7 @@ export default function ChatWindow({
     }
 
     // Event B: Operator joins chat room channel
+    // Event B: Operator joins chat room channel
     const handleOperatorJoined = (payload: {
       operatorId: string
       name: string
@@ -411,8 +412,11 @@ export default function ChatWindow({
       setSession((prev) => {
         if (!prev) return null
 
+        // 🎯 Solved: Added required properties to strictly match PopulatedOperator type structure
         const operatorMock: PopulatedOperator = {
+          _id: payload.operatorId,
           firstName: payload.name || platformFallbackName,
+          email: '', // Safe structural fallback placeholder string
           avatar: payload.avatar || '',
         }
 
