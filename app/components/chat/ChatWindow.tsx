@@ -318,6 +318,9 @@ export default function ChatWindow({
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
+  // 🎯 Resolve the base channel fallback name dynamically from the widget setup
+  const platformFallbackName = widget.name?.trim() || 'Support Agent'
+
   // 1. Prioritize live operator state changes emitted over WebSockets
   let operatorName = socketOperatorName
   let operatorAvatar = socketOperatorAvatar
@@ -335,13 +338,13 @@ export default function ChatWindow({
     }
   }
 
-  // 3. Global generic fallback string if no customized profiles are assigned
+  // 3. Dynamic Filtering: Replace system strings or empty lookups with the tenant workspace name 🎯
   if (
     !operatorName ||
     operatorName.toLowerCase() === 'operator' ||
-    operatorName.includes('Above Great')
+    operatorName.toLowerCase() === 'support agent'
   ) {
-    operatorName = 'Support Agent'
+    operatorName = platformFallbackName
   }
 
   async function initializeConversation(forceNew = false) {
@@ -362,7 +365,7 @@ export default function ChatWindow({
 
       const result = await response.json()
       if (result.status === 'success' && result.data) {
-        setSession(result.data)
+        setSession(result.data as SafeSessionConfig)
         setInitialMessages([])
         setSocketOperatorName(undefined)
         setSocketOperatorAvatar(undefined)
@@ -386,41 +389,49 @@ export default function ChatWindow({
       setOperatorTyping(payload.isTyping)
       if (
         payload.senderName &&
-        payload.senderName.toLowerCase() !== 'operator' &&
-        !payload.senderName.includes('Above Great')
+        payload.senderName.toLowerCase() !== 'operator'
       ) {
         setSocketOperatorName(payload.senderName)
       }
     }
 
-    // Event B: Operator joins chat room channel 🎯
+    // Event B: Operator joins chat room channel
     const handleOperatorJoined = (payload: {
       operatorId: string
       name: string
       avatar?: string
     }) => {
-      if (payload.name && !payload.name.includes('Above Great')) {
+      if (payload.name) {
         setSocketOperatorName(payload.name.trim())
       }
       if (payload.avatar) {
         setSocketOperatorAvatar(payload.avatar)
       }
 
-      // Update local session state configuration parameters
-      setSession((prev) =>
-        prev
-          ? { ...prev, assignedOperatorId: payload.operatorId as any }
-          : null,
-      )
+      setSession((prev) => {
+        if (!prev) return null
+
+        const operatorMock: PopulatedOperator = {
+          firstName: payload.name || platformFallbackName,
+          avatar: payload.avatar || '',
+        }
+
+        return {
+          ...prev,
+          assignedOperatorId:
+            operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
+        }
+      })
     }
 
-    // Event C: Operator unassigns or leaves workspace chat room channel 🎯
+    // Event C: Operator unassigns or leaves workspace chat room channel
     const handleOperatorLeft = () => {
       setSocketOperatorName(undefined)
       setSocketOperatorAvatar(undefined)
-      setSession((prev) =>
-        prev ? { ...prev, assignedOperatorId: undefined } : null,
-      )
+      setSession((prev) => {
+        if (!prev) return null
+        return { ...prev, assignedOperatorId: undefined }
+      })
     }
 
     socket.on('user_typing', handleTyping)
@@ -432,7 +443,7 @@ export default function ChatWindow({
       socket.off('operator_joined', handleOperatorJoined)
       socket.off('operator_left', handleOperatorLeft)
     }
-  }, [session?.sessionId, socket])
+  }, [session?.sessionId, socket, platformFallbackName])
 
   async function handleEndChat() {
     if (!session?.sessionId) return
