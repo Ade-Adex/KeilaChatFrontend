@@ -141,7 +141,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
           type="button"
           onClick={() => void sendMessage()}
           disabled={sending || !message.trim() || !operator}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/15 transition hover:opacity-90 disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary! text-white shadow-sm shadow-primary/15 transition hover:opacity-90 disabled:opacity-40"
         >
           <FaPaperPlane size={14} />
         </button>
