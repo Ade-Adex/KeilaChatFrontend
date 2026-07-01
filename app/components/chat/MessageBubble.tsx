@@ -16,7 +16,7 @@ function MessageStatusTicks({
   switch (status) {
     case 'sent':
       return (
-        <span className="text-white/60 text-[10px] select-none" title="Sent">
+        <span className="text-white/80 text-[10px] select-none" title="Sent">
           ✓
         </span>
       )

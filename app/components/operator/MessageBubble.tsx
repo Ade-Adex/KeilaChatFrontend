@@ -1,16 +1,54 @@
 // /components/operator/MessageBubble.tsx
-
 'use client'
 
 import Image from 'next/image'
 import { memo } from 'react'
-
 import { FaRobot, FaUser, FaUserTie, FaFile, FaMusic } from 'react-icons/fa'
-
 import type { ChatMessage } from '@/app/types/dashboard'
 
 export interface MessageBubbleProps {
   message: ChatMessage
+}
+
+function MessageStatusTicks({
+  status,
+}: {
+  status?: 'sent' | 'delivered' | 'seen' | 'failed'
+}) {
+  switch (status) {
+    case 'sent':
+      return (
+        <span className="text-white/60 text-[10px] select-none" title="Sent">
+          ✓
+        </span>
+      )
+    case 'delivered':
+      return (
+        <span
+          className="text-white/60 text-[10px] tracking-[-3px] pr-1 select-none"
+          title="Delivered"
+        >
+          ✓✓
+        </span>
+      )
+    case 'seen':
+      return (
+        <span
+          className="text-sky-300 font-bold text-[10px] tracking-[-3px] pr-1 select-none"
+          title="Seen"
+        >
+          ✓✓
+        </span>
+      )
+    case 'failed':
+      return (
+        <span className="text-red-400 text-[10px] font-semibold" title="Failed">
+          ✕
+        </span>
+      )
+    default:
+      return <span className="text-white/60 text-[10px] select-none">✓</span>
+  }
 }
 
 function MessageBubble({ message }: MessageBubbleProps) {
@@ -41,11 +79,8 @@ function MessageBubble({ message }: MessageBubbleProps) {
       className={`flex w-full mb-1 ${isOperator ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`flex max-w-[85%] sm:max-w-[75%] gap-2.5 ${
-          isOperator ? 'flex-row-reverse' : ''
-        }`}
+        className={`flex max-w-[85%] sm:max-w-[75%] gap-2.5 ${isOperator ? 'flex-row-reverse' : ''}`}
       >
-        {/* Avatar badge graphic frame elements */}
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card shadow-sm text-muted-foreground/80">
           {isVisitor && <FaUser size={11} />}
           {isOperator && <FaUserTie size={11} />}
@@ -54,7 +89,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
           )}
         </div>
 
-        {/* Bubble Text Wrapper Content Canvas block */}
         <div
           className={`space-y-1 flex flex-col ${isOperator ? 'items-end' : 'items-start'}`}
         >
@@ -74,7 +108,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
               </p>
             )}
 
-            {/* Attachments rendering processing streams */}
+            {/* Attachments rendering logic remains perfectly preserved */}
             {message.attachments && message.attachments.length > 0 && (
               <div className="space-y-2 mt-2">
                 {message.attachments.map((attachment, index) => {
@@ -95,7 +129,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
                       </div>
                     )
                   }
-
                   if (attachment.fileType.startsWith('video/')) {
                     return (
                       <div key={index} className="mt-1.5 max-w-xs">
@@ -108,7 +141,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
                       </div>
                     )
                   }
-
                   if (attachment.fileType.startsWith('audio/')) {
                     return (
                       <div
@@ -125,7 +157,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
                       </div>
                     )
                   }
-
                   return (
                     <a
                       key={index}
@@ -146,15 +177,10 @@ function MessageBubble({ message }: MessageBubbleProps) {
             )}
           </div>
 
-          {/* Timestamp details */}
+          {/* Timestamp and Checkmark Status Blocks */}
           <div className="flex items-center gap-1.5 px-1 text-[10px] font-medium text-muted-foreground/70">
             <span>{formattedTime}</span>
-            {isOperator && message.status && (
-              <>
-                <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-                <span className="capitalize">{message.status}</span>
-              </>
-            )}
+            {isOperator && <MessageStatusTicks status={message.status} />}
             {isAI && (
               <span className="bg-blue-500/10 text-blue-500 px-1 rounded font-bold text-[9px] tracking-wide">
                 AI

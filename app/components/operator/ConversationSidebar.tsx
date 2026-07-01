@@ -178,6 +178,10 @@ export default function ConversationSidebar({
                 key={chat._id}
                 onClick={() => {
                   chat.unreadOperator = 0
+                  socket.emit('mark_session_seen', {
+                    sessionId: chat._id,
+                    clientType: 'operator',
+                  })
                   onSelect(chat)
                 }}
                 className={`w-full text-left px-3 py-2.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between

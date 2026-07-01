@@ -15,6 +15,17 @@ interface OperatorWorkspaceProps {
   session: OperatorConversation
 }
 
+interface MessageStatusPayload {
+  messageId: string
+  status: 'sent' | 'delivered' | 'seen' | 'failed'
+  sessionId: string
+}
+
+interface MessagesSeenPayload {
+  sessionId: string
+  reader: 'visitor' | 'operator'
+}
+
 export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,6 +83,12 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       operatorId: session.assignedOperatorId,
       clientType: 'operator',
     })
+
+    // 🎯 Read Receipt trigger: Emit when operator joins/opens workspace channel
+    socket.emit('mark_session_seen', {
+      sessionId: currentSessionId,
+      clientType: 'operator',
+    })
   }, [session, currentSessionId, socket])
 
   useEffect(() => {
@@ -85,7 +102,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
       if (incomingSessionId !== currentSessionId) return
 
-      // Cleanly check for duplicate database IDs or identical message values to avoid doubling up
       setMessages((prev) => {
         const isDuplicate = prev.some(
           (m) =>
@@ -98,6 +114,14 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         if (isDuplicate) return prev
         return [...prev, message]
       })
+
+      // 🎯 Emit lookback seen event if visitor sends a message while window is open
+      if (message.senderType === 'visitor') {
+        socket.emit('mark_session_seen', {
+          sessionId: currentSessionId,
+          clientType: 'operator',
+        })
+      }
     }
 
     const handleTyping = (payload: {
@@ -113,8 +137,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
           : (payload.sessionId as string)
 
       if (incomingSessionId !== currentSessionId) return
-
-      // IGNORE if the typing update is from an operator
       if (payload.actor === 'operator') return
 
       setVisitorTyping(payload.isTyping)
@@ -125,12 +147,39 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       }
     }
 
+    // 🎯 Catch when visitor updates message status to delivered or seen
+    const handleStatusUpdated = (data: MessageStatusPayload) => {
+      if (data.sessionId !== currentSessionId) return
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === data.messageId ? { ...m, status: data.status } : m,
+        ),
+      )
+    }
+
+    const handleMessagesSeen = (data: MessagesSeenPayload) => {
+      if (data.sessionId !== currentSessionId) return
+      if (data.reader === 'visitor') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.senderType === 'operator' || m.senderType === 'ai'
+              ? { ...m, status: 'seen' }
+              : m,
+          ),
+        )
+      }
+    }
+
     socket.on('new_message', handleMessage)
     socket.on('user_typing', handleTyping)
+    socket.on('message_status_updated', handleStatusUpdated)
+    socket.on('messages_seen', handleMessagesSeen)
 
     return () => {
       socket.off('new_message', handleMessage)
       socket.off('user_typing', handleTyping)
+      socket.off('message_status_updated', handleStatusUpdated)
+      socket.off('messages_seen', handleMessagesSeen)
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
     }
   }, [currentSessionId, socket])
@@ -153,7 +202,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
   return (
     <div className="flex h-full flex-col bg-background/40 relative">
-      {/* Workspace Subheader Workspace Meta Section */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4 backdrop-blur-sm">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground truncate tracking-tight">
@@ -168,18 +216,13 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         </div>
       </div>
 
-      {/* Message Feed Canvas Layer */}
       <div className="flex-1 overflow-hidden relative">
         <MessageFeed messages={messages} loading={false} />
       </div>
 
-      {/* Interactive Telemetry Feed Footers */}
       <div className="relative z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-4">
         {visitorTyping && <TypingIndicator />}
-
-        <OperatorInput
-          sessionId={currentSessionId}
-        />
+        <OperatorInput sessionId={currentSessionId} />
       </div>
     </div>
   )
