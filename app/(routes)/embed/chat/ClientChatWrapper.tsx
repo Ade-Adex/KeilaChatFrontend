@@ -1,5 +1,4 @@
 // /app/(routes)/embed/chat/ClientChatWrapper.tsx
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -17,6 +16,17 @@ interface Props {
   widgetId: string
   visitorTrackingId: string
   widget: WidgetConfig
+}
+
+interface MessageStatusPayload {
+  messageId: string
+  status: 'sent' | 'delivered' | 'seen' | 'failed'
+  sessionId: string
+}
+
+interface MessagesSeenPayload {
+  sessionId: string
+  reader: 'visitor' | 'operator'
 }
 
 export default function ClientChatWrapper({
@@ -68,7 +78,7 @@ export default function ClientChatWrapper({
     initializeConversation()
   }, [widgetId, visitorTrackingId])
 
-  // 3. 🎯 FIX: Fetch database message logs as soon as session context maps out
+  // 3. Fetch database message logs as soon as session context maps out
   useEffect(() => {
     if (!session?.sessionId) return
 
@@ -80,7 +90,7 @@ export default function ClientChatWrapper({
         )
         const result = await response.json()
         if (result.status === 'success' && Array.isArray(result.data)) {
-          setMessages(result.data)
+          setMessages(result.data as ChatMessage[])
         }
       } catch (error) {
         console.error(
@@ -94,7 +104,7 @@ export default function ClientChatWrapper({
     fetchHistory()
   }, [session?.sessionId])
 
-  // 4. Persistent Core Socket Engine Link (Runs even when closed!)
+  // 4. Persistent Core Socket Engine Link + Message Receipts
   useEffect(() => {
     if (!session?.sessionId) return
 
@@ -118,8 +128,14 @@ export default function ClientChatWrapper({
         return [...prev, payload]
       })
 
-      // Process unread metrics + playback alerts if minimized
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
+        if (payload._id) {
+          socket.emit('message_delivered', {
+            messageId: payload._id,
+            sessionId: session.sessionId,
+          })
+        }
+
         if (!open) {
           setUnreadCount((prev) => prev + 1)
 
@@ -134,19 +150,57 @@ export default function ClientChatWrapper({
               console.error(e)
             }
           }
+        } else {
+          socket.emit('mark_session_seen', {
+            sessionId: session.sessionId,
+            clientType: 'visitor',
+          })
         }
       }
     }
 
+    // 🎯 Properly typed status confirmation listener
+    const handleStatusUpdated = (data: MessageStatusPayload) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === data.messageId ? { ...m, status: data.status } : m,
+        ),
+      )
+    }
+
+    // 🎯 Properly typed session read tracker listener
+    const handleMessagesSeen = (data: MessagesSeenPayload) => {
+      if (data.reader === 'operator') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.senderType === 'visitor' ? { ...m, status: 'seen' as const } : m,
+          ),
+        )
+      }
+    }
+
     socket.on('new_message', handleIncomingMessage)
+    socket.on('message_status_updated', handleStatusUpdated)
+    socket.on('messages_seen', handleMessagesSeen)
+
     return () => {
       socket.off('new_message', handleIncomingMessage)
+      socket.off('message_status_updated', handleStatusUpdated)
+      socket.off('messages_seen', handleMessagesSeen)
     }
   }, [session, open, widget])
 
   const handleOpenChat = () => {
     setUnreadCount(0)
     setOpen(true)
+
+    const socket = getChatSocket()
+    if (socket.connected && session?.sessionId) {
+      socket.emit('mark_session_seen', {
+        sessionId: session.sessionId,
+        clientType: 'visitor',
+      })
+    }
   }
 
   return (

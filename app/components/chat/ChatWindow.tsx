@@ -1,6 +1,5 @@
 // /app/components/chat/ChatWindow.tsx
 
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -17,7 +16,7 @@ import ChatHeader from './ChatHeader'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
 
-// 🎯 Explicitly define the unified types passed from the wrapper
+// 🎯 Explicitly define the unified types passed from the wrapper without using any
 interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
   initialSession: SafeSessionConfig | null
   initialMessages: ChatMessage[]
@@ -38,17 +37,16 @@ export default function ChatWindow({
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
 
- const [session, setSession] = useState<SafeSessionConfig | null>(
-   initialSession,
- )
- const [message, setMessage] = useState('')
- const [operatorTyping, setOperatorTyping] = useState(false)
- const [socketOperatorName, setSocketOperatorName] = useState<string>()
- const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
+  const [session, setSession] = useState<SafeSessionConfig | null>(
+    initialSession,
+  )
+  const [message, setMessage] = useState('')
+  const [operatorTyping, setOperatorTyping] = useState(false)
+  const [socketOperatorName, setSocketOperatorName] = useState<string>()
+  const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
 
- const [confirmModalOpen, setConfirmModalOpen] = useState(false)
- const [isClosing, setIsClosing] = useState(false)
-
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
 
   // Parse Operator names and brand filters safely
   let operatorName = socketOperatorName
@@ -112,6 +110,24 @@ export default function ChatWindow({
       console.error('[KeilaChat] Session hard-reset failed:', error)
     }
   }
+
+  // 🎯 NEW: Emit a seen receipt loop if unread messages are loaded while open
+  useEffect(() => {
+    if (!session?.sessionId || initialMessages.length === 0) return
+
+    const hasUnread = initialMessages.some(
+      (m) =>
+        (m.senderType === 'operator' || m.senderType === 'ai') &&
+        m.status !== 'seen',
+    )
+
+    if (hasUnread && socket.connected) {
+      socket.emit('mark_session_seen', {
+        sessionId: session.sessionId,
+        clientType: 'visitor',
+      })
+    }
+  }, [initialMessages, session?.sessionId, socket])
 
   // Listen directly within the open layout frame view for profile events and typing flags
   useEffect(() => {
