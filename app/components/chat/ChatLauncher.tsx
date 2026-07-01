@@ -7,12 +7,13 @@ import type { WidgetConfig } from '@/app/types/chat'
 interface Props {
   widget: WidgetConfig
   onClick: () => void
-  unreadCount: number // 🎯 Pass down the live count
+  unreadCount: number
 }
 
 export function ChatLauncher({ widget, onClick, unreadCount }: Props) {
   return (
-    <div className="relative inline-block">
+    // 🎯 FIX: Explicitly enforce exact 64px containment boundaries matching your script dimension bounds
+    <div className="relative h-16 w-16 flex items-center justify-center overflow-visible">
       <button
         onClick={onClick}
         className="
@@ -28,6 +29,7 @@ export function ChatLauncher({ widget, onClick, unreadCount }: Props) {
           transition-transform
           hover:scale-105
           active:scale-95
+          border-none
         "
         style={{
           background: widget.theme?.primaryColor ?? '#2563eb',
@@ -36,15 +38,15 @@ export function ChatLauncher({ widget, onClick, unreadCount }: Props) {
         💬
       </button>
 
-      {/* 🎯 NATIVE REACT BADGE: Renders inside the launcher's layout safely */}
+      {/* 🎯 FIX: Absolute position shifted completely INSIDE the 64px viewport frame boundaries */}
       {unreadCount > 0 && (
         <span
           className="
             absolute 
-            -top-1 
-            -right-1 
+            top-1
+            right-1
             bg-red-500 
-            color-white 
+            text-white 
             text-xs 
             font-bold 
             rounded-full 
@@ -54,10 +56,14 @@ export function ChatLauncher({ widget, onClick, unreadCount }: Props) {
             flex 
             items-center 
             justify-center 
-            animate-bounce
             shadow-md
+            animate-pulse
+            z-50
           "
-          style={{ color: '#ffffff' }}
+          style={{
+            color: '#ffffff',
+            backgroundColor: '#ef4444',
+          }}
         >
           {unreadCount}
         </span>

@@ -27,7 +27,7 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
               height: 100%;
               min-width: 100%;
               min-height: 100%;
-              overflow: hidden;
+              overflow: visible !important; /* 🎯 FIX: Allow child items to be visible */
               background: transparent !important;
             }
           `,
@@ -38,9 +38,12 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
         style={{
           position: 'fixed',
           inset: 0,
-          width: '100vw',
-          height: '100dvh',
-          overflow: 'hidden',
+          width: '100%',
+          height: '100%',
+          display: 'flex' /* 🎯 FIX: Keep launcher perfectly aligned */,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'visible',
           background: 'transparent',
         }}
       >
