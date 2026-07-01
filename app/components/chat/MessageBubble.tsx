@@ -16,15 +16,18 @@ function MessageStatusTicks({
   switch (status) {
     case 'sent':
       return (
-        <span className="text-white/10 text-[10px] select-none" title="Sent">
+        <span
+          className="text-white/40 text-[10px] tracking-normal font-normal select-none"
+          title="Sent to Server"
+        >
           ✓
         </span>
       )
     case 'delivered':
       return (
         <span
-          className="text-white/10 text-[10px] tracking-[-3px] pr-1 select-none"
-          title="Delivered"
+          className="text-white/70 text-[10px] tracking-[-3px] pr-1 font-bold select-none"
+          title="Delivered to Workspace Desk"
         >
           ✓✓
         </span>
@@ -32,22 +35,26 @@ function MessageStatusTicks({
     case 'seen':
       return (
         <span
-          className="text-sky-300 font-bold text-[10px] tracking-[-3px] pr-1 select-none"
-          title="Seen"
+          className="text-sky-300 font-extrabold text-[10px] tracking-[-3px] pr-1 select-none"
+          title="Seen by Operator"
         >
           ✓✓
         </span>
       )
     case 'failed':
       return (
-        <span className="text-red-400 text-[10px] font-semibold" title="Failed">
+        <span
+          className="text-red-400 text-[10px] font-semibold select-none"
+          title="Failed"
+        >
           ✕
         </span>
       )
     default:
-      return <span className="text-white/10 text-[10px] select-none">✓</span>
+      return <span className="text-white/30 text-[10px] select-none">✓</span>
   }
 }
+
 
 export default function MessageBubble({ message }: Props) {
   const isVisitor = message.senderType === 'visitor'
