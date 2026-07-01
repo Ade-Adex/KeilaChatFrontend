@@ -52,7 +52,7 @@ export default function MessageBubble({ message }: Props) {
           ${
             isVisitor
               ? 'rounded-br-sm bg-blue-600 text-white'
-              : 'rounded-bl-smbg-chat-agent border border-chat-agent-border text-foreground'
+              : 'rounded-bl-sm bg-chat-agent border border-chat-agent-border text-foreground'
           }
         `}
       >
@@ -60,7 +60,7 @@ export default function MessageBubble({ message }: Props) {
       </div>
 
       <div className="mt-1 flex items-center gap-1 px-1">
-        <span className="text-[10px] text-muted-foreground">{time}</span>
+        <span className="text-[10px] text-foreground">{time}</span>
 
         {/* 🎯 Only render status checkmarks for the visitor's outgoing messages */}
         {isVisitor && <MessageStatusTicks status={message.status} />}
