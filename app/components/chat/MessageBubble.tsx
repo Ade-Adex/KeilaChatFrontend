@@ -52,7 +52,7 @@ export default function MessageBubble({ message }: Props) {
           ${
             isVisitor
               ? 'rounded-br-sm bg-blue-600 text-white'
-              : 'rounded-bl-sm bg-card'
+              : 'rounded-bl-smbg-chat-agent border border-chat-agent-border text-foreground'
           }
         `}
       >
