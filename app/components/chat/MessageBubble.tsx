@@ -2,58 +2,13 @@
 
 'use client'
 
+import MessageStatusTicks from '@/app/components/MessageStatusTicks'
 import type { ChatMessage } from '@/app/types/chat'
 
 interface Props {
   message: ChatMessage
 }
 
-function MessageStatusTicks({
-  status,
-}: {
-  status?: 'sent' | 'delivered' | 'seen' | 'failed'
-}) {
-  switch (status) {
-    case 'sent':
-      return (
-        <span
-          className="text-white/40 text-[10px] tracking-normal font-normal select-none"
-          title="Sent to Server"
-        >
-          ✓
-        </span>
-      )
-    case 'delivered':
-      return (
-        <span
-          className="text-white/70 text-[10px] tracking-[-3px] pr-1 font-bold select-none"
-          title="Delivered to Workspace Desk"
-        >
-          ✓✓
-        </span>
-      )
-    case 'seen':
-      return (
-        <span
-          className="text-sky-300 font-extrabold text-[10px] tracking-[-3px] pr-1 select-none"
-          title="Seen by Operator"
-        >
-          ✓✓
-        </span>
-      )
-    case 'failed':
-      return (
-        <span
-          className="text-red-400 text-[10px] font-semibold select-none"
-          title="Failed"
-        >
-          ✕
-        </span>
-      )
-    default:
-      return <span className="text-white/30 text-[10px] select-none">✓</span>
-  }
-}
 
 
 export default function MessageBubble({ message }: Props) {

@@ -5,51 +5,12 @@ import Image from 'next/image'
 import { memo } from 'react'
 import { FaRobot, FaUser, FaUserTie, FaFile, FaMusic } from 'react-icons/fa'
 import type { ChatMessage } from '@/app/types/dashboard'
+import MessageStatusTicks from '@/app/components/MessageStatusTicks'
 
 export interface MessageBubbleProps {
   message: ChatMessage
 }
 
-function MessageStatusTicks({
-  status,
-}: {
-  status?: 'sent' | 'delivered' | 'seen' | 'failed'
-}) {
-  switch (status) {
-    case 'sent':
-      return (
-        <span className="text-white/10 text-[10px] select-none" title="Sent">
-          ✓
-        </span>
-      )
-    case 'delivered':
-      return (
-        <span
-          className="text-white/10 text-[10px] tracking-[-3px] pr-1 select-none"
-          title="Delivered"
-        >
-          ✓✓
-        </span>
-      )
-    case 'seen':
-      return (
-        <span
-          className="text-sky-300 font-bold text-[10px] tracking-[-3px] pr-1 select-none"
-          title="Seen"
-        >
-          ✓✓
-        </span>
-      )
-    case 'failed':
-      return (
-        <span className="text-red-400 text-[10px] font-semibold" title="Failed">
-          ✕
-        </span>
-      )
-    default:
-      return <span className="text-white/10 text-[10px] select-none">✓</span>
-  }
-}
 
 function MessageBubble({ message }: MessageBubbleProps) {
   const isVisitor = message.senderType === 'visitor'
