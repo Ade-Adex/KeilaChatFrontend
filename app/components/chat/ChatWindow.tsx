@@ -1,4 +1,4 @@
-// /app/components/chat/ChatWindow.tsx
+// // /app/components/chat/ChatWindow.tsx
 
 // 'use client'
 
@@ -316,15 +316,13 @@
 //   )
 // }
 
-// /app/components/chat/ChatWindow.tsx
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal, Button, Group, Text, LoadingOverlay } from '@mantine/core'
 import type {
   ChatMessage,
   ChatWindowProps,
-  SessionInitResponse,
   PopulatedOperator,
   SafeSessionConfig,
 } from '@/app/types/chat'
@@ -334,27 +332,40 @@ import ChatHeader from './ChatHeader'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
 
+// 🎯 Explicitly define the unified types passed from the wrapper
+interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
+  initialSession: SafeSessionConfig | null
+  initialMessages: ChatMessage[]
+  setInitialMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+  loading: boolean
+  onClose: () => void
+}
+
 export default function ChatWindow({
   widget,
   widgetId,
   visitorTrackingId,
+  initialSession,
+  initialMessages,
+  setInitialMessages,
+  loading,
   onClose,
-}: ChatWindowProps) {
+}: ExtendedChatWindowProps) {
   const socket = getChatSocket()
 
-  const currentUnreadRef = useRef<number>(0)
+ const [session, setSession] = useState<SafeSessionConfig | null>(
+   initialSession,
+ )
+ const [message, setMessage] = useState('')
+ const [operatorTyping, setOperatorTyping] = useState(false)
+ const [socketOperatorName, setSocketOperatorName] = useState<string>()
+ const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
 
-  const [session, setSession] = useState<SafeSessionConfig | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [message, setMessage] = useState('')
-  const [operatorTyping, setOperatorTyping] = useState(false)
-  const [socketOperatorName, setSocketOperatorName] = useState<string>()
-  const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
-  const [loading, setLoading] = useState(true)
+ const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+ const [isClosing, setIsClosing] = useState(false)
 
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
 
+  // Parse Operator names and brand filters safely
   let operatorName = socketOperatorName
   let operatorAvatar = socketOperatorAvatar
 
@@ -388,7 +399,9 @@ export default function ChatWindow({
     operatorName = 'Support Agent'
   }
 
+  // Handle a forced new conversation session request from the header actions menu
   async function initializeConversation(forceNew = false) {
+    if (!forceNew) return
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
@@ -398,92 +411,32 @@ export default function ChatWindow({
           body: JSON.stringify({
             widgetId,
             visitorTrackingId,
-            createNew: forceNew,
+            createNew: true,
           }),
         },
       )
 
-      const result: SessionInitResponse = await response.json()
+      const result = await response.json()
       if (result.status === 'success' && result.data) {
         setSession(result.data)
-        if (forceNew) {
-          setMessages([])
-          setSocketOperatorName(undefined)
-          setSocketOperatorAvatar(undefined)
-        }
+        setInitialMessages([])
+        setSocketOperatorName(undefined)
+        setSocketOperatorAvatar(undefined)
       }
     } catch (error) {
-      console.error('Session initialization failed', error)
-    } finally {
-      setLoading(false)
+      console.error('[KeilaChat] Session hard-reset failed:', error)
     }
   }
 
-  useEffect(() => {
-    let isMounted = true
-    const timer = setTimeout(() => {
-      if (isMounted) initializeConversation(false)
-    }, 0)
-
-    return () => {
-      isMounted = false
-      clearTimeout(timer)
-    }
-  }, [widgetId, visitorTrackingId])
-
-  useEffect(() => {
-    if (!session?.sessionId || session.status === 'closed') return
-
-    async function fetchHistory() {
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session?.sessionId}`,
-          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
-        )
-        const result = await response.json()
-        if (result.status === 'success' && Array.isArray(result.data)) {
-          setMessages(result.data)
-        }
-      } catch (error) {
-        console.error('Failed to load previous chat history:', error)
-      }
-    }
-    fetchHistory()
-  }, [session?.sessionId, session?.status])
-
-  useEffect(() => {
-    const handleResizeCheck = () => {
-      const minimized = window.innerWidth <= 66 || window.innerHeight <= 66
-      if (!minimized) {
-        currentUnreadRef.current = 0
-        window.parent.postMessage({ type: 'UNREAD_RESET' }, '*')
-      }
-    }
-
-    window.addEventListener('resize', handleResizeCheck)
-    handleResizeCheck()
-
-    return () => window.removeEventListener('resize', handleResizeCheck)
-  }, [])
-
+  // Listen directly within the open layout frame view for profile events and typing flags
   useEffect(() => {
     if (!session?.sessionId) return
-
-    if (!socket.connected) {
-      socket.connect()
-    }
-
-    socket.emit('join_chat_session', {
-      sessionId: session.sessionId,
-      propertyId: session.propertyId,
-      visitorId: session.visitorId,
-      clientType: 'visitor',
-    })
 
     const handleNewMessage = (
       payload: ChatMessage & { senderAvatar?: string },
     ) => {
-      setMessages((prev) => {
+      // Append message instantly if it lands while the screen is open
+      setInitialMessages((prev) => {
         if (!payload._id) return [...prev, payload]
         if (prev.some((m) => m._id === payload._id)) return prev
         return [...prev, payload]
@@ -491,50 +444,14 @@ export default function ChatWindow({
 
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
         setOperatorTyping(false)
-
-        // 🎯 FIX: Read layout values explicitly on event execution. This avoids state closure traps completely.
-        const isMinimized = window.innerWidth <= 66 || window.innerHeight <= 66
-
-        if (isMinimized) {
-          currentUnreadRef.current += 1
-
-          // 1. Send badge count value to parent script context
-          window.parent.postMessage(
-            { type: 'UNREAD_UPDATE', count: currentUnreadRef.current },
-            '*',
-          )
-
-          // 2. 🔊 Execute notification chime audio stream track
-          if (widget?.widgetSettings?.soundEnabled) {
-            try {
-              const audio = new Audio('/sound/notification.wav')
-              audio.volume = 0.7
-
-              const playPromise = audio.play()
-              if (playPromise !== undefined) {
-                playPromise.catch((err) => {
-                  console.warn(
-                    '[KeilaChat] Audio playback deferred until user engagement:',
-                    err,
-                  )
-                })
-              }
-            } catch (audioError) {
-              console.error(
-                '[KeilaChat] HTML5 Audio runtime issue:',
-                audioError,
-              )
-            }
-          }
-        }
-
         if (
           payload.senderName &&
           payload.senderName.toLowerCase() !== 'operator'
         ) {
           setSocketOperatorName(payload.senderName)
-          if (payload.senderAvatar)
+          if (payload.senderAvatar) {
             setSocketOperatorAvatar(payload.senderAvatar)
+          }
         }
       }
     }
@@ -561,7 +478,7 @@ export default function ChatWindow({
       socket.off('new_message', handleNewMessage)
       socket.off('user_typing', handleTyping)
     }
-  }, [session, socket, widget])
+  }, [session, socket, setInitialMessages])
 
   async function handleEndChat() {
     if (!session?.sessionId) return
@@ -582,7 +499,7 @@ export default function ChatWindow({
         onClose()
       }
     } catch (error) {
-      console.error('Error closing conversation thread:', error)
+      console.error('[KeilaChat] Error closing conversation session:', error)
     } finally {
       setIsClosing(false)
     }
@@ -619,7 +536,7 @@ export default function ChatWindow({
         {!loading && (
           <ChatMessages
             widget={widget}
-            messages={messages}
+            messages={initialMessages}
             operatorTyping={operatorTyping}
           />
         )}
