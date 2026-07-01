@@ -5,7 +5,6 @@
 import { useEffect, useState } from 'react'
 
 import { getWebsite, updateWebsite } from '@/app/lib/api/settings.api'
-
 import type { WebsiteFormValues } from '@/app/lib/validation/settings/settings.schema'
 
 export function useWebsite() {
@@ -18,21 +17,20 @@ export function useWebsite() {
     const load = async () => {
       try {
         const res = await getWebsite()
-
         const property = res.data.property
 
         setWebsite({
           name: property.name ?? '',
           domain: property.domain ?? '',
-
           allowedDomains: property.allowedDomains.join('\n'),
-
           category: property.details.category ?? '',
           subCategory: property.details.subCategory ?? '',
           region: property.details.region ?? '',
           description: property.details.description ?? '',
           logoUrl: property.details.logoUrl ?? '',
         })
+      } catch (err) {
+        console.error('Failed to load website configuration:', err)
       } finally {
         setLoading(false)
       }
@@ -48,12 +46,10 @@ export function useWebsite() {
       await updateWebsite({
         name: values.name,
         domain: values.domain,
-
         allowedDomains: values.allowedDomains
           .split('\n')
           .map((d) => d.trim())
           .filter(Boolean),
-
         category: values.category,
         subCategory: values.subCategory,
         region: values.region,
@@ -62,6 +58,9 @@ export function useWebsite() {
       })
 
       setWebsite(values)
+    } catch (err) {
+      console.error('Failed to update website configuration:', err)
+      throw err
     } finally {
       setSaving(false)
     }

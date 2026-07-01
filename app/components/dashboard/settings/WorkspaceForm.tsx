@@ -16,9 +16,11 @@ import {
   Title,
   Badge,
 } from '@mantine/core'
-import { FiSave } from 'react-icons/fi'
+import { notifications } from '@mantine/notifications'
+import { FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
 
 import { useWorkspace } from '@/app/hooks/settings/useWorkspace'
+import { getErrorMessage } from '@/app/lib/utils/error'
 import {
   WorkspaceFormValues,
   workspaceSchema,
@@ -49,13 +51,34 @@ export default function WorkspaceForm() {
   }, [workspace, reset])
 
   const onSubmit = async (values: WorkspaceFormValues) => {
-    await saveWorkspace(values)
+    try {
+      await saveWorkspace(values)
+      reset(values) // Marks the workspace form clean (isDirty = false) on complete save
+
+      notifications.show({
+        title: 'Workspace Updated',
+        message: 'Your organization details have been saved successfully.',
+        color: 'green',
+        icon: <FiCheck size={16} />,
+        autoClose: 4000,
+      })
+    } catch (error: unknown) {
+      notifications.show({
+        title: 'Save Failed',
+        message: getErrorMessage(error), 
+        color: 'red',
+        icon: <FiAlertCircle size={16} />,
+        autoClose: 5000,
+      })
+    }
   }
 
   if (loading) {
     return (
-      <Card className="bg-card! flex justify-center items-center">
-        <Text>Loading...</Text>
+      <Card className="bg-card! flex justify-center items-center p-6">
+        <Text size="sm" c="dimmed">
+          Loading workspace information...
+        </Text>
       </Card>
     )
   }
@@ -70,7 +93,7 @@ export default function WorkspaceForm() {
           {/* Header */}
           <div>
             <Title order={3}>Workspace</Title>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="dimmed" mt={4}>
               Manage your organization details
             </Text>
           </div>

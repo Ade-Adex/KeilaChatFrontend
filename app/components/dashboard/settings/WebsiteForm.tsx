@@ -5,7 +5,6 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-
 import {
   Button,
   Card,
@@ -17,11 +16,11 @@ import {
   Textarea,
   Title,
 } from '@mantine/core'
-
-import { FiGlobe, FiSave } from 'react-icons/fi'
+import { notifications } from '@mantine/notifications'
+import { FiGlobe, FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
 
 import { useWebsite } from '@/app/hooks/settings/useWebsite'
-
+import { getErrorMessage } from '@/app/lib/utils/error'
 import {
   websiteSchema,
   type WebsiteFormValues,
@@ -38,7 +37,6 @@ export default function WebsiteForm() {
   } = useForm<WebsiteFormValues>({
     resolver: zodResolver(websiteSchema),
     mode: 'onChange',
-
     defaultValues: {
       name: '',
       domain: '',
@@ -58,14 +56,34 @@ export default function WebsiteForm() {
   }, [website, reset])
 
   const onSubmit = async (values: WebsiteFormValues) => {
-    await saveWebsite(values)
-    reset(values)
+    try {
+      await saveWebsite(values)
+      reset(values) // Marks form pristine after save completed
+
+      notifications.show({
+        title: 'Settings Saved',
+        message: 'Your website property configuration has been saved.',
+        color: 'green',
+        icon: <FiCheck size={16} />,
+        autoClose: 4000,
+      })
+    } catch (error: unknown) {
+      notifications.show({
+        title: 'Save Failed',
+        message: getErrorMessage(error), 
+        color: 'red',
+        icon: <FiAlertCircle size={16} />,
+        autoClose: 5000,
+      })
+    }
   }
 
   if (loading) {
     return (
-      <Card className="bg-card! flex justify-center items-center">
-        <Text>Loading website...</Text>
+      <Card className="bg-card! flex justify-center items-center p-6">
+        <Text size="sm" c="dimmed">
+          Loading website...
+        </Text>
       </Card>
     )
   }
@@ -80,7 +98,6 @@ export default function WebsiteForm() {
         <Stack gap="xl">
           <div>
             <Title order={3}>Website</Title>
-
             <Text size="sm" c="dimmed" mt={4}>
               Configure the website connected to your live chat widget.
             </Text>

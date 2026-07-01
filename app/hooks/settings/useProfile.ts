@@ -1,6 +1,5 @@
 // /app/hooks/settings/useProfile.ts
 
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -42,10 +41,11 @@ export function useProfile() {
 
     try {
       await updateProfile(values)
-
       setProfile(values)
     } catch (err) {
       console.error('Failed to update profile:', err)
+      // Rethrow the error so that the calling form component can catch it and display an error alert
+      throw err
     } finally {
       setSaving(false)
     }

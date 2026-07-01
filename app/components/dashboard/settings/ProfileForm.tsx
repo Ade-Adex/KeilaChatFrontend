@@ -16,11 +16,12 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { FiCamera, FiSave } from 'react-icons/fi'
-
+import { notifications } from '@mantine/notifications'
+import { FiCamera, FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
 
 import { useProfile } from '@/app/hooks/settings/useProfile'
 import { ProfileFormValues, profileSchema } from '@/app/lib/validation/settings/settings.schema'
+import { getErrorMessage } from '@/app/lib/utils/error'
 
 export default function ProfileForm() {
   const { profile, loading, saving, saveProfile } = useProfile()
@@ -53,14 +54,32 @@ export default function ProfileForm() {
   }, [profile, reset])
 
   const onSubmit = async (values: ProfileFormValues) => {
-    await saveProfile(values)
-    reset(values) // mark form clean after save
+    try {
+      await saveProfile(values)
+      reset(values) // Marks the form clean (isDirty = false) after successful save
+
+      notifications.show({
+        title: 'Profile Updated',
+        message: 'Your profile changes have been saved successfully.',
+        color: 'green',
+        icon: <FiCheck size={16} />,
+        autoClose: 4000,
+      })
+    } catch (error: unknown) {
+      notifications.show({
+        title: 'Update Failed',
+        message: getErrorMessage(error), 
+        color: 'red',
+        icon: <FiAlertCircle size={16} />,
+        autoClose: 5000,
+      })
+    }
   }
 
   if (loading) {
     return (
-      <Card className='bg-card! flex justify-center items-center'>
-        <Text>Loading profile...</Text>
+      <Card className="bg-card! flex justify-center items-center p-6">
+        <Text size="sm" c="dimmed">Loading profile...</Text>
       </Card>
     )
   }

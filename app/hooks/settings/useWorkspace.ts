@@ -31,6 +31,8 @@ export function useWorkspace() {
           companyName: res.data.account.name,
           plan: res.data.account.plan,
         })
+      } catch (err) {
+        console.error('Failed to load workspace data:', err)
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -59,6 +61,9 @@ export function useWorkspace() {
             }
           : null,
       )
+    } catch (err) {
+      console.error('Failed to update workspace configuration:', err)
+      throw err
     } finally {
       setSaving(false)
     }
