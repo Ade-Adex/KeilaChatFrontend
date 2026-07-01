@@ -9,6 +9,8 @@ import {
   FiLogOut,
   FiEdit2,
   FiPlusCircle,
+  FiSun,
+  FiMoon,
 } from 'react-icons/fi'
 import {
   Menu,
@@ -20,6 +22,7 @@ import {
 } from '@mantine/core'
 import type { WidgetConfig } from '@/app/types/chat'
 import Image from 'next/image'
+import { useTheme } from 'next-themes'
 
 interface ChatHeaderProps {
   widget: WidgetConfig
@@ -50,6 +53,9 @@ export default function ChatHeader({
   const [visitorName, setVisitorName] = useState('')
   const [visitorEmail, setVisitorEmail] = useState('')
   const [updating, setUpdating] = useState(false)
+
+  // 🎯 Theme Hook Integration
+  const { resolvedTheme, setTheme } = useTheme()
 
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -110,6 +116,22 @@ export default function ChatHeader({
         </div>
 
         <div className="flex items-center gap-1">
+          {/* 🎯 Integrated Theme Shift Toggle with matching header action button sizing */}
+          <button
+            suppressHydrationWarning
+            onClick={() =>
+              setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
+            }
+            className="rounded-full p-2 transition hover:bg-white/10 cursor-pointer text-white"
+            aria-label="Toggle theme appearance"
+          >
+            {resolvedTheme === 'dark' ? (
+              <FiSun size={18} />
+            ) : (
+              <FiMoon size={18} />
+            )}
+          </button>
+
           <Menu shadow="md" width={180} position="bottom-end" withinPortal>
             <Menu.Target>
               <ActionIcon
@@ -175,6 +197,8 @@ export default function ChatHeader({
             <Image
               src={operatorAvatar}
               alt={operatorName}
+              width={20}
+              height={20}
               className="h-5 w-5 rounded-full object-cover border border-border shrink-0"
               onError={(e) => {
                 ;(e.currentTarget as HTMLElement).style.display = 'none'
