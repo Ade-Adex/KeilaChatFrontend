@@ -10,7 +10,7 @@ export default function EmptyState() {
     <div className="flex h-full items-center justify-center bg-background">
       <div className="mx-auto max-w-md px-6 text-center">
         {/* Icon */}
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
           <FaComments className="text-4xl text-primary" />
         </div>
 
@@ -26,7 +26,7 @@ export default function EmptyState() {
         </p>
 
         {/* Helper */}
-        <div className="mt-8 rounded-xl border bg-card p-4">
+        <div className="mt-8 rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">
             • Select a queued conversation to accept it
           </p>

@@ -50,7 +50,7 @@ export default function DashboardShell({
       </AppShell.Header>
 
       {/* Navigation Drawer Panel */}
-      <AppShell.Navbar className="border-r border-border transition-all duration-300">
+      <AppShell.Navbar className="border-r border-border! transition-all duration-300">
         <ScrollArea className="h-full bg-card">
           <Sidebar isOpened={opened} />
         </ScrollArea>

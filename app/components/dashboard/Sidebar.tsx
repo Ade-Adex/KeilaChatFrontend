@@ -80,7 +80,7 @@ export default function Sidebar({ isOpened }: SidebarProps) {
                 className={`rounded-lg font-medium transition-all duration-200 py-2.5! ${
                   isActive
                     ? ' bg-primary! hover:opacity-80 shadow-sm'
-                    : 'bg-sidebar! text-foreground opacity-80 hover:opacity-70!'
+                    : 'bg-sidebar/70! text-foreground opacity-80 hover:opacity-70!'
                 }`}
                 styles={{
                   root: {
