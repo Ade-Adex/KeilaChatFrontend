@@ -174,7 +174,7 @@ export default function ChatHeader({
               </ActionIcon>
             </Menu.Target>
 
-            <Menu.Dropdown>
+            <Menu.Dropdown className='bg-card! border border-border! text-foreground!'>
               <Menu.Label>Options</Menu.Label>
 
               <Menu.Item
