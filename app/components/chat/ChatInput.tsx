@@ -38,7 +38,7 @@ export default function ChatInput({
           p-4
           text-center
           text-sm
-          text-muted-foreground
+          text-foreground
         "
       >
         This chat session has ended.
@@ -49,7 +49,7 @@ export default function ChatInput({
   return (
     <div
       className="
-        border-t
+        border-t border-border
         bg-card
         p-3
       "
@@ -70,8 +70,9 @@ export default function ChatInput({
           className="
             flex-1
             rounded-full
-            border
+            border border-border
             bg-background
+            text-foreground
             px-4
             py-3
             text-sm
@@ -109,7 +110,7 @@ export default function ChatInput({
           mt-2
           text-center
           text-[10px]
-          text-muted-foreground
+          text-foreground
         "
       >
         Powered by <strong>Keila Technologies</strong>
