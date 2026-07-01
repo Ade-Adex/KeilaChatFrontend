@@ -8,9 +8,49 @@ interface Props {
   message: ChatMessage
 }
 
+function MessageStatusTicks({
+  status,
+}: {
+  status?: 'sent' | 'delivered' | 'seen' | 'failed'
+}) {
+  switch (status) {
+    case 'sent':
+      return (
+        <span className="text-white/60 text-[10px] select-none" title="Sent">
+          ✓
+        </span>
+      )
+    case 'delivered':
+      return (
+        <span
+          className="text-white/60 text-[10px] tracking-[-3px] pr-1 select-none"
+          title="Delivered"
+        >
+          ✓✓
+        </span>
+      )
+    case 'seen':
+      return (
+        <span
+          className="text-sky-300 font-bold text-[10px] tracking-[-3px] pr-1 select-none"
+          title="Seen"
+        >
+          ✓✓
+        </span>
+      )
+    case 'failed':
+      return (
+        <span className="text-red-400 text-[10px] font-semibold" title="Failed">
+          ✕
+        </span>
+      )
+    default:
+      return <span className="text-white/60 text-[10px] select-none">✓</span>
+  }
+}
+
 export default function MessageBubble({ message }: Props) {
   const isVisitor = message.senderType === 'visitor'
-
   const isSystem = message.senderType === 'system'
 
   const time = new Date(message.createdAt).toLocaleTimeString([], {
@@ -57,16 +97,12 @@ export default function MessageBubble({ message }: Props) {
         {message.messageText}
       </div>
 
-      <span
-        className="
-          mt-1
-          px-1
-          text-[10px]
-          text-muted-foreground
-        "
-      >
-        {time}
-      </span>
+      <div className="mt-1 flex items-center gap-1 px-1">
+        <span className="text-[10px] text-muted-foreground">{time}</span>
+
+        {/* 🎯 Only render status checkmarks for the visitor's outgoing messages */}
+        {isVisitor && <MessageStatusTicks status={message.status} />}
+      </div>
     </div>
   )
 }
