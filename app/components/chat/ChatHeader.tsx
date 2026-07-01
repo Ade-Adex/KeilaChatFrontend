@@ -1,5 +1,4 @@
 // /app/components/chat/ChatHeader.tsx
-
 'use client'
 
 import { useState } from 'react'
@@ -11,6 +10,8 @@ import {
   FiPlusCircle,
   FiSun,
   FiMoon,
+  FiCheck,
+  FiAlertCircle,
 } from 'react-icons/fi'
 import {
   Menu,
@@ -20,9 +21,11 @@ import {
   Button,
   Stack,
 } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import type { WidgetConfig } from '@/app/types/chat'
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
+import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
 
 interface ChatHeaderProps {
   widget: WidgetConfig
@@ -68,6 +71,7 @@ export default function ChatHeader({
       return
 
     setUpdating(true)
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/visitors/profile`,
@@ -77,21 +81,49 @@ export default function ChatHeader({
           body: JSON.stringify({
             propertyId,
             visitorTrackingId,
-            name: visitorName,
-            email: visitorEmail,
+            name: visitorName.trim(),
+            email: visitorEmail.trim().toLowerCase(),
           }),
         },
       )
 
       const result = await response.json()
-      if (result.status === 'success') {
-        setProfileModalOpen(false)
+
+      if (response.ok && (result.success || result.status === 'success')) {
+        // 🎯 Toast Notification for Successful Updates
+        notifications.show({
+          title: 'Profile Updated',
+          message: getSuccessMessage(
+            result,
+            'Your profile details have been saved.',
+          ),
+          color: 'green',
+          icon: <FiCheck size={16} />,
+          autoClose: 4000,
+        })
+
         if (onVisitorProfileUpdated) {
-          onVisitorProfileUpdated(visitorName, visitorEmail)
+          onVisitorProfileUpdated(
+            visitorName.trim(),
+            visitorEmail.trim().toLowerCase(),
+          )
         }
+
+        setProfileModalOpen(false)
+      } else {
+        throw result
       }
     } catch (err) {
       console.error('Failed to update visitor profile details:', err)
+
+      // 🎯 Toast Notification for Validation or Duplicate Email Conflicts
+      notifications.show({
+        title: 'Update Failed',
+        message: getErrorMessage(err),
+        color: 'red',
+        icon: <FiAlertCircle size={16} />,
+        autoClose: 5000,
+      })
     } finally {
       setUpdating(false)
     }
@@ -116,7 +148,7 @@ export default function ChatHeader({
         </div>
 
         <div className="flex items-center gap-1">
-          {/* 🎯 Integrated Theme Shift Toggle with matching header action button sizing */}
+          {/* Integrated Theme Shift Toggle */}
           <button
             suppressHydrationWarning
             onClick={() =>
@@ -223,10 +255,13 @@ export default function ChatHeader({
       {/* Profile Setup Modal */}
       <Modal
         opened={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
+        onClose={() => !updating && setProfileModalOpen(false)}
         title="Introduce Yourself"
         centered
         size="sm"
+        closeOnClickOutside={!updating}
+        closeOnEscape={!updating}
+        withCloseButton={!updating}
       >
         <form onSubmit={handleUpdateProfile}>
           <Stack gap="md">
@@ -236,6 +271,7 @@ export default function ChatHeader({
               value={visitorName}
               onChange={(e) => setVisitorName(e.currentTarget.value)}
               required
+              disabled={updating}
               size="xs"
             />
             <TextInput
@@ -245,6 +281,7 @@ export default function ChatHeader({
               value={visitorEmail}
               onChange={(e) => setVisitorEmail(e.currentTarget.value)}
               required
+              disabled={updating}
               size="xs"
             />
             <Button
