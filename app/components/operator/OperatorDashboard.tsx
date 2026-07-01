@@ -204,7 +204,7 @@ export default function OperatorDashboard() {
     }) => {
       triggerUpdate()
 
-      // If a visitor drops a fresh trace in any channel room while the operator is logged into the dashboard, mark it as delivered instantly
+      // 🎯 FIX: Verify senderType is visitor, and make sure we only emit delivery if it isn't seen yet
       if (
         payload.message.senderType === 'visitor' &&
         payload.message._id &&

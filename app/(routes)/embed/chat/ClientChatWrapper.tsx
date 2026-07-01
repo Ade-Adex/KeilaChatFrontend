@@ -332,7 +332,9 @@ export default function ClientChatWrapper({
     fetchHistory()
   }, [session?.sessionId])
 
-  // 4. Persistent Core Socket Engine Link + Real-Time Decoupled Status Checks
+  
+
+  // 4. Persistent Core Socket Engine Link + Real-Time Decoupled Status Delivery Check
   useEffect(() => {
     if (!session?.sessionId) return
 
@@ -349,11 +351,11 @@ export default function ClientChatWrapper({
       clientType: 'visitor',
     })
 
-    // 🎯 Catch background historical entries that are still unverified and mark them delivered
+    // Catch background historical entries that are still unverified and mark them delivered
     messages.forEach((m) => {
       if (
         (m.senderType === 'operator' || m.senderType === 'ai') &&
-        m.status === 'sent' &&
+        !m.status &&
         m._id
       ) {
         socket.emit('message_delivered', {
@@ -364,26 +366,43 @@ export default function ClientChatWrapper({
     })
 
     const handleIncomingMessage = (payload: ChatMessage) => {
+      // Ensure the incoming message belongs to this active session context
+      const incomingSessionId =
+        payload.sessionId &&
+        typeof payload.sessionId === 'object' &&
+        '_id' in payload.sessionId
+          ? (payload.sessionId as { _id: string })._id
+          : (payload.sessionId as string)
+
+      if (incomingSessionId !== session.sessionId) return
+
       setMessages((prev) => {
         if (!payload._id) return [...prev, payload]
-        if (prev.some((m) => m._id === payload._id)) return prev
+        if (prev.some((m) => m._id === payload._id)) {
+          // Update status if it changed
+          return prev.map((m) =>
+            m._id === payload._id
+              ? { ...m, status: payload.status ?? m.status }
+              : m,
+          )
+        }
         return [...prev, payload]
       })
 
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
-        // 🎯 ALWAYS declare delivered if the socket catches the background context payload
-        if (
-          payload._id &&
-          payload.status !== 'seen' &&
-          payload.status !== 'delivered'
-        ) {
-          socket.emit('message_delivered', {
-            messageId: payload._id,
-            sessionId: session.sessionId,
-          })
-        }
-
         if (!open) {
+          // 🎯 MINIMIZED STATE: ONLY mark as delivered. DO NOT trigger mark_session_seen!
+          if (
+            payload._id &&
+            payload.status !== 'seen' &&
+            payload.status !== 'delivered'
+          ) {
+            socket.emit('message_delivered', {
+              messageId: payload._id,
+              sessionId: session.sessionId,
+            })
+          }
+
           setUnreadCount((prev) => prev + 1)
 
           if (widget?.widgetSettings?.soundEnabled) {
@@ -398,7 +417,7 @@ export default function ClientChatWrapper({
             }
           }
         } else {
-          // 🎯 Instantly broadcast read state if chat box is already open on-screen
+          // 🎯 MAXIMIZED STATE: Only mark seen when the visitor is actively looking at it
           socket.emit('mark_session_seen', {
             sessionId: session.sessionId,
             clientType: 'visitor',
