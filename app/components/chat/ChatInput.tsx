@@ -74,7 +74,7 @@ export default function ChatInput({
             bg-background
             text-foreground
             px-4
-            py-3
+            py-2.5
             text-sm
             outline-none
             transition
