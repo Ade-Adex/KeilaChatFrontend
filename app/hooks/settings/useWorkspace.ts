@@ -61,6 +61,8 @@ export function useWorkspace() {
             }
           : null,
       )
+
+      return res
     } catch (err) {
       console.error('Failed to update workspace configuration:', err)
       throw err

@@ -20,7 +20,7 @@ import { notifications } from '@mantine/notifications'
 import { FiGlobe, FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
 
 import { useWebsite } from '@/app/hooks/settings/useWebsite'
-import { getErrorMessage } from '@/app/lib/utils/error'
+import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
 import {
   websiteSchema,
   type WebsiteFormValues,
@@ -57,12 +57,12 @@ export default function WebsiteForm() {
 
   const onSubmit = async (values: WebsiteFormValues) => {
     try {
-      await saveWebsite(values)
-      reset(values) // Marks form pristine after save completed
+      const response = await saveWebsite(values)
+      reset(values) 
 
       notifications.show({
         title: 'Settings Saved',
-        message: 'Your website property configuration has been saved.',
+        message: getSuccessMessage(response),
         color: 'green',
         icon: <FiCheck size={16} />,
         autoClose: 4000,

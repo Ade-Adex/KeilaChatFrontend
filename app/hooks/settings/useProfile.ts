@@ -26,6 +26,8 @@ export function useProfile() {
           email: res.data.operator.email,
           avatar: res.data.operator.avatar ?? '',
         })
+
+        return res
       } catch (err) {
         console.error('Failed to load profile:', err)
       } finally {
@@ -40,8 +42,9 @@ export function useProfile() {
     setSaving(true)
 
     try {
-      await updateProfile(values)
+      const res = await updateProfile(values)
       setProfile(values)
+      return res
     } catch (err) {
       console.error('Failed to update profile:', err)
       // Rethrow the error so that the calling form component can catch it and display an error alert

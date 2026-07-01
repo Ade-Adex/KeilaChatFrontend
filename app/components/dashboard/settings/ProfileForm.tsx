@@ -21,7 +21,7 @@ import { FiCamera, FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
 
 import { useProfile } from '@/app/hooks/settings/useProfile'
 import { ProfileFormValues, profileSchema } from '@/app/lib/validation/settings/settings.schema'
-import { getErrorMessage } from '@/app/lib/utils/error'
+import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
 
 export default function ProfileForm() {
   const { profile, loading, saving, saveProfile } = useProfile()
@@ -55,12 +55,12 @@ export default function ProfileForm() {
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
-      await saveProfile(values)
+      const response = await saveProfile(values)
       reset(values) // Marks the form clean (isDirty = false) after successful save
 
       notifications.show({
         title: 'Profile Updated',
-        message: 'Your profile changes have been saved successfully.',
+        message: getSuccessMessage(response),
         color: 'green',
         icon: <FiCheck size={16} />,
         autoClose: 4000,

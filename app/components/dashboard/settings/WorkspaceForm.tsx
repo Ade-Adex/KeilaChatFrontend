@@ -20,7 +20,7 @@ import { notifications } from '@mantine/notifications'
 import { FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
 
 import { useWorkspace } from '@/app/hooks/settings/useWorkspace'
-import { getErrorMessage } from '@/app/lib/utils/error'
+import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
 import {
   WorkspaceFormValues,
   workspaceSchema,
@@ -52,12 +52,12 @@ export default function WorkspaceForm() {
 
   const onSubmit = async (values: WorkspaceFormValues) => {
     try {
-      await saveWorkspace(values)
-      reset(values) // Marks the workspace form clean (isDirty = false) on complete save
+      const response = await saveWorkspace(values)
+      reset(values) 
 
       notifications.show({
         title: 'Workspace Updated',
-        message: 'Your organization details have been saved successfully.',
+        message: getSuccessMessage(response),
         color: 'green',
         icon: <FiCheck size={16} />,
         autoClose: 4000,

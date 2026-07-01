@@ -43,7 +43,7 @@ export function useWebsite() {
     setSaving(true)
 
     try {
-      await updateWebsite({
+      const res = await updateWebsite({
         name: values.name,
         domain: values.domain,
         allowedDomains: values.allowedDomains
@@ -58,6 +58,8 @@ export function useWebsite() {
       })
 
       setWebsite(values)
+
+      return res
     } catch (err) {
       console.error('Failed to update website configuration:', err)
       throw err
