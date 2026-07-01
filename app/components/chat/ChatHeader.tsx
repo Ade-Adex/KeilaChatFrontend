@@ -177,6 +177,7 @@ export default function ChatHeader({
             <Menu.Dropdown className='bg-card! border border-border! text-foreground!'>
               <Menu.Label>Options</Menu.Label>
 
+              {!isSessionActive && (
               <Menu.Item
                 leftSection={<FiPlusCircle size={14} />}
                 onClick={onStartNewChat}
@@ -184,6 +185,7 @@ export default function ChatHeader({
               >
                 Start New Chat
               </Menu.Item>
+              )}
 
               <Menu.Item
                 leftSection={<FiEdit2 size={14} />}
