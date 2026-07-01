@@ -154,11 +154,11 @@ export default function SetupPage() {
       {/* Header */}
       {/* ===================================================== */}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-5">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-5 px-4">
         <div>
           <Title order={2}>Widget Integration</Title>
 
-          <Text size="sm" c="dimmed" mt={4}>
+          <Text size="sm" c="dimmed" mt={4} className='w-full max-w-[80%]'>
             Embed the Keila Chat widget into your website with a single script.
             Every widget request is securely verified against your registered
             domain before loading.
@@ -169,6 +169,7 @@ export default function SetupPage() {
           size="md"
           color={isNotRegistered ? 'amber' : 'green'}
           variant="light"
+          className='my-auto'
         >
           {isNotRegistered ? 'Awaiting Configuration' : 'Production Ready'}
         </Badge>
