@@ -184,7 +184,7 @@ export default function ConversationSidebar({
                   })
                   onSelect(chat)
                 }}
-                className={`w-full text-left px-3 py-2.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between
+                className={`w-full text-left px-3 py-1.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between cursor-pointer border border-border!
                   ${
                     isSelected
                       ? 'bg-primary text-white shadow-sm shadow-primary/10'

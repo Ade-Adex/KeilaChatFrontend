@@ -13,7 +13,7 @@ export default function DashboardShell({
 }: {
   children: React.ReactNode
 }) {
-  const [opened, { toggle }] = useDisclosure(true)
+  const [opened, { toggle }] = useDisclosure(false)
 
   return (
     <AppShell
@@ -27,7 +27,7 @@ export default function DashboardShell({
       className="bg-background text-foreground transition-all duration-300"
     >
       {/* Header Container */}
-      <AppShell.Header className="bg-card border-b border-border px-4 transition-all duration-300">
+      <AppShell.Header className="bg-card! border-b border-border! px-4 transition-all duration-300">
         <Group h="100%" justify="space-between">
           <Group>
             <Burger
@@ -50,8 +50,8 @@ export default function DashboardShell({
       </AppShell.Header>
 
       {/* Navigation Drawer Panel */}
-      <AppShell.Navbar className="bg-card border-r border-border transition-all duration-300">
-        <ScrollArea className="h-full">
+      <AppShell.Navbar className="border-r border-border transition-all duration-300">
+        <ScrollArea className="h-full bg-card">
           <Sidebar isOpened={opened} />
         </ScrollArea>
       </AppShell.Navbar>

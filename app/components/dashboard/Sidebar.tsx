@@ -57,7 +57,7 @@ export default function Sidebar({ isOpened }: SidebarProps) {
  }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between bg-sidebar text-white">
+    <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between text-white">
       {/* Main Navigation links mapping container */}
       <div className="flex flex-col gap-2">
         {links.map((link) => {
@@ -79,8 +79,8 @@ export default function Sidebar({ isOpened }: SidebarProps) {
                 leftSection={link.icon}
                 className={`rounded-lg font-medium transition-all duration-200 py-2.5! ${
                   isActive
-                    ? ' bg-primary! hover:bg-button-hover! shadow-sm'
-                    : 'bg-slate-900! text-foreground opacity-80 hover:opacity-100'
+                    ? ' bg-primary! hover:opacity-80 shadow-sm'
+                    : 'bg-sidebar! text-foreground opacity-80 hover:opacity-70!'
                 }`}
                 styles={{
                   root: {
@@ -98,7 +98,7 @@ export default function Sidebar({ isOpened }: SidebarProps) {
 
       {/* Footer Segment: Boundary Divider + Logout Action */}
       <div className="flex flex-col gap-2">
-        <div className="border-t border-neutral-200 dark:border-neutral-800 w-full my-1" />
+        <div className="border-t border-border w-full my-1" />
 
         <Tooltip label="Logout" disabled={isOpened} position="right" withArrow>
           <NavLink
