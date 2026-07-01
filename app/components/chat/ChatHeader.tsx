@@ -93,10 +93,7 @@ export default function ChatHeader({
         // 🎯 Toast Notification for Successful Updates
         notifications.show({
           title: 'Profile Updated',
-          message: getSuccessMessage(
-            result,
-            'Your profile details have been saved.',
-          ),
+          message: getSuccessMessage(result),
           color: 'green',
           icon: <FiCheck size={16} />,
           autoClose: 4000,
