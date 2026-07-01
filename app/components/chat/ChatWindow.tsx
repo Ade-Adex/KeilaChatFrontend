@@ -1,4 +1,4 @@
-// // // /app/components/chat/ChatWindow.tsx
+// /app/components/chat/ChatWindow.tsx
 
 // 'use client'
 
@@ -316,6 +316,7 @@
 //   )
 // }
 
+// /app/components/chat/ChatWindow.tsx
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -342,8 +343,6 @@ export default function ChatWindow({
   const socket = getChatSocket()
 
   const currentUnreadRef = useRef<number>(0)
-  // 🎯 Use a state mirror to ensure runtime code references current layout bounds perfectly
-  const [isCurrentlyMinimized, setIsCurrentlyMinimized] = useState(true)
 
   const [session, setSession] = useState<SafeSessionConfig | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -452,13 +451,9 @@ export default function ChatWindow({
     fetchHistory()
   }, [session?.sessionId, session?.status])
 
-  // 🎯 Combined viewport listener to determine layout state accurately
   useEffect(() => {
     const handleResizeCheck = () => {
-      // Browsers match small dimensions up to 66px inside standalone widget layouts
       const minimized = window.innerWidth <= 66 || window.innerHeight <= 66
-      setIsCurrentlyMinimized(minimized)
-
       if (!minimized) {
         currentUnreadRef.current = 0
         window.parent.postMessage({ type: 'UNREAD_RESET' }, '*')
@@ -497,17 +492,19 @@ export default function ChatWindow({
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
         setOperatorTyping(false)
 
-        // 🎯 Evaluates state from the synchronized state variable instead of direct window size operations
-        if (isCurrentlyMinimized) {
+        // 🎯 FIX: Read layout values explicitly on event execution. This avoids state closure traps completely.
+        const isMinimized = window.innerWidth <= 66 || window.innerHeight <= 66
+
+        if (isMinimized) {
           currentUnreadRef.current += 1
 
-          // 1. Send count value to parent script context
+          // 1. Send badge count value to parent script context
           window.parent.postMessage(
             { type: 'UNREAD_UPDATE', count: currentUnreadRef.current },
             '*',
           )
 
-          // 2. 🔊 Execute sound track playback sequence
+          // 2. 🔊 Execute notification chime audio stream track
           if (widget?.widgetSettings?.soundEnabled) {
             try {
               const audio = new Audio('/sound/notification.wav')
@@ -564,7 +561,7 @@ export default function ChatWindow({
       socket.off('new_message', handleNewMessage)
       socket.off('user_typing', handleTyping)
     }
-  }, [session, socket, isCurrentlyMinimized, widget]) // 🎯 Added dependencies to ensure effect re-binds on layout adjustments
+  }, [session, socket, widget])
 
   async function handleEndChat() {
     if (!session?.sessionId) return

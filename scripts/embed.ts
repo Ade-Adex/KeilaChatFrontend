@@ -1,4 +1,4 @@
-// // /scripts/embed.ts
+// /scripts/embed.ts
 
 // (async function () {
 //   const scriptTag = document.currentScript as HTMLScriptElement | null
@@ -244,9 +244,10 @@
 
 
 
+// /scripts/embed.ts
 
 
-;(async function () {
+(async function () {
   const scriptTag = document.currentScript as HTMLScriptElement | null
 
   if (!scriptTag) {
@@ -395,6 +396,7 @@
 
     const frontendOrigin = new URL(FRONTEND_URL).origin
 
+
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== frontendOrigin) return
 
@@ -403,7 +405,9 @@
 
       switch (data.type) {
         case 'UNREAD_UPDATE': {
-          if (iframe.style.width === '64px' || iframe.getAttribute('data-state') === 'minimized') {
+          // 🎯 FIX: Check the dedicated state data attribute instead of comparing pixel strings directly
+          const currentState = iframe.getAttribute('data-state') || 'minimized'
+          if (currentState === 'minimized') {
             badge.innerText = data.count.toString()
             badge.style.display = 'flex'
           }
@@ -431,7 +435,7 @@
           const mobile = window.screen.width <= 768
           const expanded = width > 64 || height > 64
 
-          // 🎯 Keep state track on element attribute to avoid race conditions with frame size checks
+          // 🎯 Update the attribute state explicitly
           iframe.setAttribute('data-state', expanded ? 'expanded' : 'minimized')
 
           Object.assign(iframe.style, {
@@ -467,6 +471,8 @@
           break
       }
     }
+
+    // ... (Rest of the script file remains the same)
 
     window.addEventListener('message', handleMessage)
 
