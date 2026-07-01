@@ -259,6 +259,18 @@ export default function ChatHeader({
         closeOnClickOutside={!updating}
         closeOnEscape={!updating}
         withCloseButton={!updating}
+        styles={{
+          content: {
+            backgroundColor: 'var(--background)',
+            color: 'var(--foreground)',
+            border: '1px solid var(--border, #262626)',
+          },
+          header: {
+            backgroundColor: 'var(--background)',
+            color: 'var(--foreground)',
+          },
+        }}
+        className="bg-card! border-border!"
       >
         <form onSubmit={handleUpdateProfile}>
           <Stack gap="md">
@@ -270,6 +282,10 @@ export default function ChatHeader({
               required
               disabled={updating}
               size="xs"
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
             />
             <TextInput
               label="Email Address"
@@ -280,6 +296,10 @@ export default function ChatHeader({
               required
               disabled={updating}
               size="xs"
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
             />
             <Button
               type="submit"

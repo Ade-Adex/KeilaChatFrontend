@@ -163,7 +163,7 @@ export default function ContactsPage() {
              <Button
                type="submit"
                loading={submitLoading}
-               className="bg-primary hover:bg-button-hover text-white"
+               className="bg-primary hover:bg-primary/70 text-white"
              >
                Send Invite Link
              </Button>

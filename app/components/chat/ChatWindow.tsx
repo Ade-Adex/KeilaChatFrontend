@@ -230,6 +230,18 @@ export default function ChatWindow({
         title="End Conversation"
         centered
         size="sm"
+        styles={{
+          content: {
+            backgroundColor: 'var(--background)',
+            color: 'var(--foreground)',
+            border: '1px solid var(--border, #262626)',
+          },
+          header: {
+            backgroundColor: 'var(--background)',
+            color: 'var(--foreground)',
+          },
+        }}
+        className="bg-card! border-border!"
       >
         <Text size="sm" mb="lg">
           Are you sure you want to close this support session?
