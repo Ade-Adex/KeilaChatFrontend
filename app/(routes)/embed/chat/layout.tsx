@@ -40,7 +40,7 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
           inset: 0,
           width: '100%',
           height: '100%',
-          display: 'flex' /* 🎯 FIX: Keep launcher perfectly aligned */,
+          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'visible',
