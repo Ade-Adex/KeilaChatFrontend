@@ -67,9 +67,14 @@
 //   )
 // }
 
+
+
+
+// /app/(routes)/embed/chat/ClientChatWrapper.tsx
+
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import ChatWindow from '@/app/components/chat/ChatWindow'
 import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
 import type {
@@ -124,17 +129,44 @@ export default function ClientChatWrapper({
         const result: SessionInitResponse = await response.json()
         if (result.status === 'success' && result.data) {
           setSession(result.data)
+        } else {
+          setLoading(false)
         }
       } catch (error) {
         console.error('[KeilaChat] Root initialization failed:', error)
-      } finally {
         setLoading(false)
       }
     }
     initializeConversation()
   }, [widgetId, visitorTrackingId])
 
-  // 3. Persistent Core Socket Engine Link (Runs even when closed!)
+  // 3. 🎯 FIX: Fetch database message logs as soon as session context maps out
+  useEffect(() => {
+    if (!session?.sessionId) return
+
+    async function fetchHistory() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session?.sessionId}`,
+          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        )
+        const result = await response.json()
+        if (result.status === 'success' && Array.isArray(result.data)) {
+          setMessages(result.data)
+        }
+      } catch (error) {
+        console.error(
+          '[KeilaChat] Failed to load previous chat history:',
+          error,
+        )
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchHistory()
+  }, [session?.sessionId])
+
+  // 4. Persistent Core Socket Engine Link (Runs even when closed!)
   useEffect(() => {
     if (!session?.sessionId) return
 
@@ -144,7 +176,6 @@ export default function ClientChatWrapper({
       socket.connect()
     }
 
-    // Join the room room right away so backend can route events to this minimized client
     socket.emit('join_chat_session', {
       sessionId: session.sessionId,
       propertyId: session.propertyId,
@@ -159,7 +190,7 @@ export default function ClientChatWrapper({
         return [...prev, payload]
       })
 
-      // 🎯 Process unread metrics + playback alerts if minimized
+      // Process unread metrics + playback alerts if minimized
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
         if (!open) {
           setUnreadCount((prev) => prev + 1)
