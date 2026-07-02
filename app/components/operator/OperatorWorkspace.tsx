@@ -1,6 +1,5 @@
 // /app/components/operator/OperatorWorkspace.tsx
 
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -11,7 +10,12 @@ import { getChatSocket } from '@/app/hooks/useChatSocket'
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 import TypingIndicator from '@/app/components/TypingIndicator'
 import { useAuthStore } from '@/app/store/useAuthStore'
-import { FiShuffle, FiUserPlus } from 'react-icons/fi'
+import {
+  FiShuffle,
+  FiUserPlus,
+  FiXCircle,
+  FiAlertTriangle,
+} from 'react-icons/fi'
 
 interface OperatorWorkspaceProps {
   session: OperatorConversation
@@ -34,12 +38,20 @@ interface OperatorTeammate {
   lastName?: string
 }
 
+interface StructuralVisitorWrapper {
+  visitorId?: {
+    name?: string
+  }
+}
+
 export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [visitorTyping, setVisitorTyping] = useState(false)
   const [operators, setOperators] = useState<OperatorTeammate[]>([])
   const [showTransferDropdown, setShowTransferDropdown] = useState(false)
+  const [isTerminating, setIsTerminating] = useState(false)
+  const [showEndModal, setShowEndModal] = useState(false) // 🎯 Custom Modal visibility state
 
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -52,7 +64,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     if (!socket.connected) socket.connect()
   }, [socket])
 
-  // Fetch available operator teammates when the transfer list dropdown opens
   useEffect(() => {
     if (!showTransferDropdown) return
 
@@ -70,7 +81,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     void fetchTeammates()
   }, [showTransferDropdown, user?._id])
 
-  // Close the transfer dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -84,7 +94,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Load Room Message Thread Logs + Handle Seen Status Syncs Loop
   useEffect(() => {
     let mounted = true
     const fetchMessages = async () => {
@@ -98,7 +107,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
           : []
         setMessages(fetchedMsgs)
 
-        // Instantly clear pending unseen visitor logs because the operator workspace window is open
         const possessesUnread = fetchedMsgs.some(
           (m) => m.senderType === 'visitor' && m.status !== 'seen',
         )
@@ -120,7 +128,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     }
   }, [currentSessionId, socket])
 
-  // Isolate Socket Namespace Room Tunnels
   useEffect(() => {
     if (!socket.connected) socket.connect()
 
@@ -134,7 +141,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         ? session.visitorId
         : session.visitorId?._id
 
-    // Join the chat room channel
     socket.emit('join_chat_session', {
       sessionId: currentSessionId,
       propertyId,
@@ -143,7 +149,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       clientType: 'operator',
     })
 
-    // Read Receipt trigger: Emit when operator joins/opens workspace channel
     socket.emit('mark_session_seen', {
       sessionId: currentSessionId,
       clientType: 'operator',
@@ -167,7 +172,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         return [...prev, message]
       })
 
-      // Instantly raise seen broadcast receipt flags since workspace panel view is prioritized open
       if (message.senderType === 'visitor') {
         socket.emit('mark_session_seen', {
           sessionId: currentSessionId,
@@ -243,10 +247,41 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     setShowTransferDropdown(false)
   }
 
-  const visitorName =
-    typeof session.visitorId === 'object' && session.visitorId?.name
-      ? session.visitorId.name
-      : 'Anonymous Visitor'
+  // 🎯 Cleaned Operator End Chat Request Pipeline
+  const handleEndChatSession = async () => {
+    setIsTerminating(true)
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${currentSessionId}/close`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ closedBy: 'operator' }),
+        },
+      )
+      setShowEndModal(false)
+    } catch (error) {
+      console.error('❌ Failed terminating channel sequence:', error)
+    } finally {
+      setIsTerminating(false)
+    }
+  }
+
+  const getVisitorDisplayName = () => {
+    const fallback = 'Anonymous Visitor'
+    if (!session.visitorId) return fallback
+
+    if (typeof session.visitorId === 'object') {
+      if ('name' in session.visitorId && session.visitorId.name) {
+        return session.visitorId.name
+      }
+      const structuredData = session.visitorId as StructuralVisitorWrapper
+      if (structuredData.visitorId?.name) {
+        return structuredData.visitorId.name
+      }
+    }
+    return fallback
+  }
 
   if (loading) {
     return (
@@ -264,7 +299,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4 backdrop-blur-sm relative z-30">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground truncate tracking-tight">
-            {visitorName}
+            {getVisitorDisplayName()}
           </h2>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -274,43 +309,53 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
           </div>
         </div>
 
-        {/* Dynamic Chat Transfer Component Action Menu */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="flex items-center gap-2">
+          {/* 🎯 Trigger Custom Confirmation Modal instead of window.confirm */}
           <button
-            onClick={() => setShowTransferDropdown(!showTransferDropdown)}
-            className="inline-flex items-center gap-1.5 text-xs! font-semibold text-muted-foreground hover:text-foreground transition-all px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted cursor-pointer  border border-border"
+            onClick={() => setShowEndModal(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-600 transition-all px-2.5 py-1.5 rounded-lg bg-rose-500/5 hover:bg-rose-500/10 cursor-pointer border border-rose-500/20"
           >
-            <FiShuffle size={13} />
-            <span>Transfer</span>
+            <FiXCircle size={13} />
+            <span>End Chat</span>
           </button>
 
-          {showTransferDropdown && (
-            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-2 shadow-xl text-foreground animate-in fade-in zoom-in-95 duration-150">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-2 py-1">
-                Transfer to Teammate
-              </p>
-              <div className="mt-1 max-h-40 overflow-y-auto space-y-0.5">
-                {operators.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground italic px-2 py-1.5">
-                    No other online agents
-                  </p>
-                ) : (
-                  operators.map((op) => (
-                    <button
-                      key={op._id}
-                      onClick={() => handleTransferChat(op._id)}
-                      className="w-full text-left px-2 py-1.5 text-xs font-medium rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-2"
-                    >
-                      <FiUserPlus size={12} />
-                      <span>
-                        {op.firstName} {op.lastName ?? ''}
-                      </span>
-                    </button>
-                  ))
-                )}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowTransferDropdown(!showTransferDropdown)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted cursor-pointer border border-border"
+            >
+              <FiShuffle size={13} />
+              <span>Transfer</span>
+            </button>
+
+            {showTransferDropdown && (
+              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-2 shadow-xl text-foreground animate-in fade-in zoom-in-95 duration-150">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-2 py-1">
+                  Transfer to Teammate
+                </p>
+                <div className="mt-1 max-h-40 overflow-y-auto space-y-0.5">
+                  {operators.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground italic px-2 py-1.5">
+                      No other online agents
+                    </p>
+                  ) : (
+                    operators.map((op) => (
+                      <button
+                        key={op._id}
+                        onClick={() => handleTransferChat(op._id)}
+                        className="w-full text-left px-2 py-1.5 text-xs font-medium rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-2"
+                      >
+                        <FiUserPlus size={12} />
+                        <span>
+                          {op.firstName} {op.lastName ?? ''}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -322,6 +367,48 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         {visitorTyping && <TypingIndicator />}
         <OperatorInput sessionId={currentSessionId} />
       </div>
+
+      {/* 🎯 CUSTOM MODAL POPUP DIALOG */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-2xl text-foreground animate-in scale-in-95 duration-200">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+                <FiAlertTriangle size={20} />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold tracking-tight">
+                  Terminate Session?
+                </h3>
+                <p className="text-xs text-muted-foreground leading-normal">
+                  Are you sure you want to end this live chat thread with{' '}
+                  <span className="font-semibold text-foreground">
+                    {getVisitorDisplayName()}
+                  </span>
+                  ? This action is permanent.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShowEndModal(false)}
+                disabled={isTerminating}
+                className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:bg-muted transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEndChatSession}
+                disabled={isTerminating}
+                className="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              >
+                {isTerminating ? 'Ending...' : 'End Chat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
