@@ -190,7 +190,7 @@ export default function ChatWindow({
       })
     }
 
-    // 🎯 Real-Time Status Change Interceptor Hook (Handles Operator Closing Chat)
+    // 🎯 Real-Time Status Change Interceptor Hook (Handles Closing Chat)
     const handleStatusChanged = (payload: {
       sessionId: string
       status: SafeSessionConfig['status']
@@ -207,16 +207,31 @@ export default function ChatWindow({
         handledClosedSessionRef.current = payload.sessionId
         setOperatorTyping(false)
 
-        const terminalNotice: ChatMessage = {
-          _id: `sys-${Date.now()}`,
-          sessionId: payload.sessionId,
-          senderType: 'ai',
-          senderId: 'system', // 🎯 FIXED: Added required senderId property
-          messageText: `🚫 Conversation ended by ${operatorName || 'the support agent'}.`,
-          status: 'seen',
-          createdAt: new Date().toISOString(),
+        // 🎯 FIX: Check if the modal was open or if the client is currently processing a local close request.
+        // If true, the visitor ended it, so we don't display the operator text notice.
+        if (confirmModalOpen || isClosing) {
+          const visitorNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: payload.sessionId,
+            senderType: 'ai',
+            senderId: 'system',
+            messageText: '🚫 You have ended this support session.',
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => [...prev, visitorNotice])
+        } else {
+          const terminalNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: payload.sessionId,
+            senderType: 'ai',
+            senderId: 'system',
+            messageText: `🚫 Conversation ended by ${operatorName || 'the support agent'}.`,
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => [...prev, terminalNotice])
         }
-        setInitialMessages((prev) => [...prev, terminalNotice])
       }
     }
 
