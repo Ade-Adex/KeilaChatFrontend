@@ -98,16 +98,6 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       clientType: 'operator',
     })
 
-    // 🎯 CORRECTION: If the conversation is currently unassigned or in queue, instantly take ownership
-    if (
-      session.status === 'queued' ||
-      session.status === 'waiting' ||
-      !session.assignedOperatorId
-    ) {
-      socket.emit('assign_operator', {
-        sessionId: currentSessionId,
-      })
-    }
 
     // Read Receipt trigger: Emit when operator joins/opens workspace channel
     socket.emit('mark_session_seen', {
