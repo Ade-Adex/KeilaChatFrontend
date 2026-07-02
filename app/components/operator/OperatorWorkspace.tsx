@@ -247,18 +247,26 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
     setShowTransferDropdown(false)
   }
 
-  // 🎯 Cleaned Operator End Chat Request Pipeline
   const handleEndChatSession = async () => {
     setIsTerminating(true)
     try {
-      await fetch(
+      const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${currentSessionId}/close`,
         {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({ closedBy: 'operator' }),
+          credentials: 'include',
         },
       )
+
+      if (!response.ok) {
+        const errData = await response.json()
+        throw new Error(errData.message || 'Failed to close chat session')
+      }
+
       setShowEndModal(false)
     } catch (error) {
       console.error('❌ Failed terminating channel sequence:', error)
