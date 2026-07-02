@@ -133,8 +133,8 @@ export default function ChatMessages({
         />
 
         {/* Actual messages */}
+
         {messages.map((message) => {
-          // 🎯 Detect if this message is an engineering/presence transfer notice
           const isTransferNotice =
             message.senderType === 'system' ||
             (message.messageText &&
@@ -146,29 +146,25 @@ export default function ChatMessages({
                 key={message._id ?? `${message.senderId}-${message.createdAt}`}
                 className="flex items-center my-4 w-full select-none"
               >
-                <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
-                <span className="mx-4 text-[11px] font-semibold tracking-wide text-muted-foreground bg-muted px-3 py-1 rounded-full border border-border shadow-xs animate-in fade-in duration-300">
-                  🔄 {message.messageText}
+                <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
+                <span className="mx-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/80 backdrop-blur-xs border border-border px-3 py-1 rounded-full shadow-xs text-center">
+                  {message.messageText}
                 </span>
-                <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+                <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
               </div>
             )
           }
 
-          // Otherwise, fallback to the traditional diagnostic click wrapper frame
           return (
             <div
               key={message._id ?? `${message.senderId}-${message.createdAt}`}
               className="cursor-help"
-              onContextMenu={(e) => triggerMessageInfo(e, message)}
-              onTouchStart={(e) => handleTouchStart(e, message)}
-              onTouchEnd={handleTouchEnd}
-              onTouchMove={handleTouchEnd}
             >
               <MessageBubble message={message} />
             </div>
           )
         })}
+
         {/* Typing */}
         {operatorTyping && <TypingIndicator />}
         <div ref={bottomRef} />
