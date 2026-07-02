@@ -1,4 +1,71 @@
-// /app/components/chat/MessageBubble.tsx
+// // /app/components/chat/MessageBubble.tsx
+
+// 'use client'
+
+// import MessageStatusTicks from '@/app/components/MessageStatusTicks'
+// import type { ChatMessage } from '@/app/types/chat'
+
+// interface Props {
+//   message: ChatMessage
+// }
+
+// export default function MessageBubble({ message }: Props) {
+//   const isVisitor = message.senderType === 'visitor'
+//   const isSystem = message.senderType === 'system'
+
+//   const time = new Date(message.createdAt).toLocaleTimeString([], {
+//     hour: '2-digit',
+//     minute: '2-digit',
+//   })
+
+//   if (isSystem) {
+//     return (
+//       <div className="flex justify-center">
+//         <div
+//           className="
+//             rounded-full
+//             bg-muted
+//             px-4
+//             py-2
+//             text-xs
+//             text-muted-foreground
+//           "
+//         >
+//           {message.messageText}
+//         </div>
+//       </div>
+//     )
+//   }
+
+//   return (
+//     <div className={`flex flex-col ${isVisitor ? 'items-end' : 'items-start'}`}>
+//       <div
+//         className={`
+//           max-w-[80%]
+//           rounded-2xl
+//           px-4
+//           py-2.5
+//           text-sm
+//           shadow-sm
+//           ${
+//             isVisitor
+//               ? 'rounded-br-sm bg-blue-600 text-white'
+//               : 'rounded-bl-sm bg-chat-agent border border-chat-agent-border text-foreground'
+//           }
+//         `}
+//       >
+//         {message.messageText}
+//       </div>
+
+//       <div className="mt-1 flex items-center gap-1 px-1">
+//         <span className="text-[10px] text-foreground">{time}</span>
+
+//         {/* 🎯 Only render status checkmarks for the visitor's outgoing messages */}
+//         {isVisitor && <MessageStatusTicks status={message.status} />}
+//       </div>
+//     </div>
+//   )
+// }
 
 'use client'
 
@@ -9,11 +76,10 @@ interface Props {
   message: ChatMessage
 }
 
-
-
 export default function MessageBubble({ message }: Props) {
   const isVisitor = message.senderType === 'visitor'
-  const isSystem = message.senderType === 'system'
+  const isSystem =
+    message.senderType === 'system' || message.sessionId === 'system'
 
   const time = new Date(message.createdAt).toLocaleTimeString([], {
     hour: '2-digit',
@@ -22,15 +88,16 @@ export default function MessageBubble({ message }: Props) {
 
   if (isSystem) {
     return (
-      <div className="flex justify-center">
+      <div className="flex justify-center w-full my-1">
         <div
           className="
             rounded-full
             bg-muted
             px-4
-            py-2
-            text-xs
+            py-1.5
+            text-[11px]
             text-muted-foreground
+            text-center
           "
         >
           {message.messageText}
@@ -60,9 +127,9 @@ export default function MessageBubble({ message }: Props) {
       </div>
 
       <div className="mt-1 flex items-center gap-1 px-1">
-        <span className="text-[10px] text-foreground">{time}</span>
+        <span className="text-[10px] text-muted-foreground">{time}</span>
 
-        {/* 🎯 Only render status checkmarks for the visitor's outgoing messages */}
+        {/* Only render status checkmarks for the visitor's outgoing messages */}
         {isVisitor && <MessageStatusTicks status={message.status} />}
       </div>
     </div>

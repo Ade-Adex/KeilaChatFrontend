@@ -109,12 +109,12 @@ export interface ChatMessage {
   senderType: MessageSender
   senderId: string
   senderName?: string
-  // 🎯 FIXED: Added missing avatar tracking support property
   senderAvatar?: string
   messageText: string
   messageType?: string
   status?: 'sent' | 'delivered' | 'seen' | 'failed'
   createdAt: string
+  updatedAt?: string
   deliveredAt?: string
   seenAt?: string
 }
