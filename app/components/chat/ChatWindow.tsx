@@ -20,6 +20,7 @@ interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
   initialSession: SafeSessionConfig | null
   initialMessages: ChatMessage[]
   setInitialMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+  setSession: React.Dispatch<React.SetStateAction<SafeSessionConfig | null>> // 🎯 ADD THIS
   loading: boolean
   onClose: () => void
   queueSubtext?: string
@@ -29,7 +30,8 @@ export default function ChatWindow({
   widget,
   widgetId,
   visitorTrackingId,
-  initialSession,
+  initialSession, 
+  setSession, 
   initialMessages,
   setInitialMessages,
   loading,
@@ -38,9 +40,17 @@ export default function ChatWindow({
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
 
-  const [session, setSession] = useState<SafeSessionConfig | null>(
-    initialSession,
+  const session = initialSession
+
+  const [prevSessionId, setPrevSessionId] = useState<string | undefined>(
+    initialSession?.sessionId,
   )
+
+  if (initialSession?.sessionId !== prevSessionId) {
+    setSession(initialSession)
+    setPrevSessionId(initialSession?.sessionId)
+  }
+
   const [message, setMessage] = useState('')
   const [operatorTyping, setOperatorTyping] = useState(false)
 
@@ -57,10 +67,6 @@ export default function ChatWindow({
   // 1. Prioritize live operator state changes emitted over WebSockets
   let operatorName = socketOperatorName
   let operatorAvatar = socketOperatorAvatar
-
-  console.log('operatorName', operatorName)
-  console.log('operatorName  from session', session?.assignedOperatorId)
-  console.log('operatorName  from initialSession', initialSession)
 
   // 2. Fallback to parsing structural snapshot fields populated during SSR or hydration
   if (!operatorName && session?.assignedOperatorId) {
@@ -92,149 +98,136 @@ export default function ChatWindow({
     }
   }
 
-  async function initializeConversation(forceNew = false) {
-    if (!forceNew) return
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            widgetId,
-            visitorTrackingId,
-            createNew: true,
-          }),
-        },
-      )
+ async function initializeConversation(forceNew = false) {
+   if (!forceNew) return
+   try {
+     const response = await fetch(
+       `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
+       {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ widgetId, visitorTrackingId, createNew: true }),
+       },
+     )
 
-      const result = await response.json()
-      if (result.status === 'success' && result.data) {
-        setSession(result.data as SafeSessionConfig)
-        setInitialMessages([])
-        setSocketOperatorName(undefined)
-        setSocketOperatorAvatar(undefined)
-      }
-    } catch (error) {
-      console.error('[KeilaChat] Session hard-reset failed:', error)
-    }
-  }
+     const result = await response.json()
+     if (result.status === 'success' && result.data) {
+       setSession(result.data as SafeSessionConfig) // 🎯 Bubbles update up
+       setInitialMessages([])
+       setSocketOperatorName(undefined)
+       setSocketOperatorAvatar(undefined)
+     }
+   } catch (error) {
+     console.error('[KeilaChat] Session hard-reset failed:', error)
+   }
+ }
 
-  // 🎯 Manage Socket Lifecycle events for Live Presence Tracking
-  useEffect(() => {
-    if (!session?.sessionId) return
+ // 🎯 Manage Socket Lifecycle events for Live Presence Tracking
+ useEffect(() => {
+   if (!session?.sessionId) return
 
-    // Event A: Operator updates typing indicators
-    const handleTyping = (payload: {
-      isTyping: boolean
-      actor?: string
-      senderName?: string
-    }) => {
-      if (payload.actor === 'visitor') return
-      setOperatorTyping(payload.isTyping)
-      if (
-        payload.senderName &&
-        payload.senderName.toLowerCase() !== 'operator'
-      ) {
-        setSocketOperatorName(payload.senderName)
-      }
-    }
+   if (socket.connected) {
+     socket.emit('join_chat_session', {
+       sessionId: session.sessionId,
+       clientType: 'visitor',
+     })
+   }
 
-    // 🎯 FIXED: Strongly typed live joining synchronization loop
-    const handleOperatorJoined = (payload: {
-      operatorId: string
-      name: string
-      avatar?: string
-    }) => {
-      const cleanName = payload.name?.trim() || 'Support Agent'
+   const handleTyping = (payload: {
+     isTyping: boolean
+     actor?: string
+     senderName?: string
+   }) => {
+     if (payload.actor === 'visitor') return
+     setOperatorTyping(payload.isTyping)
+     if (
+       payload.senderName &&
+       payload.senderName.toLowerCase() !== 'operator'
+     ) {
+       setSocketOperatorName(payload.senderName)
+     }
+   }
 
-      setSocketOperatorName(cleanName)
-      if (payload.avatar) {
-        setSocketOperatorAvatar(payload.avatar)
-      }
+   const handleOperatorJoined = (payload: {
+     operatorId: string
+     name: string
+     avatar?: string
+   }) => {
+     const cleanName = payload.name?.trim() || 'Support Agent'
+     setSocketOperatorName(cleanName)
+     if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
 
-      setSession((prev): SafeSessionConfig | null => {
-        if (!prev) return null
+     setSession((prev): SafeSessionConfig | null => {
+       if (!prev) return null
+       const operatorMock: PopulatedOperator = {
+         _id: payload.operatorId,
+         firstName: cleanName,
+         email: '',
+         avatar: payload.avatar || '',
+       }
+       return {
+         ...prev,
+         status: 'active',
+         assignedOperatorId:
+           operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
+       }
+     })
+   }
 
-        const operatorMock: PopulatedOperator = {
-          _id: payload.operatorId,
-          firstName: cleanName,
-          email: '', // Fits our PopulatedOperator structure perfectly
-          avatar: payload.avatar || '',
-        }
+   const handleOperatorLeft = () => {
+     setSocketOperatorName(undefined)
+     setSocketOperatorAvatar(undefined)
+     setSession((prev) => {
+       if (!prev) return null
+       return { ...prev, status: 'queued', assignedOperatorId: null }
+     })
+   }
 
-        return {
-          ...prev,
-          status: 'active', // 🎯 Dynamic Shift: Pull chat state out of queue cleanly
-          assignedOperatorId:
-            operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
-        }
-      })
-    }
+   const handleStatusChanged = (payload: {
+     sessionId: string
+     status: SafeSessionConfig['status']
+   }) => {
+     if (payload.sessionId !== session.sessionId) return
+     setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
+   }
 
-    // Event C: Operator unassigns or leaves workspace chat room channel
-    const handleOperatorLeft = () => {
-      setSocketOperatorName(undefined)
-      setSocketOperatorAvatar(undefined)
-      setSession((prev) => {
-        if (!prev) return null
-        return {
-          ...prev,
-          status: 'queued', // Put back to queue if dropped
-          assignedOperatorId: null,
-        }
-      })
-    }
+   socket.on('user_typing', handleTyping)
+   socket.on('operator_joined', handleOperatorJoined)
+   socket.on('operator_left', handleOperatorLeft)
+   socket.on('session_status_changed', handleStatusChanged)
 
-    // Listen to status updates from backend modifications
-    const handleStatusChanged = (payload: {
-      sessionId: string
-      status: SafeSessionConfig['status']
-    }) => {
-      if (payload.sessionId !== session.sessionId) return
-      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
-    }
+   return () => {
+     socket.off('user_typing', handleTyping)
+     socket.off('operator_joined', handleOperatorJoined)
+     socket.off('operator_left', handleOperatorLeft)
+     socket.off('session_status_changed', handleStatusChanged)
+   }
+ }, [session?.sessionId, socket, setSession])
 
-    socket.on('user_typing', handleTyping)
-    socket.on('operator_joined', handleOperatorJoined)
-    socket.on('operator_left', handleOperatorLeft)
-    socket.on('session_status_changed', handleStatusChanged)
-
-    return () => {
-      socket.off('user_typing', handleTyping)
-      socket.off('operator_joined', handleOperatorJoined)
-      socket.off('operator_left', handleOperatorLeft)
-      socket.off('session_status_changed', handleStatusChanged)
-    }
-  }, [session?.sessionId, socket, platformFallbackName])
-
-  // 4. 🎯 Handle Chat Session Closure from Visitor Side
-
-  async function handleEndChat() {
-    if (!session?.sessionId) return
-    setIsClosing(true)
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/${session.sessionId}/close`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ closedBy: 'visitor' }),
-        },
-      )
-      const result = await response.json()
-      if (result.status === 'success') {
-        // 🎯 Update state immediately to trigger re-rendering
-        setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-        setConfirmModalOpen(false)
-        // 🛑 REMOVED: onClose() - Keep window open so they can see the disabled state
-      }
-    } catch (error) {
-      console.error('[KeilaChat] Error closing conversation session:', error)
-    } finally {
-      setIsClosing(false)
-    }
-  }
+ // 4. 🎯 Handle Chat Session Closure from Visitor Side
+ async function handleEndChat() {
+   if (!session?.sessionId) return
+   setIsClosing(true)
+   try {
+     const response = await fetch(
+       `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
+       {
+         method: 'PATCH',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ closedBy: 'visitor' }),
+       },
+     )
+     const result = await response.json()
+     if (result.status === 'success') {
+       setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+       setConfirmModalOpen(false)
+     }
+   } catch (error) {
+     console.error('[KeilaChat] Error closing conversation session:', error)
+   } finally {
+     setIsClosing(false)
+   }
+ }
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
@@ -301,7 +294,7 @@ export default function ChatWindow({
           }}
         />
       )}
-      
+
       <Modal
         opened={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
