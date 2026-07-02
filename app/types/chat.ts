@@ -37,11 +37,8 @@ export interface TypingPayload {
 
 export interface ChatSessionConfig {
   propertyId: string
-
   sessionId: string
-
   visitorId: string
-
   status: 'waiting' | 'queued' | 'active' | 'closed'
 }
 
@@ -52,7 +49,6 @@ export interface WidgetTheme {
   backgroundColor?: string
 }
 
-// 🎯 NEW: Define the complete structure of widgetSettings matching the service layer
 export interface WidgetSettingsConfig {
   launcherPosition: string
   launcherIcon?: string
@@ -69,30 +65,21 @@ export interface WidgetConfig {
   _id: string
   name: string
   propertyId: string
-
   theme?: WidgetTheme
-
-  // 🎯 UPDATE: Change settings structure or match backend's top-level layout
   settings?: {
     position?: 'left' | 'right'
     welcomeMessage?: string
     offlineMessage?: string
     onlineStatus?: boolean
   }
-
-  // 🎯 NEW: Add the missing configuration object property to fix the compiler error
   widgetSettings?: WidgetSettingsConfig
 }
 
 export interface SessionConfig {
   sessionId: string
-
   propertyId: string
-
   visitorId: string
-
   assignedOperatorId?: string | null
-
   status: 'waiting' | 'queued' | 'active' | 'closed' | 'transferred'
 }
 
@@ -100,13 +87,9 @@ export type MessageSender = 'visitor' | 'operator' | 'ai' | 'system'
 
 export interface JoinChatPayload {
   sessionId: string
-
   propertyId: string
-
   visitorId?: string
-
   operatorId?: string
-
   clientType: 'visitor' | 'operator'
 }
 
@@ -121,27 +104,18 @@ export interface NotificationPayload {
 
 export interface ChatMessage {
   _id?: string
-
   sessionId: string
-
   propertyId?: string
-
   senderType: MessageSender
-
   senderId: string
-
   senderName?: string
-
+  // 🎯 FIXED: Added missing avatar tracking support property
+  senderAvatar?: string
   messageText: string
-
   messageType?: string
-
   status?: 'sent' | 'delivered' | 'seen' | 'failed'
-
   createdAt: string
-
   deliveredAt?: string
-
   seenAt?: string
 }
 
@@ -162,59 +136,40 @@ export interface IncomingVisitorAlert {
   sessionId: string
   messageText: string
 }
+
 export interface PresenceNotification {
   _id: string
-
   sessionId: string
-
   senderType: 'system'
-
   senderId: string
-
   messageText: string
-
   createdAt: string
 }
 
 export interface ChatWindowProps {
   widget: WidgetConfig
-
   widgetId: string
-
   visitorTrackingId: string
-
   onClose: () => void
 }
 
 export interface UserTypingPayload {
   sessionId: string
-
   senderName?: string
-
   isTyping: boolean
 }
 
 export interface SendMessagePayload {
   sessionId: string
-
   propertyId: string
-
   senderType: 'visitor'
-
   senderId: string
-
   messageText: string
 }
 
-export interface SafeSessionConfig extends Omit<SessionConfig, 'assignedOperatorId'> {
-  assignedOperatorId?: string | PopulatedOperator
-}
-
-export interface SessionInitResponse {
-  status: string
-
-  data: SafeSessionConfig
-}
+/* -------------------------------------------------------------------------- */
+/* 🎯 FIXED ORDERING: Interfaces defined before their compound utility shapes */
+/* -------------------------------------------------------------------------- */
 
 export interface PopulatedAccount {
   _id: string
@@ -227,5 +182,17 @@ export interface PopulatedOperator {
   lastName?: string
   email: string
   avatar?: string
-  accountId?: PopulatedAccount 
+  accountId?: PopulatedAccount
+}
+
+export interface SafeSessionConfig extends Omit<
+  SessionConfig,
+  'assignedOperatorId'
+> {
+  assignedOperatorId?: string | PopulatedOperator | null
+}
+
+export interface SessionInitResponse {
+  status: string
+  data: SafeSessionConfig
 }

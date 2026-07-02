@@ -11,6 +11,7 @@ import type {
   ChatMessage,
   SafeSessionConfig,
   SessionInitResponse,
+  PopulatedOperator,
 } from '@/app/types/chat'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
 
@@ -147,6 +148,28 @@ export default function ClientChatWrapper({
 
       if (incomingSessionId !== session.sessionId) return
 
+      // 🎯 FIXED: Strongly typed context assignment to prevent build failures without using 'any'
+      if (payload.senderType === 'operator' && payload.senderId) {
+        setSession((prev): SafeSessionConfig | null => {
+          if (!prev) return null
+          if (!prev.assignedOperatorId) {
+            const runtimeOperator: PopulatedOperator = {
+              _id: payload.senderId,
+              firstName: payload.senderName || 'Support Agent',
+              avatar: payload.senderAvatar || '',
+              email: '', // Required structural parameter signature
+            }
+
+            return {
+              ...prev,
+              assignedOperatorId:
+                runtimeOperator as unknown as SafeSessionConfig['assignedOperatorId'],
+            }
+          }
+          return prev
+        })
+      }
+
       setMessages((prev) => {
         if (!payload._id) return [...prev, payload]
         const matchIndex = prev.findIndex((m) => m._id === payload._id)
@@ -162,7 +185,6 @@ export default function ClientChatWrapper({
 
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
         if (!open) {
-          // 🎯 EMBED MINIMIZED: Broadcast delivery state immediately back down the pipe
           if (payload._id && payload.status !== 'seen') {
             socket.emit('message_delivered', {
               messageId: payload._id,
@@ -184,7 +206,6 @@ export default function ClientChatWrapper({
             }
           }
         } else {
-          // 🎯 EMBED OPENED: Mark seen instantly
           socket.emit('mark_session_seen', {
             sessionId: session.sessionId,
             clientType: 'visitor',
