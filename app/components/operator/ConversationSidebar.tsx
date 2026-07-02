@@ -1,5 +1,4 @@
 // /components/operator/ConversationSidebar.tsx
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -10,6 +9,7 @@ import {
   getMyProperties,
 } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { useAuthStore } from '@/app/store/useAuthStore'
 import { FiUser, FiActivity, FiLayers } from 'react-icons/fi'
 import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
@@ -17,6 +17,16 @@ interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
   onSelect: (conversation: OperatorConversation) => void
   refreshKey?: number
+}
+
+// Custom structure to represent an object with an _id string property
+interface WithId {
+  _id: string
+}
+
+// Safe Type Guard to verify if a field is fully populated or contains an ID object string
+function isPopulatedWithId(obj: unknown): obj is WithId {
+  return typeof obj === 'object' && obj !== null && '_id' in obj
 }
 
 export default function ConversationSidebar({
@@ -30,20 +40,19 @@ export default function ConversationSidebar({
   const [loading, setLoading] = useState(true)
 
   const socket = getChatSocket()
+  const currentOperator = useAuthStore((state) => state.operator)
 
   const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
     if (visitor && typeof visitor === 'object' && 'name' in visitor) {
-      return visitor.name ?? 'Anonymous Visitor'
+      return (visitor as { name?: string }).name ?? 'Anonymous Visitor'
     }
     return 'Anonymous Visitor'
   }
 
-  // 🎯 FIX 1: Allow re-fetching state whenever refreshKey updates from parent hooks
   useEffect(() => {
     let mounted = true
     const fetchConversations = async () => {
       try {
-        // Only trigger the absolute center layout loader spinner on initial boot lifecycle
         if (refreshKey === 0) setLoading(true)
 
         const propertiesData = await getMyProperties()
@@ -75,56 +84,58 @@ export default function ConversationSidebar({
     return () => {
       mounted = false
     }
-  }, [refreshKey]) // Reacting dynamically on each dashboard trigger emit sequence
+  }, [refreshKey])
 
-  // Effect 2: Fine-Grained Real-Time Message & Notification Push Mapper
   useEffect(() => {
     if (!socket) return
 
-   const handleMessageUpdate = (payload: {
-     sessionId: string
-     message: ChatMessage
-     sessionContext?: OperatorConversation 
-   }) => {
-     const updateList = (
-       list: OperatorConversation[],
-       type: 'mine' | 'queued' | 'active',
-     ) => {
-       const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
+    const handleMessageUpdate = (payload: {
+      sessionId: string
+      message: ChatMessage
+      sessionContext?: OperatorConversation
+    }) => {
+      const updateList = (
+        list: OperatorConversation[],
+        type: 'mine' | 'queued' | 'active',
+      ) => {
+        const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
 
-       // 🎯 If message comes from a newly created session missing from the list,
-       // we append it locally instead of dropping it on the floor.
-       if (targetIndex === -1) {
-         if (payload.sessionContext && payload.sessionContext.status === type) {
-           return [payload.sessionContext, ...list]
-         }
-         return list
-       }
+        if (targetIndex === -1) {
+          if (
+            payload.sessionContext &&
+            payload.sessionContext.status === type
+          ) {
+            return [payload.sessionContext, ...list]
+          }
+          return list
+        }
 
-       const updatedList = [...list]
-       const targetChat = { ...updatedList[targetIndex] }
+        const updatedList = [...list]
+        const targetChat = { ...updatedList[targetIndex] }
 
-       // Update preview metrics dynamically
-       targetChat.lastMessage = payload.message.messageText
-       targetChat.lastMessageAt = payload.message.createdAt
+        targetChat.lastMessage = payload.message.messageText
+        targetChat.lastMessageAt = payload.message.createdAt
 
-       // Increment unread count if it's an operator viewing an incoming message from a visitor
-       if (
-         payload.message.senderType === 'visitor' &&
-         selectedConversation?._id !== payload.sessionId
-       ) {
-         targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
-       }
+        if (payload.sessionContext?.assignedOperatorId) {
+          targetChat.assignedOperatorId =
+            payload.sessionContext.assignedOperatorId
+        }
 
-       // Pull item forward to top position of array list stack
-       updatedList.splice(targetIndex, 1)
-       return [targetChat, ...updatedList]
-     }
+        if (
+          payload.message.senderType === 'visitor' &&
+          selectedConversation?._id !== payload.sessionId
+        ) {
+          targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
+        }
 
-     setMyChats((prev) => updateList(prev, 'mine'))
-     setQueuedChats((prev) => updateList(prev, 'queued'))
-     setActiveChats((prev) => updateList(prev, 'active'))
-   }
+        updatedList.splice(targetIndex, 1)
+        return [targetChat, ...updatedList]
+      }
+
+      setMyChats((prev) => updateList(prev, 'mine'))
+      setQueuedChats((prev) => updateList(prev, 'queued'))
+      setActiveChats((prev) => updateList(prev, 'active'))
+    }
     socket.on('dashboard_message_update', handleMessageUpdate)
     return () => {
       socket.off('dashboard_message_update', handleMessageUpdate)
@@ -148,78 +159,92 @@ export default function ConversationSidebar({
     emptyText: string,
     icon: React.ReactNode,
     badgeColor: string,
-  ) => (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          {icon}
-          <h3 className="text-[11px] font-bold uppercase tracking-wider">
-            {title}
-          </h3>
-        </div>
-        <span
-          className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full border ${badgeColor}`}
-        >
-          {chats.length}
-        </span>
-      </div>
-      {chats.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground/60 italic p-3 border border-dashed border-border/60 rounded-xl bg-background/20">
-          {emptyText}
-        </p>
-      ) : (
-        <div className="space-y-1">
-          {chats.map((chat) => {
-            const isSelected = selectedConversation?._id === chat._id
-            const hasUnread = (chat.unreadOperator ?? 0) > 0
+    isGlobalActiveFeed = false,
+  ) => {
+    // 🎯 Strictly Type-checked Filter targeting transferred chats
+    const displayableChats = isGlobalActiveFeed
+      ? chats.filter((chat) => {
+          const operatorId = isPopulatedWithId(chat.assignedOperatorId)
+            ? chat.assignedOperatorId._id
+            : (chat.assignedOperatorId as string | null | undefined)
 
-            return (
-              <button
-                key={chat._id}
-                onClick={() => {
-                  chat.unreadOperator = 0
-                  socket.emit('mark_session_seen', {
-                    sessionId: chat._id,
-                    clientType: 'operator',
-                  })
-                  onSelect(chat)
-                }}
-                className={`w-full text-left px-3 py-1.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between cursor-pointer border border-border!
-                  ${
-                    isSelected
-                      ? 'bg-primary text-white shadow-sm shadow-primary/10'
-                      : 'hover:bg-muted bg-background/30 text-foreground border border-transparent hover:border-border/50'
-                  }`}
-              >
-                <div className="flex flex-col min-w-0 flex-1 pr-2">
-                  <span className="truncate font-semibold">
-                    {getVisitorName(chat.visitorId)}
-                  </span>
-                  {chat.lastMessage && (
-                    <span
-                      className={`truncate text-[10px] mt-0.5 ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}
-                    >
-                      {chat.lastMessage}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {hasUnread && !isSelected && (
-                    <span className="bg-blue-600 text-white text-[9px] font-bold h-4 min-w-4 px-1 rounded-full flex items-center justify-center">
-                      {chat.unreadOperator}
-                    </span>
-                  )}
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${chat.status === 'queued' || chat.status === 'waiting' ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                  />
-                </div>
-              </button>
-            )
-          })}
+          return !operatorId || operatorId === currentOperator?._id
+        })
+      : chats
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            {icon}
+            <h3 className="text-[11px] font-bold uppercase tracking-wider">
+              {title}
+            </h3>
+          </div>
+          <span
+            className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full border ${badgeColor}`}
+          >
+            {displayableChats.length}
+          </span>
         </div>
-      )}
-    </div>
-  )
+        {displayableChats.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground/60 italic p-3 border border-dashed border-border/60 rounded-xl bg-background/20">
+            {emptyText}
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {displayableChats.map((chat) => {
+              const isSelected = selectedConversation?._id === chat._id
+              const hasUnread = (chat.unreadOperator ?? 0) > 0
+
+              return (
+                <button
+                  key={chat._id}
+                  onClick={() => {
+                    chat.unreadOperator = 0
+                    socket.emit('mark_session_seen', {
+                      sessionId: chat._id,
+                      clientType: 'operator',
+                    })
+                    onSelect(chat)
+                  }}
+                  className={`w-full text-left px-3 py-1.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between cursor-pointer border border-border!
+                    ${
+                      isSelected
+                        ? 'bg-primary text-white shadow-sm shadow-primary/10'
+                        : 'hover:bg-muted bg-background/30 text-foreground border border-transparent hover:border-border/50'
+                    }`}
+                >
+                  <div className="flex flex-col min-w-0 flex-1 pr-2">
+                    <span className="truncate font-semibold">
+                      {getVisitorName(chat.visitorId)}
+                    </span>
+                    {chat.lastMessage && (
+                      <span
+                        className={`truncate text-[10px] mt-0.5 ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}
+                      >
+                        {chat.lastMessage}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasUnread && !isSelected && (
+                      <span className="bg-blue-600 text-white text-[9px] font-bold h-4 min-w-4 px-1 rounded-full flex items-center justify-center">
+                        {chat.unreadOperator}
+                      </span>
+                    )}
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${chat.status === 'queued' || chat.status === 'waiting' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                    />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col overflow-y-auto p-4 space-y-5 custom-scrollbar bg-card/40">
@@ -243,6 +268,7 @@ export default function ConversationSidebar({
         'No concurrent channel streams',
         <FiLayers size={12} />,
         'bg-muted text-muted-foreground border-border',
+        true,
       )}
     </div>
   )
