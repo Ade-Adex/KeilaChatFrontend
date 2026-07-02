@@ -14,6 +14,7 @@ import type {
   PopulatedOperator,
 } from '@/app/types/chat'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+// import AudioSound from '@/public/sound/notification.wav'
 
 interface Props {
   widgetId: string
@@ -124,7 +125,6 @@ export default function ClientChatWrapper({
       clientType: 'visitor',
     })
 
-    // Catch background entries that are unverified on launch and mark them delivered
     messages.forEach((m) => {
       if (
         (m.senderType === 'operator' || m.senderType === 'ai') &&
@@ -148,7 +148,6 @@ export default function ClientChatWrapper({
 
       if (incomingSessionId !== session.sessionId) return
 
-      // 🎯 FIXED: Strongly typed context assignment to prevent build failures without using 'any'
       if (payload.senderType === 'operator' && payload.senderId) {
         setSession((prev): SafeSessionConfig | null => {
           if (!prev) return null
@@ -157,7 +156,7 @@ export default function ClientChatWrapper({
               _id: payload.senderId,
               firstName: payload.senderName || 'Support Agent',
               avatar: payload.senderAvatar || '',
-              email: '', // Required structural parameter signature
+              email: '',
             }
 
             return {
@@ -196,7 +195,7 @@ export default function ClientChatWrapper({
 
           if (widget?.widgetSettings?.soundEnabled) {
             try {
-              const audio = new Audio('/sound/notification.wav')
+              const audio = new Audio('/public/sound/notification.wav'/* AudioSound */)
               audio.volume = 0.7
               audio
                 .play()

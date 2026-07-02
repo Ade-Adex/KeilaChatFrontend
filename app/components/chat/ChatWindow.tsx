@@ -59,6 +59,7 @@ export default function ChatWindow({
   let operatorAvatar = socketOperatorAvatar
 
   console.log('operatorName', operatorName)
+  console.log('operatorName  from session', session?.assignedOperatorId)
 
   // 2. Fallback to parsing structural snapshot fields populated during SSR or hydration
  if (!operatorName && session?.assignedOperatorId) {
