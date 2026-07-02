@@ -1,6 +1,5 @@
 // /app/(routes)/embed/chat/ClientChatWrapper.tsx
 
-
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -14,7 +13,6 @@ import type {
   PopulatedOperator,
 } from '@/app/types/chat'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-// import AudioSound from '@/public/sound/notification.wav'
 
 interface Props {
   widgetId: string
@@ -161,6 +159,7 @@ export default function ClientChatWrapper({
 
             return {
               ...prev,
+              status: 'active',
               assignedOperatorId:
                 runtimeOperator as unknown as SafeSessionConfig['assignedOperatorId'],
             }
@@ -195,7 +194,7 @@ export default function ClientChatWrapper({
 
           if (widget?.widgetSettings?.soundEnabled) {
             try {
-              const audio = new Audio('/public/sound/notification.wav'/* AudioSound */)
+              const audio = new Audio('/public/sound/notification.wav')
               audio.volume = 0.7
               audio
                 .play()
@@ -233,7 +232,6 @@ export default function ClientChatWrapper({
       }
     }
 
-    // Capture bulk delivery status mappings updates from server room resets
     const handleBulkDelivered = (data: {
       sessionId: string
       senderType: string
@@ -248,20 +246,55 @@ export default function ClientChatWrapper({
       )
     }
 
+    // 🎯 CORRECTION 1: Handle live room status transitions (queued -> active) cleanly
+    const handleStatusChanged = (payload: {
+      sessionId: string
+      status: SafeSessionConfig['status']
+    }) => {
+      if (payload.sessionId !== session.sessionId) return
+      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
+    }
+
+    // 🎯 CORRECTION 2: Listen directly for explicit metadata adjustments
+    const handleOperatorJoinedLive = (payload: {
+      operatorId: string
+      name: string
+      avatar?: string
+    }) => {
+      setSession((prev): SafeSessionConfig | null => {
+        if (!prev) return null
+        const runtimeOperator: PopulatedOperator = {
+          _id: payload.operatorId,
+          firstName: payload.name?.trim() || 'Support Agent',
+          avatar: payload.avatar || '',
+          email: '',
+        }
+        return {
+          ...prev,
+          status: 'active',
+          assignedOperatorId:
+            runtimeOperator as unknown as SafeSessionConfig['assignedOperatorId'],
+        }
+      })
+    }
+
     socket.on('new_message', handleIncomingMessage)
     socket.on('message_status_updated', handleStatusUpdated)
     socket.on('messages_seen', handleMessagesSeen)
     socket.on('messages_delivered_bulk', handleBulkDelivered)
+    socket.on('session_status_changed', handleStatusChanged)
+    socket.on('operator_joined', handleOperatorJoinedLive)
 
     return () => {
       socket.off('new_message', handleIncomingMessage)
       socket.off('message_status_updated', handleStatusUpdated)
       socket.off('messages_seen', handleMessagesSeen)
       socket.off('messages_delivered_bulk', handleBulkDelivered)
+      socket.off('session_status_changed', handleStatusChanged)
+      socket.off('operator_joined', handleOperatorJoinedLive)
     }
   }, [session, open, widget, messages.length])
 
-  // Trigger seen sync loops explicitly when clicking launcher to toggle display frame
   const handleOpenChat = () => {
     setUnreadCount(0)
     setOpen(true)
@@ -287,6 +320,11 @@ export default function ClientChatWrapper({
           setInitialMessages={setMessages}
           loading={loading}
           onClose={() => setOpen(false)}
+          queueSubtext={
+            session?.status === 'queued' || session?.status === 'waiting'
+              ? 'Someone will join your chat soon...'
+              : undefined
+          }
         />
       ) : (
         <ChatLauncher

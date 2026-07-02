@@ -1,6 +1,4 @@
-// // /app/components/chat/ChatWindow.tsx
-
-
+// /app/components/chat/ChatWindow.tsx
 
 'use client'
 
@@ -24,6 +22,7 @@ interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
   setInitialMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   loading: boolean
   onClose: () => void
+  queueSubtext?: string
 }
 
 export default function ChatWindow({
@@ -35,6 +34,7 @@ export default function ChatWindow({
   setInitialMessages,
   loading,
   onClose,
+  queueSubtext,
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
 
@@ -63,28 +63,34 @@ export default function ChatWindow({
   console.log('operatorName  from initialSession', initialSession)
 
   // 2. Fallback to parsing structural snapshot fields populated during SSR or hydration
- if (!operatorName && session?.assignedOperatorId) {
-   const op = session.assignedOperatorId as unknown as PopulatedOperator
-   if (op && typeof op === 'object') {
-     if (
-       'firstName' in op &&
-       typeof op.firstName === 'string' &&
-       op.firstName.trim()
-     ) {
-       operatorName = op.firstName.trim()
-     }
-     if ('avatar' in op && typeof op.avatar === 'string') {
-       operatorAvatar = op.avatar
-     }
-   }
- }
+  if (!operatorName && session?.assignedOperatorId) {
+    const op = session.assignedOperatorId as unknown as PopulatedOperator
+    if (op && typeof op === 'object') {
+      if (
+        'firstName' in op &&
+        typeof op.firstName === 'string' &&
+        op.firstName.trim()
+      ) {
+        operatorName = op.firstName.trim()
+      }
+      if ('avatar' in op && typeof op.avatar === 'string') {
+        operatorAvatar = op.avatar
+      }
+    }
+  }
 
-  // 3. Dynamic Filtering: Replace system strings or empty lookups with the tenant workspace name 🎯
- if (!operatorName || operatorName.toLowerCase() === 'operator') {
-   operatorName = session?.assignedOperatorId
-     ? 'Support Agent'
-     : platformFallbackName
- }
+  // 3. Dynamic Filtering: Handle fallbacks cleanly when no operator is actively bound
+  if (!operatorName || operatorName.toLowerCase() === 'operator') {
+    if (
+      session?.assignedOperatorId ||
+      session?.status === 'queued' ||
+      session?.status === 'waiting'
+    ) {
+      operatorName = 'Support Agent'
+    } else {
+      operatorName = platformFallbackName
+    }
+  }
 
   async function initializeConversation(forceNew = false) {
     if (!forceNew) return
@@ -134,31 +140,32 @@ export default function ChatWindow({
       }
     }
 
-    // Event B: Operator joins chat room channel
+    // 🎯 FIXED: Strongly typed live joining synchronization loop
     const handleOperatorJoined = (payload: {
       operatorId: string
       name: string
       avatar?: string
     }) => {
-      if (payload.name) {
-        setSocketOperatorName(payload.name.trim())
-      }
+      const cleanName = payload.name?.trim() || 'Support Agent'
+
+      setSocketOperatorName(cleanName)
       if (payload.avatar) {
         setSocketOperatorAvatar(payload.avatar)
       }
 
-      setSession((prev) => {
+      setSession((prev): SafeSessionConfig | null => {
         if (!prev) return null
 
         const operatorMock: PopulatedOperator = {
           _id: payload.operatorId,
-          firstName: payload.name || 'Support Agent',
-          email: '',
+          firstName: cleanName,
+          email: '', // Fits our PopulatedOperator structure perfectly
           avatar: payload.avatar || '',
         }
 
         return {
           ...prev,
+          status: 'active', // 🎯 Dynamic Shift: Pull chat state out of queue cleanly
           assignedOperatorId:
             operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
         }
@@ -171,20 +178,37 @@ export default function ChatWindow({
       setSocketOperatorAvatar(undefined)
       setSession((prev) => {
         if (!prev) return null
-        return { ...prev, assignedOperatorId: undefined }
+        return {
+          ...prev,
+          status: 'queued', // Put back to queue if dropped
+          assignedOperatorId: null,
+        }
       })
+    }
+
+    // Listen to status updates from backend modifications
+    const handleStatusChanged = (payload: {
+      sessionId: string
+      status: SafeSessionConfig['status']
+    }) => {
+      if (payload.sessionId !== session.sessionId) return
+      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
     }
 
     socket.on('user_typing', handleTyping)
     socket.on('operator_joined', handleOperatorJoined)
     socket.on('operator_left', handleOperatorLeft)
+    socket.on('session_status_changed', handleStatusChanged)
 
     return () => {
       socket.off('user_typing', handleTyping)
       socket.off('operator_joined', handleOperatorJoined)
       socket.off('operator_left', handleOperatorLeft)
+      socket.off('session_status_changed', handleStatusChanged)
     }
   }, [session?.sessionId, socket, platformFallbackName])
+
+  // 4. 🎯 Handle Chat Session Closure from Visitor Side
 
   async function handleEndChat() {
     if (!session?.sessionId) return
