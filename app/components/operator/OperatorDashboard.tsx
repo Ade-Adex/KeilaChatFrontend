@@ -74,8 +74,8 @@ export default function OperatorDashboard() {
     socket.on('dashboard_chat_queued', triggerUpdate)
     socket.on('dashboard_chat_assigned', triggerUpdate)
     socket.on('chat_assigned', triggerUpdate)
-    // 🎯 CORRECTION: Listen to real-time status transitions to trigger dynamic state refreshes
     socket.on('session_status_changed', triggerUpdate)
+    socket.on('dashboard_refresh_request', triggerUpdate)
 
     return () => {
       socket.off('dashboard_message_update', handleGlobalMessageReceipt)
@@ -83,6 +83,7 @@ export default function OperatorDashboard() {
       socket.off('dashboard_chat_assigned', triggerUpdate)
       socket.off('chat_assigned', triggerUpdate)
       socket.off('session_status_changed', triggerUpdate)
+      socket.off('dashboard_refresh_request', triggerUpdate)
     }
   }, [])
 

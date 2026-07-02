@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -30,6 +29,8 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [loading, setLoading] = useState(true)
   const [visitorTyping, setVisitorTyping] = useState(false)
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
+
+  const user = useAuthStore((state) => state.operator)
 
   const socket = getChatSocket()
   const currentSessionId = session._id
@@ -93,7 +94,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       sessionId: currentSessionId,
       propertyId,
       visitorId,
-      operatorId: session.assignedOperatorId,
+      operatorId: user?._id || session.assignedOperatorId,
       clientType: 'operator',
     })
 
@@ -113,7 +114,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       sessionId: currentSessionId,
       clientType: 'operator',
     })
-  }, [session, currentSessionId, socket])
+  }, [session, currentSessionId, socket, user?._id])
 
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
