@@ -205,29 +205,31 @@ export default function ChatWindow({
  }, [session?.sessionId, socket, setSession])
 
  // 4. 🎯 Handle Chat Session Closure from Visitor Side
- async function handleEndChat() {
-   if (!session?.sessionId) return
-   setIsClosing(true)
-   try {
-     const response = await fetch(
-       `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
-       {
-         method: 'PATCH',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ closedBy: 'visitor' }),
-       },
-     )
-     const result = await response.json()
-     if (result.status === 'success') {
-       setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-       setConfirmModalOpen(false)
-     }
-   } catch (error) {
-     console.error('[KeilaChat] Error closing conversation session:', error)
-   } finally {
-     setIsClosing(false)
-   }
- }
+async function handleEndChat() {
+  if (!session?.sessionId) return
+  setIsClosing(true)
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ closedBy: 'visitor' }),
+        credentials: 'include', 
+      },
+    )
+
+    const result = await response.json()
+    if (result.status === 'success') {
+      setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+      setConfirmModalOpen(false)
+    }
+  } catch (error) {
+    console.error('[KeilaChat] Error closing conversation session:', error)
+  } finally {
+    setIsClosing(false)
+  }
+}
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
