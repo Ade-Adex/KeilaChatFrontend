@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Modal, Button, Group, Text, LoadingOverlay } from '@mantine/core'
 import type {
   ChatMessage,
@@ -20,7 +20,7 @@ interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
   initialSession: SafeSessionConfig | null
   initialMessages: ChatMessage[]
   setInitialMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
-  setSession: React.Dispatch<React.SetStateAction<SafeSessionConfig | null>> // 🎯 ADD THIS
+  setSession: React.Dispatch<React.SetStateAction<SafeSessionConfig | null>>
   loading: boolean
   onClose: () => void
   queueSubtext?: string
@@ -30,8 +30,8 @@ export default function ChatWindow({
   widget,
   widgetId,
   visitorTrackingId,
-  initialSession, 
-  setSession, 
+  initialSession,
+  setSession,
   initialMessages,
   setInitialMessages,
   loading,
@@ -39,7 +39,6 @@ export default function ChatWindow({
   queueSubtext,
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
-
   const session = initialSession
 
   const [prevSessionId, setPrevSessionId] = useState<string | undefined>(
@@ -61,14 +60,16 @@ export default function ChatWindow({
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
+  // 🎯 Track the currently active session string to cleanly manage system message deduplication
+  const handledClosedSessionRef = useRef<string | null>(null)
+
   // 🎯 Resolve the base channel fallback name dynamically from the widget setup
   const platformFallbackName = widget.name?.trim() || 'Support Agent'
 
-  // 1. Prioritize live operator state changes emitted over WebSockets
   let operatorName = socketOperatorName
   let operatorAvatar = socketOperatorAvatar
 
-  // 2. Fallback to parsing structural snapshot fields populated during SSR or hydration
+  // Fallback to parsing structural snapshot fields populated during SSR or hydration
   if (!operatorName && session?.assignedOperatorId) {
     const op = session.assignedOperatorId as unknown as PopulatedOperator
     if (op && typeof op === 'object') {
@@ -85,7 +86,6 @@ export default function ChatWindow({
     }
   }
 
-  // 3. Dynamic Filtering: Handle fallbacks cleanly when no operator is actively bound
   if (!operatorName || operatorName.toLowerCase() === 'operator') {
     if (
       session?.assignedOperatorId ||
@@ -98,138 +98,181 @@ export default function ChatWindow({
     }
   }
 
- async function initializeConversation(forceNew = false) {
-   if (!forceNew) return
-   try {
-     const response = await fetch(
-       `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
-       {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ widgetId, visitorTrackingId, createNew: true }),
-       },
-     )
+  async function initializeConversation(forceNew = false) {
+    if (!forceNew) return
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            widgetId,
+            visitorTrackingId,
+            createNew: true,
+          }),
+        },
+      )
 
-     const result = await response.json()
-     if (result.status === 'success' && result.data) {
-       setSession(result.data as SafeSessionConfig) // 🎯 Bubbles update up
-       setInitialMessages([])
-       setSocketOperatorName(undefined)
-       setSocketOperatorAvatar(undefined)
-     }
-   } catch (error) {
-     console.error('[KeilaChat] Session hard-reset failed:', error)
-   }
- }
+      const result = await response.json()
+      if (result.status === 'success' && result.data) {
+        // 🎯 Reset deduplication flag for the brand new session room
+        handledClosedSessionRef.current = null
 
- // 🎯 Manage Socket Lifecycle events for Live Presence Tracking
- useEffect(() => {
-   if (!session?.sessionId) return
-
-   if (socket.connected) {
-     socket.emit('join_chat_session', {
-       sessionId: session.sessionId,
-       clientType: 'visitor',
-     })
-   }
-
-   const handleTyping = (payload: {
-     isTyping: boolean
-     actor?: string
-     senderName?: string
-   }) => {
-     if (payload.actor === 'visitor') return
-     setOperatorTyping(payload.isTyping)
-     if (
-       payload.senderName &&
-       payload.senderName.toLowerCase() !== 'operator'
-     ) {
-       setSocketOperatorName(payload.senderName)
-     }
-   }
-
-   const handleOperatorJoined = (payload: {
-     operatorId: string
-     name: string
-     avatar?: string
-   }) => {
-     const cleanName = payload.name?.trim() || 'Support Agent'
-     setSocketOperatorName(cleanName)
-     if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
-
-     setSession((prev): SafeSessionConfig | null => {
-       if (!prev) return null
-       const operatorMock: PopulatedOperator = {
-         _id: payload.operatorId,
-         firstName: cleanName,
-         email: '',
-         avatar: payload.avatar || '',
-       }
-       return {
-         ...prev,
-         status: 'active',
-         assignedOperatorId:
-           operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
-       }
-     })
-   }
-
-   const handleOperatorLeft = () => {
-     setSocketOperatorName(undefined)
-     setSocketOperatorAvatar(undefined)
-     setSession((prev) => {
-       if (!prev) return null
-       return { ...prev, status: 'queued', assignedOperatorId: null }
-     })
-   }
-
-   const handleStatusChanged = (payload: {
-     sessionId: string
-     status: SafeSessionConfig['status']
-   }) => {
-     if (payload.sessionId !== session.sessionId) return
-     setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
-   }
-
-   socket.on('user_typing', handleTyping)
-   socket.on('operator_joined', handleOperatorJoined)
-   socket.on('operator_left', handleOperatorLeft)
-   socket.on('session_status_changed', handleStatusChanged)
-
-   return () => {
-     socket.off('user_typing', handleTyping)
-     socket.off('operator_joined', handleOperatorJoined)
-     socket.off('operator_left', handleOperatorLeft)
-     socket.off('session_status_changed', handleStatusChanged)
-   }
- }, [session?.sessionId, socket, setSession])
-
- // 4. 🎯 Handle Chat Session Closure from Visitor Side
-async function handleEndChat() {
-  if (!session?.sessionId) return
-  setIsClosing(true)
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ closedBy: 'visitor' }),
-        credentials: 'include', 
-      },
-    )
-
-    const result = await response.json()
-    if (result.status === 'success') {
-      setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-      setConfirmModalOpen(false)
+        setSession(result.data as SafeSessionConfig)
+        setInitialMessages([]) // 🎯 Clears previous ended chat text instantly
+        setSocketOperatorName(undefined)
+        setSocketOperatorAvatar(undefined)
+      }
+    } catch (error) {
+      console.error('[KeilaChat] Session hard-reset failed:', error)
     }
-  } catch (error) {
-    console.error('[KeilaChat] Error closing conversation session:', error)
-  } finally {
-    setIsClosing(false)
   }
-}
+
+  // Manage Socket Lifecycle events for Live Presence Tracking
+  useEffect(() => {
+    if (!session?.sessionId) return
+
+    if (socket.connected) {
+      socket.emit('join_chat_session', {
+        sessionId: session.sessionId,
+        clientType: 'visitor',
+      })
+    }
+
+    const handleTyping = (payload: {
+      isTyping: boolean
+      actor?: string
+      senderName?: string
+    }) => {
+      if (payload.actor === 'visitor') return
+      setOperatorTyping(payload.isTyping)
+      if (
+        payload.senderName &&
+        payload.senderName.toLowerCase() !== 'operator'
+      ) {
+        setSocketOperatorName(payload.senderName)
+      }
+    }
+
+    const handleOperatorJoined = (payload: {
+      operatorId: string
+      name: string
+      avatar?: string
+    }) => {
+      const cleanName = payload.name?.trim() || 'Support Agent'
+      setSocketOperatorName(cleanName)
+      if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
+
+      setSession((prev): SafeSessionConfig | null => {
+        if (!prev) return null
+        const operatorMock: PopulatedOperator = {
+          _id: payload.operatorId,
+          firstName: cleanName,
+          email: '',
+          avatar: payload.avatar || '',
+        }
+        return {
+          ...prev,
+          status: 'active',
+          assignedOperatorId:
+            operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
+        }
+      })
+    }
+
+    const handleOperatorLeft = () => {
+      setSocketOperatorName(undefined)
+      setSocketOperatorAvatar(undefined)
+      setSession((prev) => {
+        if (!prev) return null
+        return { ...prev, status: 'queued', assignedOperatorId: null }
+      })
+    }
+
+    // 🎯 Real-Time Status Change Interceptor Hook (Handles Operator Closing Chat)
+    const handleStatusChanged = (payload: {
+      sessionId: string
+      status: SafeSessionConfig['status']
+    }) => {
+      if (payload.sessionId !== session.sessionId) return
+
+      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
+
+      // If session transitions to closed state and we haven't processed it yet
+      if (
+        payload.status === 'closed' &&
+        handledClosedSessionRef.current !== payload.sessionId
+      ) {
+        handledClosedSessionRef.current = payload.sessionId
+        setOperatorTyping(false)
+
+        const terminalNotice: ChatMessage = {
+          _id: `sys-${Date.now()}`,
+          sessionId: payload.sessionId,
+          senderType: 'ai',
+          senderId: 'system', // 🎯 FIXED: Added required senderId property
+          messageText: `🚫 Conversation ended by ${operatorName || 'the support agent'}.`,
+          status: 'seen',
+          createdAt: new Date().toISOString(),
+        }
+        setInitialMessages((prev) => [...prev, terminalNotice])
+      }
+    }
+
+    socket.on('user_typing', handleTyping)
+    socket.on('operator_joined', handleOperatorJoined)
+    socket.on('operator_left', handleOperatorLeft)
+    socket.on('session_status_changed', handleStatusChanged)
+
+    return () => {
+      socket.off('user_typing', handleTyping)
+      socket.off('operator_joined', handleOperatorJoined)
+      socket.off('operator_left', handleOperatorLeft)
+      socket.off('session_status_changed', handleStatusChanged)
+    }
+  }, [session?.sessionId, socket, setSession, operatorName, setInitialMessages])
+
+  // Handle Chat Session Closure manually from Visitor Side
+  async function handleEndChat() {
+    if (!session?.sessionId) return
+    setIsClosing(true)
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ closedBy: 'visitor' }),
+          credentials: 'include',
+        },
+      )
+
+      const result = await response.json()
+      if (result.status === 'success') {
+        if (handledClosedSessionRef.current !== session.sessionId) {
+          handledClosedSessionRef.current = session.sessionId
+          const visitorNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: session.sessionId,
+            senderType: 'ai',
+            senderId: 'system', 
+            messageText: '🚫 You have ended this support session.',
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => [...prev, visitorNotice])
+        }
+
+        setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+        setConfirmModalOpen(false)
+      }
+    } catch (error) {
+      console.error('[KeilaChat] Error closing conversation session:', error)
+    } finally {
+      setIsClosing(false)
+    }
+  }
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
