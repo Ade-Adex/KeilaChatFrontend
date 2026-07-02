@@ -1,4 +1,5 @@
 // /components/operator/ConversationSidebar.tsx
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -15,16 +16,19 @@ import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
 interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
-  onSelect: (conversation: OperatorConversation) => void
+  onSelect: (conversation: OperatorConversation | null) => void 
   refreshKey?: number
 }
 
-// Custom structure to represent an object with an _id string property
 interface WithId {
   _id: string
 }
+interface NestedVisitorStructure {
+  visitorId?: {
+    name?: string
+  }
+}
 
-// Safe Type Guard to verify if a field is fully populated or contains an ID object string
 function isPopulatedWithId(obj: unknown): obj is WithId {
   return typeof obj === 'object' && obj !== null && '_id' in obj
 }
@@ -42,10 +46,28 @@ export default function ConversationSidebar({
   const socket = getChatSocket()
   const currentOperator = useAuthStore((state) => state.operator)
 
+
   const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
-    if (visitor && typeof visitor === 'object' && 'name' in visitor) {
-      return (visitor as { name?: string }).name ?? 'Anonymous Visitor'
+    if (!visitor) return 'Anonymous Visitor'
+
+    if (typeof visitor === 'object') {
+      // 1. Check if name exists directly on the object (flat structure)
+      if (
+        'name' in visitor &&
+        typeof (visitor as { name?: unknown }).name === 'string'
+      ) {
+        return (visitor as { name: string }).name
+      }
+
+      // 2. Check if name exists inside a nested visitorId wrapper object (nested structure)
+      if ('visitorId' in visitor) {
+        const nested = visitor as NestedVisitorStructure
+        if (nested.visitorId?.name) {
+          return nested.visitorId.name
+        }
+      }
     }
+
     return 'Anonymous Visitor'
   }
 
@@ -136,11 +158,33 @@ export default function ConversationSidebar({
       setQueuedChats((prev) => updateList(prev, 'queued'))
       setActiveChats((prev) => updateList(prev, 'active'))
     }
+
+    // 🎯 FIXED: Catch closed sessions in real time and remove them instantly from active list arrays
+    const handleStatusUpdateChange = (payload: {
+      sessionId: string
+      status: string
+    }) => {
+      if (payload.status === 'closed') {
+        const removeSession = (prev: OperatorConversation[]) =>
+          prev.filter((c) => c._id !== payload.sessionId)
+        setMyChats(removeSession)
+        setQueuedChats(removeSession)
+        setActiveChats(removeSession)
+
+        if (selectedConversation?._id === payload.sessionId) {
+          onSelect(null) // Resets workspace to clear screen layout
+        }
+      }
+    }
+
     socket.on('dashboard_message_update', handleMessageUpdate)
+    socket.on('session_status_changed', handleStatusUpdateChange)
+
     return () => {
       socket.off('dashboard_message_update', handleMessageUpdate)
+      socket.off('session_status_changed', handleStatusUpdateChange)
     }
-  }, [socket, selectedConversation])
+  }, [socket, selectedConversation, onSelect])
 
   if (loading && refreshKey === 0) {
     return (
@@ -161,7 +205,6 @@ export default function ConversationSidebar({
     badgeColor: string,
     isGlobalActiveFeed = false,
   ) => {
-    // 🎯 Strictly Type-checked Filter targeting transferred chats
     const displayableChats = isGlobalActiveFeed
       ? chats.filter((chat) => {
           const operatorId = isPopulatedWithId(chat.assignedOperatorId)
