@@ -224,9 +224,10 @@ export default function ChatWindow({
       )
       const result = await response.json()
       if (result.status === 'success') {
+        // 🎯 Update state immediately to trigger re-rendering
         setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
         setConfirmModalOpen(false)
-        onClose()
+        // 🛑 REMOVED: onClose() - Keep window open so they can see the disabled state
       }
     } catch (error) {
       console.error('[KeilaChat] Error closing conversation session:', error)
@@ -273,9 +274,10 @@ export default function ChatWindow({
         )}
       </div>
 
-      {!loading && session?.status !== 'closed' && (
+      {!loading && session && (
         <ChatInput
           value={message}
+          disabled={session.status === 'closed'}
           onChange={(val) => {
             setMessage(val)
             if (socket.connected && session) {
@@ -299,7 +301,7 @@ export default function ChatWindow({
           }}
         />
       )}
-
+      
       <Modal
         opened={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
