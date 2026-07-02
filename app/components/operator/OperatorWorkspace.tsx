@@ -278,7 +278,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowTransferDropdown(!showTransferDropdown)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted"
+            className="inline-flex items-center gap-1.5 text-xs! font-semibold text-muted-foreground hover:text-foreground transition-all px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted cursor-pointer  border border-border"
           >
             <FiShuffle size={13} />
             <span>Transfer</span>
