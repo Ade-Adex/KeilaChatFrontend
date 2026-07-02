@@ -245,6 +245,7 @@ export default function ChatWindow({
         operatorAvatar={
           session?.status === 'closed' ? undefined : operatorAvatar
         }
+        queueSubtext={session?.status === 'closed' ? undefined : queueSubtext}
         isSessionActive={session?.status !== 'closed'}
         onOpenEndModal={() => setConfirmModalOpen(true)}
         onStartNewChat={() => initializeConversation(true)}

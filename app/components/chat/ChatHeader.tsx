@@ -38,6 +38,7 @@ interface ChatHeaderProps {
   onStartNewChat: () => void
   onClose: () => void
   onVisitorProfileUpdated?: (name: string, email: string) => void
+  queueSubtext?: string
 }
 
 export default function ChatHeader({
@@ -51,6 +52,7 @@ export default function ChatHeader({
   onStartNewChat,
   onClose,
   onVisitorProfileUpdated,
+  queueSubtext,
 }: ChatHeaderProps) {
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [visitorName, setVisitorName] = useState('')
@@ -239,15 +241,23 @@ export default function ChatHeader({
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
           )}
 
-          <span>
-            {operatorName === 'Support Agent' ? (
-              <>An agent is heading to your chat</>
-            ) : (
-              <>
-                Chatting with <strong>{operatorName}</strong>
-              </>
+          <div className="flex flex-col min-w-0">
+            <span>
+              {operatorName === 'Support Agent' ? (
+                <>An agent is heading to your chat</>
+              ) : (
+                <>
+                  Chatting with <strong>{operatorName}</strong>
+                </>
+              )}
+            </span>
+            {/* 🎯 Real-time queue notification message text banner */}
+            {queueSubtext && (
+              <span className="text-[10px] text-muted-foreground font-medium mt-0.5 animate-pulse">
+                {queueSubtext}
+              </span>
             )}
-          </span>
+          </div>
         </div>
       )}
 
