@@ -313,7 +313,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
           {/* 🎯 Trigger Custom Confirmation Modal instead of window.confirm */}
           <button
             onClick={() => setShowEndModal(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-600 transition-all px-2.5 py-1.5 rounded-lg bg-rose-500/5 hover:bg-rose-500/10 cursor-pointer border border-rose-500/20"
+            className="inline-flex items-center gap-1.5 text-xs! font-semibold text-rose-500 hover:text-rose-600 transition-all px-2.5 py-1.5 rounded-lg bg-rose-500/5 hover:bg-rose-500/10 cursor-pointer border border-rose-500/20"
           >
             <FiXCircle size={13} />
             <span>End Chat</span>
@@ -322,7 +322,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowTransferDropdown(!showTransferDropdown)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted cursor-pointer border border-border"
+              className="inline-flex items-center gap-1.5 text-xs! font-semibold text-muted-foreground hover:text-foreground transition-all px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted cursor-pointer border border-border"
             >
               <FiShuffle size={13} />
               <span>Transfer</span>
