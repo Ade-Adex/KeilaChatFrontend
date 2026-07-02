@@ -161,7 +161,7 @@ function LoginContent() {
               ${
                 !isValid || isSubmitting
                   ? 'cursor-not-allowed bg-gray-400'
-                  : 'bg-primary text-white hover:opacity-90'
+                  : 'bg-primary text-white hover:opacity-90 cursor-pointer'
               }
             `}
           >
