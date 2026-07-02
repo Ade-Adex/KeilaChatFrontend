@@ -126,3 +126,29 @@ export interface TypingRequest {
 export function sendTypingStatus(sessionId: string, payload: TypingRequest) {
   return apiPatch(`/api/v1/chat/${sessionId}/typing`, payload)
 }
+
+
+
+/* -------------------------------------------------------------------------- */
+/* TEAMMATES / OPERATORS                                                      */
+/* -------------------------------------------------------------------------- */
+
+export interface ActiveOperatorItem {
+  _id: string
+  firstName: string
+  lastName?: string
+  avatar?: string
+  email: string
+}
+
+export interface ActiveOperatorsResponse {
+  status: string
+  data: ActiveOperatorItem[]
+}
+
+/**
+ * Fetches all active/online operator agents available for chat transfers.
+ */
+export function getActiveOperators() {
+  return apiGet<ActiveOperatorsResponse>('/api/v1/operators/active')
+}
