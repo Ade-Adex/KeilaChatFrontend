@@ -1,64 +1,5 @@
 // /components/operator/MessageFeed.tsx
 
-// 'use client'
-
-// import { useEffect, useRef } from 'react'
-// import MessageBubble from './MessageBubble'
-// import type { ChatMessage } from '@/app/types/dashboard'
-
-// export interface MessageFeedProps {
-//   messages: ChatMessage[]
-//   loading?: boolean
-// }
-
-// export default function MessageFeed({
-//   messages,
-//   loading = false,
-// }: MessageFeedProps) {
-//   const bottomRef = useRef<HTMLDivElement>(null)
-
-//   useEffect(() => {
-//     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-//   }, [messages])
-
-//   if (loading) {
-//     return (
-//       <div className="flex h-full flex-col items-center justify-center space-y-2 bg-background/10">
-//         <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-transparent" />
-//         <p className="text-[11px] font-medium text-muted-foreground tracking-wide">
-//           Syncing conversation stream...
-//         </p>
-//       </div>
-//     )
-//   }
-
-//   if (messages.length === 0) {
-//     return (
-//       <div className="flex h-full items-center justify-center p-8 text-center bg-background/10">
-//         <p className="text-xs text-muted-foreground/60 max-w-50 leading-relaxed italic border border-dashed border-border/50 rounded-2xl p-4 bg-card/20">
-//           No dispatch transactions verified on this channel thread.
-//         </p>
-//       </div>
-//     )
-//   }
-
-//   return (
-//     <div className="h-full overflow-y-auto custom-scrollbar bg-background/20">
-//       <div className="flex flex-col gap-3.5 p-4 md:p-6 max-w-5xl mx-auto">
-//         {messages.map((message) => (
-//           <div
-//             key={message._id}
-//             className="animate-in fade-in duration-300 slide-in-from-bottom-1"
-//           >
-//             <MessageBubble message={message} />
-//           </div>
-//         ))}
-//         <div ref={bottomRef} className="h-2" />
-//       </div>
-//     </div>
-//   )
-// }
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -195,21 +136,44 @@ export default function MessageFeed({
       className="h-full overflow-y-auto custom-scrollbar bg-background/20 relative"
     >
       <div className="flex flex-col gap-3.5 p-4 md:p-6 max-w-5xl mx-auto">
-        {messages.map((message) => (
-          <div
-            key={message._id}
-            className="animate-in fade-in duration-300 slide-in-from-bottom-1 cursor-help select-none"
-            onContextMenu={(e) => triggerMessageInfo(e, message)}
-            onTouchStart={(e) => handleTouchStart(e, message)}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchEnd}
-          >
-            <MessageBubble message={message} />
-          </div>
-        ))}
+        {messages.map((message) => {
+          // 🎯 Detect if this message is an engineering/presence transfer notice
+          const isTransferNotice =
+            message.senderType === 'system' ||
+            (message.messageText &&
+              message.messageText.toLowerCase().includes('transferred to'))
+
+          if (isTransferNotice) {
+            return (
+              <div
+                key={message._id}
+                className="flex items-center my-4 w-full select-none"
+              >
+                <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+                <span className="mx-4 text-[11px] font-semibold tracking-wide text-muted-foreground bg-muted px-3 py-1 rounded-full border border-border shadow-xs animate-in scale-in-95 duration-200">
+                  🔄 {message.messageText}
+                </span>
+                <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+              </div>
+            )
+          }
+
+          // Otherwise, render regular interactable client-side operator bubble
+          return (
+            <div
+              key={message._id}
+              className="animate-in fade-in duration-300 slide-in-from-bottom-1 cursor-help select-none"
+              onContextMenu={(e) => triggerMessageInfo(e, message)}
+              onTouchStart={(e) => handleTouchStart(e, message)}
+              onTouchEnd={handleTouchEnd}
+              onTouchMove={handleTouchEnd}
+            >
+              <MessageBubble message={message} />
+            </div>
+          )
+        })}
         <div ref={bottomRef} className="h-2" />
       </div>
-
       {/* Pop-up Telemetry Overlay Modal Context Menu */}
       {modal.isOpen && modal.message && (
         <div
