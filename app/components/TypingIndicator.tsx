@@ -1,23 +1,20 @@
 // /app/components/chat/TypingIndicator.tsx
-
 'use client'
 
 export interface TypingIndicatorProps {
-  visible: boolean
-  actor?: 'visitor' | 'operator'
-  name?: string | undefined
+  visible?: boolean
+  actor?: 'visitor' | 'operator' | 'ai'
+  name?: string
 }
 
-export default function TypingIndicator(/* {
-  visible,
-  actor = 'visitor',
-  name,
-}: TypingIndicatorProps */) {
-  // if (!visible) return null
+export default function TypingIndicator({
+  visible = true, // 🎯 Defaults to true if nothing is passed, but can be controlled explicitly
+}: TypingIndicatorProps) {
+  // 🛑 IF FALSE, RENDER ABSOLUTELY NOTHING
+  if (!visible) return null
 
-  // const label = name ?? (actor === 'visitor' ? 'Visitor' : 'Operator')
   return (
-    <div className="flex items-start">
+    <div className="flex items-start animate-in fade-in duration-200">
       <div
         className="
           flex
@@ -27,7 +24,9 @@ export default function TypingIndicator(/* {
           bg-card
           px-4
           py-3
-          shadow-sm
+          shadow-xs
+          border
+          border-border
         "
       >
         {[0, 1, 2].map((dot) => (
@@ -38,7 +37,7 @@ export default function TypingIndicator(/* {
               w-2
               animate-bounce
               rounded-full
-              bg-gray-600
+              bg-muted-foreground
             "
             style={{
               animationDelay: `${dot * 0.15}s`,

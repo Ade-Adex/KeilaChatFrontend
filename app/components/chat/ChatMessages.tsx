@@ -352,7 +352,7 @@ const [aiTyping, setAiTyping] = useState(false)
     }, 50)
 
     return () => clearTimeout(timer)
-  }, [visibleMessages, operatorTyping, aiTyping])
+  }, [visibleMessages.length, operatorTyping, aiTyping])
 
   // Click outside listener to clean up the floating window
   useEffect(() => {
