@@ -8,13 +8,13 @@ export interface TypingIndicatorProps {
 }
 
 export default function TypingIndicator({
-  visible = true, // 🎯 Defaults to true if nothing is passed, but can be controlled explicitly
+  visible = true,
 }: TypingIndicatorProps) {
-  // 🛑 IF FALSE, RENDER ABSOLUTELY NOTHING
   if (!visible) return null
 
+  // const label = name ?? (actor === 'visitor' ? 'Visitor' : 'Operator')
   return (
-    <div className="flex items-start animate-in fade-in duration-200">
+    <div className="flex items-start">
       <div
         className="
           flex
@@ -24,9 +24,7 @@ export default function TypingIndicator({
           bg-card
           px-4
           py-3
-          shadow-xs
-          border
-          border-border
+          shadow-sm
         "
       >
         {[0, 1, 2].map((dot) => (
@@ -37,7 +35,7 @@ export default function TypingIndicator({
               w-2
               animate-bounce
               rounded-full
-              bg-muted-foreground
+              bg-gray-600
             "
             style={{
               animationDelay: `${dot * 0.15}s`,
