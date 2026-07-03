@@ -49,7 +49,8 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [loading, setLoading] = useState(true)
   const [visitorTyping, setVisitorTyping] = useState(false)
   const [operators, setOperators] = useState<OperatorTeammate[]>([])
-  const [showTransferDropdown, setShowTransferDropdown] = useState(false)
+const [loadingOperators, setLoadingOperators] = useState(false) 
+const [showTransferDropdown, setShowTransferDropdown] = useState(false)
   const [isTerminating, setIsTerminating] = useState(false)
   const [showEndModal, setShowEndModal] = useState(false) // 🎯 Custom Modal visibility state
 
@@ -69,6 +70,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
 
     const fetchTeammates = async () => {
       try {
+        setLoadingOperators(true) // 🎯 START LOADING
         const response = await getActiveOperators()
         const teammates = (response?.data || []).filter(
           (op: OperatorTeammate) => op._id !== user?._id,
@@ -76,6 +78,8 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
         setOperators(teammates)
       } catch (error) {
         console.error('❌ Failed fetching operator teammates:', error)
+      } finally {
+        setLoadingOperators(false) // 🎯 STOP LOADING
       }
     }
     void fetchTeammates()
@@ -342,7 +346,13 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
                   Transfer to Teammate
                 </p>
                 <div className="mt-1 max-h-40 overflow-y-auto space-y-0.5">
-                  {operators.length === 0 ? (
+                  {/* 🎯 CONDITION 1: Display spinner while backend sync runs */}
+                  {loadingOperators ? (
+                    <div className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground font-medium">
+                      <div className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
+                      <span>Fetching operators...</span>
+                    </div>
+                  ) : operators.length === 0 ? (
                     <p className="text-[11px] text-muted-foreground italic px-2 py-1.5">
                       No other online agents
                     </p>
@@ -351,7 +361,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
                       <button
                         key={op._id}
                         onClick={() => handleTransferChat(op._id)}
-                        className="w-full text-left px-2 py-1.5 text-xs font-medium rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-2"
+                        className="w-full text-left px-2 py-1.5 text-xs font-medium rounded-lg hover:bg-primary hover:text-white transition-all flex items-center gap-2 cursor-pointer"
                       >
                         <FiUserPlus size={12} />
                         <span>
