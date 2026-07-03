@@ -1,6 +1,5 @@
 // /app/(auth)/signin/page.tsx
 
-
 // /app/(auth)/signin/page.tsx
 
 'use client'
@@ -18,10 +17,7 @@ import { InputField } from '@/app/components/auth/InputField'
 import { loginOperator } from '@/app/lib/api/auth.api'
 import { checkAuth } from '@/app/lib/auth/checkAuth'
 import { useAuthStore } from '@/app/store/useAuthStore'
-import {
-  loginSchema,
-  type LoginSchema,
-} from '@/app/lib/validation/auth.schema'
+import { loginSchema, type LoginSchema } from '@/app/lib/validation/auth.schema'
 
 function LoginContent() {
   const router = useRouter()
@@ -29,31 +25,24 @@ function LoginContent() {
 
   const setAuth = useAuthStore((state) => state.login)
 
-  const callbackUrl =
-    searchParams.get('callbackUrl') || '/dashboard'
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
- useEffect(() => {
-   async function verify() {
-     const { authenticated, account, operator } = await checkAuth()
+  useEffect(() => {
+    async function verify() {
+      const authenticated = await checkAuth()
 
-     if (authenticated && account && operator) {
-       // Hydrate local Zustand context data structures prior to swapping router frames
-       setAuth(account, operator)
-       router.replace('/dashboard')
-     }
-   }
+      if (authenticated) {
+        router.replace('/dashboard')
+      }
+    }
 
-   verify()
- }, [router, setAuth])
+    verify()
+  }, [router])
 
   const {
     register,
     handleSubmit,
-    formState: {
-      errors,
-      isSubmitting,
-      isValid,
-    },
+    formState: { errors, isSubmitting, isValid },
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
@@ -73,10 +62,7 @@ function LoginContent() {
        * Store ONLY UI identity.
        * NEVER store tokens.
        */
-      setAuth(
-        response.data.account,
-        response.data.operator,
-      )
+      setAuth(response.data.account, response.data.operator)
 
       notifications.show({
         title: 'Success',
@@ -88,10 +74,7 @@ function LoginContent() {
     } catch (error) {
       notifications.show({
         title: 'Login Failed',
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Invalid credentials',
+        message: error instanceof Error ? error.message : 'Invalid credentials',
         color: 'red',
       })
     }

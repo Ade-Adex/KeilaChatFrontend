@@ -134,7 +134,7 @@ export default function ChatMessages({
 
         {/* Actual messages */}
 
-        {messages.map((message) => {
+        {/* {messages.map((message) => {
           const isTransferNotice =
             message.senderType === 'system' ||
             (message.messageText &&
@@ -163,7 +163,43 @@ export default function ChatMessages({
               <MessageBubble message={message} />
             </div>
           )
-        })}
+        })} */}
+
+
+{messages.map((message) => {
+  const isSystemNotice =
+    message.senderType === 'system' ||
+    message.sessionId === 'system' ||
+    (message.messageText && (
+      message.messageText.toLowerCase().includes('transferred to') ||
+      message.messageText.toLowerCase().includes('joined chat') ||
+      message.messageText.toLowerCase().includes('presence_notification')
+    ));
+
+  if (isSystemNotice) {
+    return (
+      <div
+        key={message._id ?? `${message.senderId}-${message.createdAt}`}
+        className="flex items-center my-3 w-full select-none"
+      >
+        <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
+        <span className="mx-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/80 backdrop-blur-xs border border-border px-3 py-1 rounded-full shadow-xs text-center">
+          {message.messageText}
+        </span>
+        <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      key={message._id ?? `${message.senderId}-${message.createdAt}`}
+      className="cursor-help"
+    >
+      <MessageBubble message={message} />
+    </div>
+  )
+})}
 
         {/* Typing */}
         {operatorTyping && <TypingIndicator />}

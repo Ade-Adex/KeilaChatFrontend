@@ -152,3 +152,30 @@ export interface ActiveOperatorsResponse {
 export function getActiveOperators() {
   return apiGet<ActiveOperatorsResponse>('/api/v1/operators/active')
 }
+
+
+
+
+/* -------------------------------------------------------------------------- */
+/* KNOWLEDGE BASE / AI CONTROL LAYER                                         */
+/* -------------------------------------------------------------------------- */
+
+export interface ToggleAIResponse {
+  success: boolean
+  message: string
+  data: {
+    sessionId: string
+    aiEnabled: boolean
+    status: string
+  }
+}
+
+/**
+ * Allows a human live agent to instantly override and pause/resume the AI bot 
+ * for a specific active chat window.
+ */
+export function toggleSessionAI(sessionId: string, aiEnabled: boolean) {
+  return apiPatch<ToggleAIResponse>(`/api/v1/ai/session/${sessionId}/toggle`, {
+    aiEnabled,
+  })
+}
