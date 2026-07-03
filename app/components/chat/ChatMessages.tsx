@@ -256,6 +256,8 @@
 // }
 
 
+
+
 // /app/components/chat/ChatMessages.tsx
 'use client'
 
@@ -293,15 +295,25 @@ export default function ChatMessages({
     y: 0,
   })
 
-  // 🤖 Keep track of message IDs that have finished their typing delay animations safely
+  // 🤖 AI animation tracking states
   const [completedAiMessageIds, setCompletedAiMessageIds] = useState<Set<string>>(new Set())
+  
+  // ⚡ React 19 Inline Prop Synchronization Pattern (Replaces the broken useEffect)
+  const [prevMessagesLength, setPrevMessagesLength] = useState(messages.length)
+  if (messages.length !== prevMessagesLength) {
+    setPrevMessagesLength(messages.length)
+    if (messages.length === 0) {
+      // Safely adjusting state during render pass prevents cascading effect renders
+      setCompletedAiMessageIds(new Set())
+    }
+  }
 
   const lastMessage = messages[messages.length - 1]
   const lastMessageId = lastMessage
     ? (lastMessage._id || `${lastMessage.senderId}-${lastMessage.createdAt}`)
     : null
 
-  // 🧠 Compute if the AI is actively typing: Last message is AI and its ID hasn't completed animation yet
+  // 🧠 Compute AI typing status directly in the render line
   const aiTyping = lastMessage?.senderType === 'ai' && !completedAiMessageIds.has(lastMessageId!)
 
   /**
@@ -310,7 +322,6 @@ export default function ChatMessages({
   useEffect(() => {
     if (!lastMessageId || lastMessage?.senderType !== 'ai') return
 
-    // If this AI message isn't completed yet, start a timer to complete it
     if (!completedAiMessageIds.has(lastMessageId)) {
       const timer = setTimeout(() => {
         setCompletedAiMessageIds((prev) => {
@@ -318,33 +329,25 @@ export default function ChatMessages({
           next.add(lastMessageId)
           return next
         })
-      }, 1800) // 1.8 seconds typing effect simulation
+      }, 1800)
 
       return () => clearTimeout(timer)
     }
   }, [lastMessageId, lastMessage?.senderType, completedAiMessageIds])
 
   /**
-   * 🧠 Pure Render Pass Computation (Removes complex state mutations)
+   * 🧠 Pure Render Pass Slice Computation
    */
   const visibleMessages = useMemo(() => {
     if (messages.length === 0) return []
 
-    // If the AI is typing, hide that last uncompleted message from the bubble stack
     if (aiTyping) {
       return messages.slice(0, -1)
     }
     return messages
   }, [messages, aiTyping])
 
-  // Reset helper when session history wipes or hard resets
-  useEffect(() => {
-    if (messages.length === 0) {
-      setCompletedAiMessageIds(new Set())
-    }
-  }, [messages.length])
-
-  // Automatic bottom layout viewport sync tracker
+  // Automatic bottom viewport alignment
   useEffect(() => {
     const timer = setTimeout(() => {
       bottomRef.current?.scrollIntoView({
@@ -429,7 +432,7 @@ export default function ChatMessages({
           }}
         />
 
-        {/* Dynamic message logs loops */}
+        {/* Dynamic message layout grids */}
         {visibleMessages.map((message) => {
           const isSystemNotice =
             message.senderType === 'system' ||
@@ -473,7 +476,7 @@ export default function ChatMessages({
           )
         })}
 
-        {/* 🎯 Typing Indicators: Smoothly unmounts when target conditions resolve */}
+        {/* Typing Indicators */}
         {(operatorTyping || aiTyping) && <TypingIndicator visible={true} />}
         <div ref={bottomRef} />
       </div>
