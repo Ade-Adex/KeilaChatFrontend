@@ -26,6 +26,12 @@ export default function DashboardLayout({
       // 1. Silent token state health check verification
       const authenticated = await checkAuth()
 
+      console.log('[Dashboard Layout Auth Check]:', {
+        authenticated,
+        userRole: user?.role,
+        pathname,
+      })
+
       if (!authenticated) {
         router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
         return

@@ -16,6 +16,9 @@ export function proxy(request: NextRequest) {
   // 2. Extract your production HTTP-only access cookie
   const accessToken = request.cookies.get('access_token')?.value
 
+
+  console.log('[Edge Guard Access Token Check]:', accessToken)
+
   // 3. Fail-Safe Global Auth Interception
   if (pathname.startsWith('/dashboard') && !accessToken) {
     const loginUrl = new URL('/signin', request.url)
