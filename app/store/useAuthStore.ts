@@ -8,10 +8,6 @@ import type { AccountData, OperatorData } from '@/app/types/auth'
 import { logoutOperator } from '@/app/lib/api/auth.api'
 
 interface AuthState {
-  /**
-   * UI identity only.
-   * Authentication lives entirely in secure httpOnly cookies.
-   */
   account: AccountData | null
   operator: OperatorData | null
 

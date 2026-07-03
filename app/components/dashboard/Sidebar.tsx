@@ -5,62 +5,43 @@
 import { NavLink, Tooltip } from '@mantine/core'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  FiHome,
-  FiMessageSquare,
-  FiUsers,
-  FiCode,
-  FiSettings,
-  FiLogOut,
-} from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/useAuthStore'
+import { FiLogOut } from 'react-icons/fi'
+import { sidebarLinks } from '@/app/data/SidebarLinks'
 
 interface SidebarProps {
   isOpened: boolean
 }
 
-const links = [
-  { name: 'Overview', href: '/dashboard', icon: <FiHome size={18} /> },
-  {
-    name: 'Inbox',
-    href: '/dashboard/inbox',
-    icon: <FiMessageSquare size={18} />,
-  },
-  {
-    name: 'Contacts',
-    href: '/dashboard/contacts',
-    icon: <FiUsers size={18} />,
-  },
-  { name: 'Setup', href: '/dashboard/setup', icon: <FiCode size={18} /> },
-  {
-    name: 'Settings',
-    href: '/dashboard/settings',
-    icon: <FiSettings size={18} />,
-  },
-]
-
 export default function Sidebar({ isOpened }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter() 
+  const router = useRouter()
   const logout = useAuthStore((state) => state.logout)
+  const user = useAuthStore((state) => state.operator)
 
- const handleLogoutClick = async () => {
-   try {
-     await logout()
+  // 🎯 Filter links based on role clearance requirements
+  const renderedLinks = sidebarLinks.filter((link) => {
+    const adminOnlyPaths = ['/dashboard/setup', '/dashboard/contacts']
+    if (adminOnlyPaths.includes(link.href)) {
+      return user?.role === 'admin'
+    }
+    return true
+  })
 
-     router.replace('/signin')
-
-     router.refresh()
-   } catch (err) {
-     console.error(err)
-   }
- }
+  const handleLogoutClick = async () => {
+    try {
+      await logout()
+      router.replace('/signin')
+      router.refresh()
+    } catch (err) {
+      console.error('Logout sequence exception raised:', err)
+    }
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between text-white">
-      {/* Main Navigation links mapping container */}
       <div className="flex flex-col gap-2">
-        {links.map((link) => {
+        {renderedLinks.map((link) => {
           const isActive = pathname === link.href
 
           return (
@@ -96,10 +77,8 @@ export default function Sidebar({ isOpened }: SidebarProps) {
         })}
       </div>
 
-      {/* Footer Segment: Boundary Divider + Logout Action */}
       <div className="flex flex-col gap-2">
         <div className="border-t border-border w-full my-1" />
-
         <Tooltip label="Logout" disabled={isOpened} position="right" withArrow>
           <NavLink
             onClick={handleLogoutClick}
