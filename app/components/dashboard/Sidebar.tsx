@@ -5,6 +5,7 @@
 import { NavLink, Tooltip } from '@mantine/core'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
+
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { FiLogOut } from 'react-icons/fi'
 import { sidebarLinks } from '@/app/data/SidebarLinks'
@@ -13,38 +14,30 @@ interface SidebarProps {
   isOpened: boolean
 }
 
+
+
 export default function Sidebar({ isOpened }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
+  const router = useRouter() 
   const logout = useAuthStore((state) => state.logout)
 
-  // Read target role status to calculate navigation structures dynamically
-  const user = useAuthStore((state) => state.operator)
+ const handleLogoutClick = async () => {
+   try {
+     await logout()
 
-  // 🎯 Filter the navigation links based on explicit role access criteria
-  const accessibleLinks = sidebarLinks.filter((link) => {
-    const adminOnlyPaths = ['/dashboard/setup', '/dashboard/contacts']
-    if (adminOnlyPaths.includes(link.href)) {
-      return user?.role === 'admin'
-    }
-    return true
-  })
+     router.replace('/signin')
 
-  const handleLogoutClick = async () => {
-    try {
-      await logout()
-      router.replace('/signin')
-      router.refresh()
-    } catch (err) {
-      console.error('[Sidebar Logout Exception]:', err)
-    }
-  }
+     router.refresh()
+   } catch (err) {
+     console.error(err)
+   }
+ }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between text-white">
-      {/* Dynamic Link Mapping Workspace */}
+      {/* Main Navigation links mapping container */}
       <div className="flex flex-col gap-2">
-        {accessibleLinks.map((link) => {
+        {sidebarLinks.map((link) => {
           const isActive = pathname === link.href
 
           return (
@@ -80,9 +73,10 @@ export default function Sidebar({ isOpened }: SidebarProps) {
         })}
       </div>
 
-      {/* Footer Utility Drawer Segment */}
+      {/* Footer Segment: Boundary Divider + Logout Action */}
       <div className="flex flex-col gap-2">
         <div className="border-t border-border w-full my-1" />
+
         <Tooltip label="Logout" disabled={isOpened} position="right" withArrow>
           <NavLink
             onClick={handleLogoutClick}
