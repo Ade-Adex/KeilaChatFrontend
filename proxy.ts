@@ -3,35 +3,36 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const ADMIN_ONLY_ROUTES = ['/dashboard/setup', '/dashboard/contacts']
+const RESTRICTED_ADMIN_ROUTES = ['/dashboard/setup', '/dashboard/contacts']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // 1. Root Security Boundary Redirect
   if (pathname === '/') {
     return NextResponse.redirect(new URL('/signin', request.url))
   }
 
-  // 🎯 Target your actual backend HTTP-only cookie name
+  // 2. Extract your production HTTP-only access cookie
   const accessToken = request.cookies.get('access_token')?.value
 
-  // 1. Fallback Auth Guard: Block access if the access token is missing
+  // 3. Fail-Safe Global Auth Interception
   if (pathname.startsWith('/dashboard') && !accessToken) {
     const loginUrl = new URL('/signin', request.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // 2. Edge-Level RBAC Enforcement
-  const isRestrictedPath = ADMIN_ONLY_ROUTES.some((route) =>
+  // 4. Strict Role-Based Access Control Enforcement (RBAC)
+  const isTargetingRestrictedPath = RESTRICTED_ADMIN_ROUTES.some((route) =>
     pathname.startsWith(route),
   )
 
-  if (isRestrictedPath && accessToken) {
+  if (isTargetingRestrictedPath && accessToken) {
     try {
-      // Decode the JWT access_token payload segment safely at the edge
+      // Decode JWT crypt-segment seamlessly at the Edge network layer
       const base64Url = accessToken.split('.')[1]
-      if (!base64Url) throw new Error('Malformed token structure')
+      if (!base64Url) throw new Error('Malformed token envelope')
 
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
       const jsonPayload = decodeURIComponent(
@@ -43,16 +44,16 @@ export function proxy(request: NextRequest) {
 
       const payload = JSON.parse(jsonPayload)
 
-      // 🛡️ Lock down route access if user role is not admin
+      // 🛡️ If the token is valid but the role is NOT an admin, eject them immediately
       if (payload?.role !== 'admin') {
         return NextResponse.redirect(
-          new URL('/dashboard?error=unauthorized', request.url),
+          new URL('/dashboard?error=access_denied', request.url),
         )
       }
     } catch (err) {
-      console.error('[Proxy RBAC Security Interception Error]:', err)
+      console.error('[Edge Guard RBAC Violation Triggered]:', err)
       return NextResponse.redirect(
-        new URL('/dashboard?error=invalid_session', request.url),
+        new URL('/dashboard?error=invalid_security_session', request.url),
       )
     }
   }
@@ -61,5 +62,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Catch all potential paths explicitly to ensure no gaps for attackers
   matcher: ['/', '/signin', '/signup', '/dashboard/:path*'],
 }

@@ -18,26 +18,27 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [checking, setChecking] = useState(true)
 
+  // Read state safely from the hydrated Zustand identity storage
   const user = useAuthStore((state) => state.operator)
 
   useEffect(() => {
     async function verifyAccessSequence() {
-      // 1. Check if the user is authenticated via cookies
+      // 1. Silent token state health check verification
       const authenticated = await checkAuth()
+
       if (!authenticated) {
         router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
         return
       }
 
-      // 2. Client-side RBAC Guard
-      const restrictedRoutes = ['/dashboard/setup', '/dashboard/contacts']
-      const attemptsAccessingRestricted = restrictedRoutes.some((route) =>
+      // 2. Client-side layout level block
+      const adminRoutes = ['/dashboard/setup', '/dashboard/contacts']
+      const isRestrictedPath = adminRoutes.some((route) =>
         pathname.startsWith(route),
       )
 
-      // Validate against the Zustand-managed user object
-      if (attemptsAccessingRestricted && user?.role !== 'admin') {
-        router.replace('/dashboard?error=unauthorized_access')
+      if (isRestrictedPath && user?.role !== 'admin') {
+        router.replace('/dashboard?error=unauthorized_view')
         return
       }
 

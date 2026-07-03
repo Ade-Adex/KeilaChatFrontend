@@ -17,10 +17,12 @@ export default function Sidebar({ isOpened }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const logout = useAuthStore((state) => state.logout)
+
+  // Read target role status to calculate navigation structures dynamically
   const user = useAuthStore((state) => state.operator)
 
-  // 🎯 Filter links based on role clearance requirements
-  const renderedLinks = sidebarLinks.filter((link) => {
+  // 🎯 Filter the navigation links based on explicit role access criteria
+  const accessibleLinks = sidebarLinks.filter((link) => {
     const adminOnlyPaths = ['/dashboard/setup', '/dashboard/contacts']
     if (adminOnlyPaths.includes(link.href)) {
       return user?.role === 'admin'
@@ -34,14 +36,15 @@ export default function Sidebar({ isOpened }: SidebarProps) {
       router.replace('/signin')
       router.refresh()
     } catch (err) {
-      console.error('Logout sequence exception raised:', err)
+      console.error('[Sidebar Logout Exception]:', err)
     }
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between text-white">
+      {/* Dynamic Link Mapping Workspace */}
       <div className="flex flex-col gap-2">
-        {renderedLinks.map((link) => {
+        {accessibleLinks.map((link) => {
           const isActive = pathname === link.href
 
           return (
@@ -77,6 +80,7 @@ export default function Sidebar({ isOpened }: SidebarProps) {
         })}
       </div>
 
+      {/* Footer Utility Drawer Segment */}
       <div className="flex flex-col gap-2">
         <div className="border-t border-border w-full my-1" />
         <Tooltip label="Logout" disabled={isOpened} position="right" withArrow>
