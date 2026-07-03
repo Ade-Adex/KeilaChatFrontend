@@ -18,7 +18,6 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [checking, setChecking] = useState(true)
 
-  // 🎯 Read user data directly from your Zustand client cache
   const user = useAuthStore((state) => state.operator)
 
   useEffect(() => {
@@ -46,7 +45,7 @@ export default function DashboardLayout({
     }
 
     verifyAccessSequence()
-  }, [pathname, router, user?.role]) // 🎯 Tracks role changes dynamically
+  }, [pathname, router, user?.role])
 
   if (checking) {
     return (
