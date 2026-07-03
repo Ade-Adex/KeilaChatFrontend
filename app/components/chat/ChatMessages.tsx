@@ -256,11 +256,10 @@
 // }
 
 
-
 // /app/components/chat/ChatMessages.tsx
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import type { ChatMessage, WidgetConfig } from '@/app/types/chat'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from '@/app/components/TypingIndicator'
@@ -294,56 +293,58 @@ export default function ChatMessages({
     y: 0,
   })
 
-const [aiMessageId, setAiMessageId] = useState<string | null>(null)
+  // 🤖 Keep track of message IDs that have finished their typing delay animations safely
+  const [completedAiMessageIds, setCompletedAiMessageIds] = useState<Set<string>>(new Set())
 
-const [aiTyping, setAiTyping] = useState(false)
+  const lastMessage = messages[messages.length - 1]
+  const lastMessageId = lastMessage
+    ? (lastMessage._id || `${lastMessage.senderId}-${lastMessage.createdAt}`)
+    : null
 
-
-  const processedMessageIds = useRef<Set<string>>(new Set())
+  // 🧠 Compute if the AI is actively typing: Last message is AI and its ID hasn't completed animation yet
+  const aiTyping = lastMessage?.senderType === 'ai' && !completedAiMessageIds.has(lastMessageId!)
 
   /**
-   * 🧠 AI Typing Interceptor & Delay Logic
+   * ⏳ Natural Delay Trigger Management Ring
    */
   useEffect(() => {
-    if (!messages.length) return
+    if (!lastMessageId || lastMessage?.senderType !== 'ai') return
 
-    const lastMessage = messages[messages.length - 1]
-
-    const msgId =
-      lastMessage._id ?? `${lastMessage.senderId}-${lastMessage.createdAt}`
-
-    if (
-      lastMessage.senderType === 'ai' &&
-      !processedMessageIds.current.has(msgId)
-    ) {
-      processedMessageIds.current.add(msgId)
-
-      setAiMessageId(msgId)
-      setAiTyping(true)
-
+    // If this AI message isn't completed yet, start a timer to complete it
+    if (!completedAiMessageIds.has(lastMessageId)) {
       const timer = setTimeout(() => {
-        setAiTyping(false)
-        setAiMessageId(null)
-      }, 1800)
+        setCompletedAiMessageIds((prev) => {
+          const next = new Set(prev)
+          next.add(lastMessageId)
+          return next
+        })
+      }, 1800) // 1.8 seconds typing effect simulation
 
       return () => clearTimeout(timer)
     }
+  }, [lastMessageId, lastMessage?.senderType, completedAiMessageIds])
 
-    processedMessageIds.current.add(msgId)
-  }, [messages])
+  /**
+   * 🧠 Pure Render Pass Computation (Removes complex state mutations)
+   */
+  const visibleMessages = useMemo(() => {
+    if (messages.length === 0) return []
 
+    // If the AI is typing, hide that last uncompleted message from the bubble stack
+    if (aiTyping) {
+      return messages.slice(0, -1)
+    }
+    return messages
+  }, [messages, aiTyping])
 
+  // Reset helper when session history wipes or hard resets
+  useEffect(() => {
+    if (messages.length === 0) {
+      setCompletedAiMessageIds(new Set())
+    }
+  }, [messages.length])
 
-  const visibleMessages =
-    aiTyping && aiMessageId
-      ? messages.filter((msg) => {
-          const id = msg._id ?? `${msg.senderId}-${msg.createdAt}`
-
-          return id !== aiMessageId
-        })
-      : messages
-
-  // Automatic bottom viewport container anchor tracking lock updates
+  // Automatic bottom layout viewport sync tracker
   useEffect(() => {
     const timer = setTimeout(() => {
       bottomRef.current?.scrollIntoView({
@@ -428,7 +429,7 @@ const [aiTyping, setAiTyping] = useState(false)
           }}
         />
 
-        {/* Dynamic, pacing calculated message loops */}
+        {/* Dynamic message logs loops */}
         {visibleMessages.map((message) => {
           const isSystemNotice =
             message.senderType === 'system' ||
@@ -472,8 +473,8 @@ const [aiTyping, setAiTyping] = useState(false)
           )
         })}
 
-        {/* 🎯 Typing Indicators: Triggers if a live human is typing OR if the local AI engine is running calculations */}
-        {(operatorTyping || aiTyping) && <TypingIndicator />}
+        {/* 🎯 Typing Indicators: Smoothly unmounts when target conditions resolve */}
+        {(operatorTyping || aiTyping) && <TypingIndicator visible={true} />}
         <div ref={bottomRef} />
       </div>
 
