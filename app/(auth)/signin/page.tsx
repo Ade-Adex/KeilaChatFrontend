@@ -32,21 +32,19 @@ function LoginContent() {
   const callbackUrl =
     searchParams.get('callbackUrl') || '/dashboard'
 
-  /**
-   * If cookies already exist,
-   * never show login page.
-   */
-  useEffect(() => {
-    async function verify() {
-      const authenticated = await checkAuth()
+ useEffect(() => {
+   async function verify() {
+     const { authenticated, account, operator } = await checkAuth()
 
-      if (authenticated) {
-        router.replace('/dashboard')
-      }
-    }
+     if (authenticated && account && operator) {
+       // Hydrate local Zustand context data structures prior to swapping router frames
+       setAuth(account, operator)
+       router.replace('/dashboard')
+     }
+   }
 
-    verify()
-  }, [router])
+   verify()
+ }, [router, setAuth])
 
   const {
     register,
