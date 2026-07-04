@@ -40,6 +40,7 @@ export default function WebsiteForm() {
     defaultValues: {
       name: '',
       domain: '',
+      aiName: 'AI Assistant',
       category: '',
       subCategory: '',
       region: '',
@@ -121,6 +122,19 @@ export default function WebsiteForm() {
               label="Primary Domain"
               error={errors.domain?.message}
               {...register('domain')}
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+              }}
+            />
+
+            {/* 🎯 ADDED: Custom SaaS AI Agent Identity Setup Configuration Field */}
+            <TextInput
+              label="AI Bot Name"
+              placeholder="AI Assistant"
+              description="The name shown to customers when interacting with artificial intelligence."
+              error={errors.aiName?.message}
+              {...register('aiName')}
               classNames={{
                 input:
                   'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',

@@ -74,6 +74,10 @@ export interface WebsiteData {
 
   allowedDomains: string[]
 
+  widgetSettings?: {
+    aiName?: string
+  }
+
   details: {
     category: string
     subCategory: string
@@ -125,6 +129,7 @@ export interface WebsiteResponse {
 export interface UpdateWebsiteRequest {
   name: string
   domain: string
+  aiName: string
   allowedDomains: string[]
 
   category: string

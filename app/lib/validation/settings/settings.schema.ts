@@ -46,6 +46,8 @@ export const websiteSchema = z.object({
 
   domain: z.string().trim().min(1, 'Domain is required'),
 
+  aiName: z.string().trim().min(1, 'AI Name is required'),
+
   category: z.string(),
 
   subCategory: z.string(),

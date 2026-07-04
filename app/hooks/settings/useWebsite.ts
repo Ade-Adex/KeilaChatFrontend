@@ -22,6 +22,7 @@ export function useWebsite() {
         setWebsite({
           name: property.name ?? '',
           domain: property.domain ?? '',
+          aiName: property.widgetSettings?.aiName ?? 'AI Assistant',
           allowedDomains: property.allowedDomains.join('\n'),
           category: property.details.category ?? '',
           subCategory: property.details.subCategory ?? '',
@@ -46,6 +47,7 @@ export function useWebsite() {
       const res = await updateWebsite({
         name: values.name,
         domain: values.domain,
+        aiName: values.aiName,
         allowedDomains: values.allowedDomains
           .split('\n')
           .map((d) => d.trim())
