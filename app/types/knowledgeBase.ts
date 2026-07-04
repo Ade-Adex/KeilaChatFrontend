@@ -5,12 +5,34 @@ export type FallbackStrategy = 'human' | 'clarify' | 'fallback'
 
 export interface IFaqItem {
   _id?: string
+
   question: string
+
   answer: string
+
   category: string
+
   enabled: boolean
+
   priority: number
+
   keywords: string[]
+
+  intent?: string
+
+  entities?: string[]
+
+  embedding?: number[]
+
+  embeddingModel?: string
+
+  usageCount?: number
+
+  lastMatchedAt?: string
+
+  createdAt?: string
+
+  updatedAt?: string
 }
 
 export interface IKnowledgeBase {

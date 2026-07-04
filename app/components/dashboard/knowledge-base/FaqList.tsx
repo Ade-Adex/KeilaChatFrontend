@@ -45,6 +45,11 @@ export default function FaqList({ faqs, onEdit, onRemove }: FaqListProps) {
               <Table.Th style={{ width: 130 }}>Category</Table.Th>
               <Table.Th style={{ width: 260 }}>Context Question</Table.Th>
               <Table.Th>Configured Matrix Response</Table.Th>
+              <Table.Th>Intent</Table.Th>
+
+              <Table.Th>Keywords</Table.Th>
+
+              <Table.Th>Usage</Table.Th>
               <Table.Th
                 style={{ width: 90 }}
                 aria-label="Control Matrix Actions"
@@ -72,6 +77,11 @@ export default function FaqList({ faqs, onEdit, onRemove }: FaqListProps) {
                 <Table.Td className="text-xs text-dimmed max-w-100 truncate">
                   {item.answer}
                 </Table.Td>
+                <Table.Td>{item.intent}</Table.Td>
+
+                <Table.Td>{item.keywords?.join(', ')}</Table.Td>
+
+                <Table.Td>{item.usageCount ?? 0}</Table.Td>
                 <Table.Td>
                   <Group gap={4} justify="flex-end">
                     <Tooltip label="Edit Element">

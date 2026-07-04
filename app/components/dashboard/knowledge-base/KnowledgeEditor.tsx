@@ -46,12 +46,30 @@ export default function KnowledgeEditor({
 
     onSave({
       ...faq,
-      category: category.trim() || 'General',
-      question: question.trim(),
-      answer: answer.trim(),
+
+      category,
+
+      question,
+
+      answer,
+
       enabled,
-      priority: faq?.priority || 1,
+
+      priority: faq?.priority ?? 1,
+
       keywords,
+
+      intent: faq?.intent ?? 'unknown',
+
+      entities: faq?.entities ?? [],
+
+      embedding: faq?.embedding ?? [],
+
+      embeddingModel: faq?.embeddingModel ?? 'Xenova/all-MiniLM-L6-v2',
+
+      usageCount: faq?.usageCount ?? 0,
+
+      lastMatchedAt: faq?.lastMatchedAt,
     })
     onClose()
   }
