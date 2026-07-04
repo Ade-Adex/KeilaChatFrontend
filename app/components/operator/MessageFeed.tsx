@@ -38,7 +38,6 @@ export default function MessageFeed({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Click outside to close telemetry info modal window
   useEffect(() => {
     const handleOutsideClick = () => {
       if (modal.isOpen) setModal((prev) => ({ ...prev, isOpen: false }))
@@ -46,6 +45,45 @@ export default function MessageFeed({
     window.addEventListener('click', handleOutsideClick)
     return () => window.removeEventListener('click', handleOutsideClick)
   }, [modal.isOpen])
+
+  /**
+   * Industrial Standard Day Separator Formatter Engine
+   */
+  const formatDividerDate = (dateString?: string | Date): string => {
+    if (!dateString) return 'Today'
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date()
+    yesterday.setDate(today.getDate() - 1)
+
+    const compareDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    ).getTime()
+    const todayDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    ).getTime()
+    const yesterdayDate = new Date(
+      yesterday.getFullYear(),
+      yesterday.getMonth(),
+      yesterday.getDate(),
+    ).getTime()
+
+    if (compareDate === todayDate) {
+      return 'Today'
+    } else if (compareDate === yesterdayDate) {
+      return 'Yesterday'
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    }
+  }
 
   if (loading) {
     return (
@@ -68,7 +106,6 @@ export default function MessageFeed({
     )
   }
 
-  // Trigger telemetry display wrapper details
   const triggerMessageInfo = (
     e: React.MouseEvent | React.TouchEvent,
     msg: ChatMessage,
@@ -87,7 +124,6 @@ export default function MessageFeed({
       clientY = e.touches[0].clientY
     }
 
-    // Safety fallback bounds alignment logic
     const modalWidth = 260
     const modalHeight = 180
     let optimizedX = clientX + 10
@@ -108,11 +144,10 @@ export default function MessageFeed({
     })
   }
 
-  // Touch handlers for mobile devices (long-press event)
   const handleTouchStart = (e: React.TouchEvent, msg: ChatMessage) => {
     longPressTimerRef.current = setTimeout(() => {
       triggerMessageInfo(e, msg)
-    }, 500) // 500ms duration requirement flag
+    }, 500)
   }
 
   const handleTouchEnd = () => {
@@ -130,51 +165,71 @@ export default function MessageFeed({
     })
   }
 
+  // 🎯 STEP 1: Linear structural mapping across dynamic timeline group arrays
+  const groups: { [key: string]: ChatMessage[] } = {}
+  messages.forEach((msg) => {
+    const groupKey = formatDividerDate(msg.createdAt)
+    if (!groups[groupKey]) groups[groupKey] = []
+    groups[groupKey].push(msg)
+  })
+
   return (
     <div
       ref={feedContainerRef}
       className="h-full overflow-y-auto custom-scrollbar bg-background/20 relative"
     >
-      <div className="flex flex-col gap-3.5 p-4 md:p-6 max-w-5xl mx-auto">
-        {messages.map((message) => {
-          // 🎯 Detect if this message is an engineering/presence transfer notice
-          const isTransferNotice =
-            message.senderType === 'system' ||
-            (message.messageText &&
-              message.messageText.toLowerCase().includes('transferred to'))
-
-          if (isTransferNotice) {
-            return (
-              <div
-                key={message._id}
-                className="flex items-center my-4 w-full select-none"
-              >
-                <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
-                <span className="mx-4 text-[11px] font-semibold tracking-wide text-muted-foreground bg-muted px-3 py-1 rounded-full border border-border shadow-xs animate-in scale-in-95 duration-200">
-                  🔄 {message.messageText}
-                </span>
-                <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
-              </div>
-            )
-          }
-
-          // Otherwise, render regular interactable client-side operator bubble
-          return (
-            <div
-              key={message._id}
-              className="animate-in fade-in duration-300 slide-in-from-bottom-1 cursor-help select-none"
-              onContextMenu={(e) => triggerMessageInfo(e, message)}
-              onTouchStart={(e) => handleTouchStart(e, message)}
-              onTouchEnd={handleTouchEnd}
-              onTouchMove={handleTouchEnd}
-            >
-              <MessageBubble message={message} />
+      <div className="flex flex-col p-4 md:p-6 max-w-5xl mx-auto">
+        {Object.keys(groups).map((dayKey) => (
+          <div key={dayKey} className="flex flex-col gap-3.5">
+            {/* 🎯 STEP 2: Render Industry Standard Day Separator Divider line */}
+            <div className="flex items-center my-6 select-none">
+              <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border/70 to-transparent" />
+              <span className="mx-4 text-[10px] font-extrabold tracking-wider text-muted-foreground/80 uppercase bg-muted px-3 py-1 rounded-full border border-border shadow-xs">
+                {dayKey}
+              </span>
+              <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border/70 to-transparent" />
             </div>
-          )
-        })}
+
+            {/* Render message bubbles packed inside this timeframe bucket */}
+            {groups[dayKey].map((message) => {
+              const isTransferNotice =
+                message.senderType === 'system' ||
+                (message.messageText &&
+                  message.messageText.toLowerCase().includes('transferred to'))
+
+              if (isTransferNotice) {
+                return (
+                  <div
+                    key={message._id}
+                    className="flex items-center my-2 w-full select-none"
+                  >
+                    <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+                    <span className="mx-4 text-[11px] font-semibold tracking-wide text-muted-foreground bg-muted px-3 py-1 rounded-full border border-border shadow-xs animate-in scale-in-95 duration-200">
+                      🔄 {message.messageText}
+                    </span>
+                    <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+                  </div>
+                )
+              }
+
+              return (
+                <div
+                  key={message._id}
+                  className="animate-in fade-in duration-300 slide-in-from-bottom-1 cursor-help select-none"
+                  onContextMenu={(e) => triggerMessageInfo(e, message)}
+                  onTouchStart={(e) => handleTouchStart(e, message)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchEnd}
+                >
+                  <MessageBubble message={message} />
+                </div>
+              )
+            })}
+          </div>
+        ))}
         <div ref={bottomRef} className="h-2" />
       </div>
-      {/* Pop-up Telemetry Overlay Modal Context Menu */}
+
       {modal.isOpen && modal.message && (
         <div
           className="fixed z-50 w-64 rounded-xl border border-border bg-card p-3.5 shadow-xl backdrop-blur-md animate-in zoom-in-95 duration-100 text-foreground"
@@ -194,7 +249,6 @@ export default function MessageFeed({
           </div>
 
           <div className="space-y-2 text-xs">
-            {/* Sent Status Group */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground flex items-center gap-1">
                 <FiClock size={12} className="text-blue-400" /> Sent:
@@ -204,7 +258,6 @@ export default function MessageFeed({
               </span>
             </div>
 
-            {/* Delivered Status Group */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground flex items-center gap-1">
                 <FiCheck
@@ -232,7 +285,6 @@ export default function MessageFeed({
               </span>
             </div>
 
-            {/* Read Status Group */}
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground flex items-center gap-1">
                 <FiCheckSquare

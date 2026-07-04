@@ -1,4 +1,5 @@
 // /components/operator/MessageBubble.tsx
+
 'use client'
 
 import Image from 'next/image'
@@ -11,12 +12,14 @@ export interface MessageBubbleProps {
   message: ChatMessage
 }
 
-
 function MessageBubble({ message }: MessageBubbleProps) {
   const isVisitor = message.senderType === 'visitor'
   const isOperator = message.senderType === 'operator'
   const isAI = message.senderType === 'ai'
   const isSystem = message.senderType === 'system'
+
+  // 🎯 FIX: Group AI and Operator together on the right side workspace stream context layout
+  const alignRight = isOperator || isAI
 
   const formattedTime = message.createdAt
     ? new Date(message.createdAt).toLocaleTimeString([], {
@@ -37,21 +40,21 @@ function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <div
-      className={`flex w-full mb-1 ${isOperator ? 'justify-end' : 'justify-start'}`}
+      className={`flex w-full mb-1 ${alignRight ? 'justify-end' : 'justify-start'}`}
     >
       <div
-        className={`flex max-w-[85%] sm:max-w-[75%] gap-2.5 ${isOperator ? 'flex-row-reverse' : ''}`}
+        className={`flex max-w-[85%] sm:max-w-[75%] gap-2.5 ${alignRight ? 'flex-row-reverse' : ''}`}
       >
         <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card shadow-sm text-muted-foreground/80">
           {isVisitor && <FaUser size={11} />}
           {isOperator && <FaUserTie size={11} />}
           {isAI && (
-            <FaRobot size={12} className="text-blue-500 animate-pulse" />
+            <FaRobot size={12} className="text-purple-500 animate-pulse" />
           )}
         </div>
 
         <div
-          className={`space-y-1 flex flex-col ${isOperator ? 'items-end' : 'items-start'}`}
+          className={`space-y-1 flex flex-col ${alignRight ? 'items-end' : 'items-start'}`}
         >
           <div
             className={`rounded-2xl px-3.5 py-2.5 shadow-sm text-xs leading-relaxed transition-all
@@ -59,7 +62,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
                 isOperator
                   ? 'bg-primary text-white rounded-tr-none'
                   : isAI
-                    ? 'border border-blue-100/80 bg-blue-50/50 dark:border-blue-950/50 dark:bg-blue-950/30 rounded-tl-none'
+                    ? 'border border-purple-100/80 bg-purple-50/50 dark:border-purple-950/50 dark:bg-purple-950/30 rounded-tr-none'
                     : 'bg-muted/70 text-foreground rounded-tl-none'
               }`}
           >
@@ -69,7 +72,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
               </p>
             )}
 
-            {/* Attachments rendering logic remains perfectly preserved */}
             {message.attachments && message.attachments.length > 0 && (
               <div className="space-y-2 mt-2">
                 {message.attachments.map((attachment, index) => {
@@ -138,13 +140,12 @@ function MessageBubble({ message }: MessageBubbleProps) {
             )}
           </div>
 
-          {/* Timestamp and Checkmark Status Blocks */}
           <div className="flex items-center gap-1.5 px-1 text-[10px] font-medium text-muted-foreground/70">
             <span>{formattedTime}</span>
             {isOperator && <MessageStatusTicks status={message.status} />}
             {isAI && (
-              <span className="bg-blue-500/10 text-blue-500 px-1 rounded font-bold text-[9px] tracking-wide">
-                AI
+              <span className="bg-purple-500/10 text-purple-600 px-1 rounded font-bold text-[9px] tracking-wide uppercase">
+                AI Agent
               </span>
             )}
           </div>
