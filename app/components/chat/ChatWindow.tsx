@@ -71,22 +71,35 @@ export default function ChatWindow({
 
   // Fallback to parsing structural snapshot fields populated during SSR or hydration
   if (!operatorName && session?.assignedOperatorId) {
-    const op = session.assignedOperatorId as unknown as PopulatedOperator
-    if (op && typeof op === 'object') {
-      if (
-        'firstName' in op &&
-        typeof op.firstName === 'string' &&
-        op.firstName.trim()
-      ) {
-        operatorName = op.firstName.trim()
-      }
-      if ('avatar' in op && typeof op.avatar === 'string') {
-        operatorAvatar = op.avatar
+    // 🎯 FIX: Check if the assigned ID string or field itself is marked explicitly as 'ai'
+    if (
+      typeof session.assignedOperatorId === 'string' &&
+      session.assignedOperatorId.toLowerCase() === 'ai'
+    ) {
+      operatorName = 'ai'
+    } else {
+      const op = session.assignedOperatorId as unknown as PopulatedOperator
+      if (op && typeof op === 'object') {
+        if (
+          'firstName' in op &&
+          typeof op.firstName === 'string' &&
+          op.firstName.trim()
+        ) {
+          operatorName = op.firstName.trim()
+        }
+        if ('avatar' in op && typeof op.avatar === 'string') {
+          operatorAvatar = op.avatar
+        }
       }
     }
   }
 
-  if (!operatorName || operatorName.toLowerCase() === 'operator') {
+  // 🎯 FIX: Allow 'ai' string to safely bypass standard human agent fallbacks
+  if (
+    !operatorName ||
+    (operatorName.toLowerCase() === 'operator' &&
+      operatorName.toLowerCase() !== 'ai')
+  ) {
     if (
       session?.assignedOperatorId ||
       session?.status === 'queued' ||
@@ -147,6 +160,8 @@ export default function ChatWindow({
     }) => {
       if (payload.actor === 'visitor') return
       setOperatorTyping(payload.isTyping)
+
+      // 🎯 FIX: Allow 'ai' to pass through cleanly if it identifies as the typing entity
       if (
         payload.senderName &&
         payload.senderName.toLowerCase() !== 'operator'
@@ -160,7 +175,13 @@ export default function ChatWindow({
       name: string
       avatar?: string
     }) => {
-      const cleanName = payload.name?.trim() || 'Support Agent'
+      // 🎯 FIX: Keep 'ai' signature if payload specifies joining entity is artificial intelligence
+      const isPayloadAi =
+        payload.operatorId === 'ai' || payload.name?.toLowerCase() === 'ai'
+      const cleanName = isPayloadAi
+        ? 'ai'
+        : payload.name?.trim() || 'Support Agent'
+
       setSocketOperatorName(cleanName)
       if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
 
@@ -208,7 +229,6 @@ export default function ChatWindow({
         setOperatorTyping(false)
 
         // 🎯 FIX: Check if the modal was open or if the client is currently processing a local close request.
-        // If true, the visitor ended it, so we don't display the operator text notice.
         if (confirmModalOpen || isClosing) {
           const visitorNotice: ChatMessage = {
             _id: `sys-${Date.now()}`,
@@ -221,12 +241,20 @@ export default function ChatWindow({
           }
           setInitialMessages((prev) => [...prev, visitorNotice])
         } else {
+          // 🎯 FIX: Adjust terminal message text dynamically if closed by custom tenant AI configuration
+          const runtimeAiDisplayName =
+            widget.settings?.aiName?.trim() || 'AI Assistant'
+          const displayTerminalName =
+            operatorName?.toLowerCase() === 'ai'
+              ? runtimeAiDisplayName
+              : operatorName || 'the support agent'
+
           const terminalNotice: ChatMessage = {
             _id: `sys-${Date.now()}`,
             sessionId: payload.sessionId,
             senderType: 'ai',
             senderId: 'system',
-            messageText: `🚫 Conversation ended by ${operatorName || 'the support agent'}.`,
+            messageText: `🚫 Conversation ended by ${displayTerminalName}.`,
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
@@ -246,7 +274,14 @@ export default function ChatWindow({
       socket.off('operator_left', handleOperatorLeft)
       socket.off('session_status_changed', handleStatusChanged)
     }
-  }, [session?.sessionId, socket, setSession, operatorName, setInitialMessages])
+  }, [
+    session?.sessionId,
+    socket,
+    setSession,
+    operatorName,
+    setInitialMessages,
+    widget.settings?.aiName,
+  ])
 
   // Handle Chat Session Closure manually from Visitor Side
   async function handleEndChat() {
@@ -271,7 +306,7 @@ export default function ChatWindow({
             _id: `sys-${Date.now()}`,
             sessionId: session.sessionId,
             senderType: 'ai',
-            senderId: 'system', 
+            senderId: 'system',
             messageText: '🚫 You have ended this support session.',
             status: 'seen',
             createdAt: new Date().toISOString(),
