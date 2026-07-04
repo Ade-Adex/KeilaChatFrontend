@@ -159,6 +159,92 @@ const [showTransferDropdown, setShowTransferDropdown] = useState(false)
     })
   }, [session, currentSessionId, socket, user?._id])
 
+  // useEffect(() => {
+  //   const handleMessage = (message: ChatMessage) => {
+  //     const incomingSessionId =
+  //       message.sessionId &&
+  //       typeof message.sessionId === 'object' &&
+  //       '_id' in message.sessionId
+  //         ? (message.sessionId as { _id: string })._id
+  //         : (message.sessionId as string)
+
+  //     if (incomingSessionId !== currentSessionId) return
+
+  //     setMessages((prev) => {
+  //       const isDuplicate = prev.some((m) => m._id === message._id)
+  //       if (isDuplicate) return prev
+  //       return [...prev, message]
+  //     })
+
+  //     if (message.senderType === 'visitor') {
+  //       socket.emit('mark_session_seen', {
+  //         sessionId: currentSessionId,
+  //         clientType: 'operator',
+  //       })
+  //     }
+  //   }
+
+  //   const handleTyping = (payload: {
+  //     sessionId: string | { _id: string }
+  //     isTyping: boolean
+  //     actor?: string
+  //   }) => {
+  //     const incomingSessionId =
+  //       payload.sessionId &&
+  //       typeof payload.sessionId === 'object' &&
+  //       '_id' in payload.sessionId
+  //         ? (payload.sessionId as { _id: string })._id
+  //         : (payload.sessionId as string)
+
+  //     if (incomingSessionId !== currentSessionId) return
+  //     if (payload.actor === 'operator') return
+
+  //     setVisitorTyping(payload.isTyping)
+
+  //     if (typingTimeout.current) clearTimeout(typingTimeout.current)
+  //     if (payload.isTyping) {
+  //       typingTimeout.current = setTimeout(() => setVisitorTyping(false), 3500)
+  //     }
+  //   }
+
+  //   const handleStatusUpdated = (data: MessageStatusPayload) => {
+  //     if (data.sessionId !== currentSessionId) return
+  //     setMessages((prev) =>
+  //       prev.map((m) =>
+  //         m._id === data.messageId ? { ...m, status: data.status } : m,
+  //       ),
+  //     )
+  //   }
+
+  //   const handleMessagesSeen = (data: MessagesSeenPayload) => {
+  //     if (data.sessionId !== currentSessionId) return
+  //     if (data.reader === 'visitor') {
+  //       setMessages((prev) =>
+  //         prev.map((m) =>
+  //           m.senderType === 'operator' || m.senderType === 'ai'
+  //             ? { ...m, status: 'seen' }
+  //             : m,
+  //         ),
+  //       )
+  //     }
+  //   }
+
+  //   socket.on('new_message', handleMessage)
+  //   socket.on('user_typing', handleTyping)
+  //   socket.on('message_status_updated', handleStatusUpdated)
+  //   socket.on('messages_seen', handleMessagesSeen)
+
+  //   return () => {
+  //     socket.off('new_message', handleMessage)
+  //     socket.off('user_typing', handleTyping)
+  //     socket.off('message_status_updated', handleStatusUpdated)
+  //     socket.off('messages_seen', handleMessagesSeen)
+  //     if (typingTimeout.current) clearTimeout(typingTimeout.current)
+  //   }
+  // }, [currentSessionId, socket])
+
+
+
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
       const incomingSessionId =
@@ -229,19 +315,32 @@ const [showTransferDropdown, setShowTransferDropdown] = useState(false)
       }
     }
 
+    // 🎯 ADDED: Handle live status changes (like waiting -> active handoffs) inside an already active workspace view
+    const handleSessionStatusChanged = (payload: {
+      sessionId: string
+      status: string
+    }) => {
+      if (payload.sessionId !== currentSessionId) return
+
+      // Type-safe cast ensuring the incoming status matches the permitted union values of the schema
+      session.status = payload.status as OperatorConversation['status']
+    }
+
     socket.on('new_message', handleMessage)
     socket.on('user_typing', handleTyping)
     socket.on('message_status_updated', handleStatusUpdated)
     socket.on('messages_seen', handleMessagesSeen)
+    socket.on('session_status_changed', handleSessionStatusChanged)
 
     return () => {
       socket.off('new_message', handleMessage)
       socket.off('user_typing', handleTyping)
       socket.off('message_status_updated', handleStatusUpdated)
       socket.off('messages_seen', handleMessagesSeen)
+      socket.off('session_status_changed', handleSessionStatusChanged)
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
     }
-  }, [currentSessionId, socket])
+  }, [currentSessionId, socket, session])
 
   const handleTransferChat = (targetOperatorId: string) => {
     socket.emit('transfer_chat_session', {

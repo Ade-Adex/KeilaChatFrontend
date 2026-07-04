@@ -159,7 +159,25 @@ export default function ConversationSidebar({
       setActiveChats((prev) => updateList(prev, 'active'))
     }
 
-    // 🎯 FIXED: Catch closed sessions in real time and remove them instantly from active list arrays
+    // // 🎯 FIXED: Catch closed sessions in real time and remove them instantly from active list arrays
+    // const handleStatusUpdateChange = (payload: {
+    //   sessionId: string
+    //   status: string
+    // }) => {
+    //   if (payload.status === 'closed') {
+    //     const removeSession = (prev: OperatorConversation[]) =>
+    //       prev.filter((c) => c._id !== payload.sessionId)
+    //     setMyChats(removeSession)
+    //     setQueuedChats(removeSession)
+    //     setActiveChats(removeSession)
+
+    //     if (selectedConversation?._id === payload.sessionId) {
+    //       onSelect(null) // Resets workspace to clear screen layout
+    //     }
+    //   }
+    // }
+
+    // 🎯 FIXED: Catch status variations and force immediate array shifts across side panels
     const handleStatusUpdateChange = (payload: {
       sessionId: string
       status: string
@@ -172,8 +190,11 @@ export default function ConversationSidebar({
         setActiveChats(removeSession)
 
         if (selectedConversation?._id === payload.sessionId) {
-          onSelect(null) // Resets workspace to clear screen layout
+          onSelect(null)
         }
+      } else {
+        // If it shifts from waiting to active or queued, fire the refresh trigger hook to cleanly reload state definitions
+        onSelect(null) // Unselect current stale instance view models
       }
     }
 
