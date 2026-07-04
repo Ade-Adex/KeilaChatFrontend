@@ -32,25 +32,12 @@ export default function AddFaqModal({
       .filter((k) => k.length > 0)
 
     onAdd({
-      category,
-      question,
-      answer,
-
+      category: category.trim() || 'General',
+      question: question.trim(),
+      answer: answer.trim(),
       enabled: true,
-
       priority: 1,
-
       keywords,
-
-      intent: category.toLowerCase().replace(/\s+/g, '_'),
-
-      entities: [],
-
-      embedding: [],
-
-      embeddingModel: 'Xenova/all-MiniLM-L6-v2',
-
-      usageCount: 0,
     })
 
     setQuestion('')
