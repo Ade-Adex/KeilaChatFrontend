@@ -71,6 +71,7 @@ export interface WidgetConfig {
     welcomeMessage?: string
     offlineMessage?: string
     onlineStatus?: boolean
+    aiName?: string
   }
   widgetSettings?: WidgetSettingsConfig
 }

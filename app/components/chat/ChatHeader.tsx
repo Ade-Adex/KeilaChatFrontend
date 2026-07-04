@@ -1,4 +1,5 @@
 // /app/components/chat/ChatHeader.tsx
+
 'use client'
 
 import { useState } from 'react'
@@ -62,6 +63,10 @@ export default function ChatHeader({
   // 🎯 Theme Hook Integration
   const { resolvedTheme, setTheme } = useTheme()
 
+  // 🎯 Extract tenant corporate AI customization name settings or provide system default
+  const structuralAiName = widget.settings?.aiName?.trim() || 'AI Assistant'
+  const isAiSession = operatorName?.toLowerCase() === 'ai'
+
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
     if (
@@ -92,7 +97,6 @@ export default function ChatHeader({
       const result = await response.json()
 
       if (response.ok && (result.success || result.status === 'success')) {
-        // 🎯 Toast Notification for Successful Updates
         notifications.show({
           title: 'Profile Updated',
           message: getSuccessMessage(result),
@@ -115,7 +119,6 @@ export default function ChatHeader({
     } catch (err) {
       console.error('Failed to update visitor profile details:', err)
 
-      // 🎯 Toast Notification for Validation or Duplicate Email Conflicts
       notifications.show({
         title: 'Update Failed',
         message: getErrorMessage(err),
@@ -147,7 +150,6 @@ export default function ChatHeader({
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Integrated Theme Shift Toggle */}
           <button
             suppressHydrationWarning
             onClick={() =>
@@ -223,10 +225,13 @@ export default function ChatHeader({
         </div>
       </div>
 
-      {/* Operator Presence Header banner */}
+      {/* Operator/AI Presence Header banner */}
       {isSessionActive && operatorName && (
         <div className="flex items-center gap-2.5 border-b border-border bg-card px-4 py-2 text-xs text-foreground">
-          {operatorAvatar && operatorName !== 'Support Agent' ? (
+          {/* Render avatar conditionally if it's a real operator and not a generic string/AI */}
+          {operatorAvatar &&
+          operatorName !== 'Support Agent' &&
+          !isAiSession ? (
             <Image
               src={operatorAvatar}
               alt={operatorName}
@@ -243,7 +248,11 @@ export default function ChatHeader({
 
           <div className="flex flex-col min-w-0">
             <span>
-              {operatorName === 'Support Agent' ? (
+              {isAiSession ? (
+                <>
+                  Chatting with <strong>{structuralAiName}</strong>
+                </>
+              ) : operatorName === 'Support Agent' ? (
                 <>An agent is heading to your chat</>
               ) : (
                 <>
