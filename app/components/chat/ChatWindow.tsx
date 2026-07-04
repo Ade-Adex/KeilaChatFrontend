@@ -94,12 +94,17 @@ export default function ChatWindow({
     }
   }
 
-  // 🎯 FIX: Allow 'ai' string to safely bypass standard human agent fallbacks
-  if (
-    !operatorName ||
-    (operatorName.toLowerCase() === 'operator' &&
-      operatorName.toLowerCase() !== 'ai')
-  ) {
+  // 🎯 FIX: Detect if the active session state requires an AI agent header name
+  const isCurrentlyAi =
+    session?.assignedOperatorId === 'ai' ||
+    (typeof session?.assignedOperatorId === 'object' &&
+      session?.assignedOperatorId !== null &&
+      '_id' in session.assignedOperatorId &&
+      String(session.assignedOperatorId._id).toLowerCase() === 'ai')
+
+  if (isCurrentlyAi) {
+    operatorName = 'ai'
+  } else if (!operatorName || operatorName.toLowerCase() === 'operator') {
     if (
       session?.assignedOperatorId ||
       session?.status === 'queued' ||
