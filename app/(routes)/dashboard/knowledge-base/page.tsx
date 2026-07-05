@@ -44,9 +44,24 @@ export default function KnowledgeBasePage() {
   const [crawlModalOpened, crawlModalHandlers] = useDisclosure(false)
   const [selectedFaqIdx, setSelectedFaqIdx] = useState<number | null>(null)
 
+  // 1. Initial workspace discovery boot hook
   useEffect(() => {
     initializeWorkspace()
   }, [initializeWorkspace])
+
+  // 🎯 Polling loop checking for pending crawl requests
+  useEffect(() => {
+    const hasPending = crawledSources.some((s) => s.status === 'pending')
+    if (!hasPending) return
+
+    const interval = setInterval(() => {
+      // Force Zustand to bypass its internal initialization lock flag
+      useKnowledgeBaseStore.setState({ initialized: false })
+      initializeWorkspace()
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [crawledSources, initializeWorkspace])
 
   const handleOpenEditModal = (idx: number) => {
     setSelectedFaqIdx(idx)

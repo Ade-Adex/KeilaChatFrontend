@@ -2,12 +2,14 @@
 
 'use client'
 
-import { Card, Table, Text, Badge } from '@mantine/core'
+import { Card, Table, Text, Badge, Loader, Group, Tooltip } from '@mantine/core'
+import { FiCheckCircle, FiAlertCircle, FiClock } from 'react-icons/fi'
 
 interface ICrawledSource {
   url: string
   title?: string
   status: 'pending' | 'scraped' | 'failed'
+  errorMessage?: string // 🎯 Capture and display descriptive backend failure strings
   lastScrapedAt?: string | Date
 }
 
@@ -19,12 +21,6 @@ export default function CrawledSourcesList({
   sources,
 }: CrawledSourcesListProps) {
   if (!sources || sources.length === 0) return null
-
-  const getStatusColor = (status: string) => {
-    if (status === 'scraped') return 'green'
-    if (status === 'pending') return 'yellow'
-    return 'red'
-  }
 
   return (
     <Card
@@ -43,10 +39,10 @@ export default function CrawledSourcesList({
           <Table.Thead className="bg-sidebar/5">
             <Table.Tr>
               <Table.Th>Target URL Path</Table.Th>
-              <Table.Th style={{ width: 220 }}>
+              <Table.Th style={{ width: 240 }}>
                 Extracted Title Context
               </Table.Th>
-              <Table.Th style={{ width: 120 }}>Sync State</Table.Th>
+              <Table.Th style={{ width: 140 }}>Sync State</Table.Th>
               <Table.Th style={{ width: 180 }}>Last Index Evaluation</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -54,22 +50,48 @@ export default function CrawledSourcesList({
             {sources.map((source, idx) => (
               <Table.Tr
                 key={idx}
-                className="border-b border-border last:border-0"
+                className="border-b border-border last:border-0 hover:bg-sidebar/5 transition-colors"
               >
                 <Table.Td className="text-xs font-mono max-w-sm truncate text-foreground">
-                  {source.url}
+                  <a 
+                    href={source.url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-primary hover:underline transition-all"
+                  >
+                    {source.url}
+                  </a>
                 </Table.Td>
                 <Table.Td className="text-xs font-semibold max-w-xs truncate text-foreground">
-                  {source.title || 'Processing Meta Data...'}
+                  {source.status === 'failed' ? (
+                    <Text size="xs" c="red" className="italic font-normal">
+                      {source.errorMessage || 'Text extraction process failed.'}
+                    </Text>
+                  ) : (
+                    source.title || (source.status === 'pending' ? 'Parsing text DOM elements...' : 'Untitled Reference Page')
+                  )}
                 </Table.Td>
                 <Table.Td>
-                  <Badge
-                    variant="light"
-                    color={getStatusColor(source.status)}
-                    size="xs"
-                  >
-                    {source.status}
-                  </Badge>
+                  {source.status === 'scraped' && (
+                    <Badge variant="light" color="green" leftSection={<FiCheckCircle size={10} />} size="xs">
+                      Success
+                    </Badge>
+                  )}
+                  {source.status === 'pending' && (
+                    <Group gap={6}>
+                      <Loader size={10} color="yellow" type="dots" />
+                      <Badge variant="light" color="yellow" leftSection={<FiClock size={10} />} size="xs">
+                        Crawling
+                      </Badge>
+                    </Group>
+                  )}
+                  {source.status === 'failed' && (
+                    <Tooltip label={source.errorMessage || 'View trace configuration logs'}>
+                      <Badge variant="light" color="red" leftSection={<FiAlertCircle size={10} />} size="xs" className="cursor-help">
+                        Failed
+                      </Badge>
+                    </Tooltip>
+                  )}
                 </Table.Td>
                 <Table.Td className="text-xs text-dimmed">
                   {source.lastScrapedAt
