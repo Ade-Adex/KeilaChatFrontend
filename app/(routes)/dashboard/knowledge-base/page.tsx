@@ -30,6 +30,7 @@ export default function KnowledgeBasePage() {
     loading,
     syncing,
     initializeWorkspace,
+    refreshSources,
     setAiEnabled,
     setThreshold,
     addFaqItem,
@@ -49,19 +50,17 @@ export default function KnowledgeBasePage() {
     initializeWorkspace()
   }, [initializeWorkspace])
 
-  // 🎯 Polling loop checking for pending crawl requests
+  // 🎯 Clean, loop-free polling loop checking for pending crawl requests
   useEffect(() => {
     const hasPending = crawledSources.some((s) => s.status === 'pending')
     if (!hasPending) return
 
     const interval = setInterval(() => {
-      // Force Zustand to bypass its internal initialization lock flag
-      useKnowledgeBaseStore.setState({ initialized: false })
-      initializeWorkspace()
+      refreshSources()
     }, 4000)
 
     return () => clearInterval(interval)
-  }, [crawledSources, initializeWorkspace])
+  }, [crawledSources, refreshSources])
 
   const handleOpenEditModal = (idx: number) => {
     setSelectedFaqIdx(idx)
@@ -126,7 +125,7 @@ export default function KnowledgeBasePage() {
         opened={crawlModalOpened}
         onClose={crawlModalHandlers.close}
         propertyId={activePropertyId ?? ''}
-        onSuccess={initializeWorkspace}
+        onSuccess={refreshSources}
       />
 
       <KnowledgeEditor

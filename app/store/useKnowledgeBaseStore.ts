@@ -19,7 +19,7 @@ interface KnowledgeBaseState {
   isAiEnabled: boolean
   threshold: number // 0-100 representation
   faqs: IFaqItem[]
-  crawledSources: ICrawledSource[] 
+  crawledSources: ICrawledSource[]
   rawConfig: Partial<IKnowledgeBase>
   loading: boolean
   syncing: boolean
@@ -27,6 +27,7 @@ interface KnowledgeBaseState {
 
   // Actions
   initializeWorkspace: () => Promise<void>
+  refreshSources: () => Promise<void>
   setAiEnabled: (enabled: boolean) => Promise<void>
   setThreshold: (value: number) => Promise<void>
   addFaqItem: (item: IFaqItem) => Promise<void>
@@ -61,7 +62,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
 
       set({
         faqs: response.data.faqs ?? [],
-        crawledSources: response.data.crawledSources ?? [], // 🎯 Update sources on update
+        crawledSources: response.data.crawledSources ?? [],
         rawConfig: response.data,
       })
       return true
@@ -82,14 +83,13 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
     isAiEnabled: true,
     threshold: 80,
     faqs: [],
-    crawledSources: [], // 🎯 Initialized empty property fallback array
+    crawledSources: [],
     rawConfig: {},
     loading: false,
     syncing: false,
     initialized: false,
 
     initializeWorkspace: async () => {
-      // 🎯 Guard: Prevent duplicate fetch cycles across the application life cycle
       if (get().initialized) return
 
       set({ loading: true })
@@ -117,7 +117,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
               (kbRes.data.confidenceThreshold ?? 0.8) * 100,
             ),
             faqs: kbRes.data.faqs ?? [],
-            crawledSources: kbRes.data.crawledSources ?? [], // 🎯 Safely parse out crawled sources array context
+            crawledSources: kbRes.data.crawledSources ?? [],
             rawConfig: kbRes.data,
             initialized: true,
           })
@@ -130,6 +130,23 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
         })
       } finally {
         set({ loading: false })
+      }
+    },
+
+    refreshSources: async () => {
+      const { activePropertyId } = get()
+      if (!activePropertyId) return
+
+      try {
+        const kbRes = await getKnowledgeBaseSettings(activePropertyId)
+        if (kbRes?.success && kbRes.data) {
+          set({
+            crawledSources: kbRes.data.crawledSources ?? [],
+            rawConfig: kbRes.data,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to silently sync background crawl updates:', err)
       }
     },
 
