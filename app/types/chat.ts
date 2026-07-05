@@ -50,8 +50,9 @@ export interface WidgetTheme {
 }
 
 export interface WidgetSettingsConfig {
+  aiName?: string | undefined
   launcherPosition: string
-  launcherIcon?: string
+  launcherIcon?: string | undefined
   welcomeMessage: string
   offlineMessage: string
   showAgentPhoto: boolean

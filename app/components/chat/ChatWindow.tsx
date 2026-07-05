@@ -233,7 +233,6 @@ export default function ChatWindow({
         handledClosedSessionRef.current = payload.sessionId
         setOperatorTyping(false)
 
-        // 🎯 FIX: Check if the modal was open or if the client is currently processing a local close request.
         if (confirmModalOpen || isClosing) {
           const visitorNotice: ChatMessage = {
             _id: `sys-${Date.now()}`,
@@ -246,9 +245,12 @@ export default function ChatWindow({
           }
           setInitialMessages((prev) => [...prev, visitorNotice])
         } else {
-          // 🎯 FIX: Adjust terminal message text dynamically if closed by custom tenant AI configuration
+          // 🎯 FIX: Dynamically assign the custom tenant AI configuration name here as well
           const runtimeAiDisplayName =
-            widget.settings?.aiName?.trim() || 'AI Assistant'
+            widget.widgetSettings?.aiName?.trim() ||
+            widget.settings?.aiName?.trim() ||
+            'AI Assistant'
+
           const displayTerminalName =
             operatorName?.toLowerCase() === 'ai'
               ? runtimeAiDisplayName

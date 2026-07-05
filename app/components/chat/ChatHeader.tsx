@@ -63,8 +63,10 @@ export default function ChatHeader({
   // 🎯 Theme Hook Integration
   const { resolvedTheme, setTheme } = useTheme()
 
-  // 🎯 Extract tenant corporate AI customization name settings or provide system default
-  const structuralAiName = widget.settings?.aiName?.trim() || 'AI Assistant'
+ const structuralAiName =
+   widget.widgetSettings?.aiName?.trim() ||
+   widget.settings?.aiName?.trim() ||
+   'AI Assistant'
   const isAiSession = operatorName?.toLowerCase() === 'ai'
 
   async function handleUpdateProfile(e: React.FormEvent) {
