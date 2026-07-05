@@ -69,6 +69,12 @@ export default function ChatHeader({
    'AI Assistant'
   const isAiSession = operatorName?.toLowerCase() === 'ai'
 
+  console.log('ChatHeader Props:', {
+    widget,
+    structuralAiName,
+    isAiSession,
+  })
+
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
     if (
