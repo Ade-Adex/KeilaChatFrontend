@@ -1,15 +1,13 @@
 // /app/(routes)/admin/dashboard/knowledge-base/page.tsx
+
 'use client'
 
 import { useState, useEffect } from 'react'
 import { Button, Group, LoadingOverlay, Box } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { FiSave } from 'react-icons/fi'
-
-// Global Store Hook Integration
 import { useKnowledgeBaseStore } from '@/app/store/useKnowledgeBaseStore'
 
-// Atomic Modular Components
 import KnowledgeHeader from '@/app/components/dashboard/knowledge-base/KnowledgeHeader'
 import AiToggleCard from '@/app/components/dashboard/knowledge-base/AiToggleCard'
 import KnowledgeStats from '@/app/components/dashboard/knowledge-base/KnowledgeStats'
@@ -19,6 +17,8 @@ import EmptyKnowledge from '@/app/components/dashboard/knowledge-base/EmptyKnowl
 import AddFaqModal from '@/app/components/dashboard/knowledge-base/AddFaqModal'
 import KnowledgeEditor from '@/app/components/dashboard/knowledge-base/KnowledgeEditor'
 import TestPlayground from '@/app/components/dashboard/knowledge-base/TestPlayground'
+import CrawlUrlModal from '@/app/components/dashboard/knowledge-base/CrawlUrlModal'
+import CrawledSourcesList from '@/app/components/dashboard/knowledge-base/CrawledSourcesList'
 
 export default function KnowledgeBasePage() {
   const {
@@ -26,6 +26,7 @@ export default function KnowledgeBasePage() {
     isAiEnabled,
     threshold,
     faqs,
+    crawledSources = [],
     loading,
     syncing,
     initializeWorkspace,
@@ -37,13 +38,12 @@ export default function KnowledgeBasePage() {
     forceCloudSync,
   } = useKnowledgeBaseStore()
 
-  // Overlay management modal states
   const [addModalOpened, addModalHandlers] = useDisclosure(false)
   const [editModalOpened, editModalHandlers] = useDisclosure(false)
   const [playgroundOpened, playgroundHandlers] = useDisclosure(false)
+  const [crawlModalOpened, crawlModalHandlers] = useDisclosure(false)
   const [selectedFaqIdx, setSelectedFaqIdx] = useState<number | null>(null)
 
-  // 1. Initial workspace discovery boot hook
   useEffect(() => {
     initializeWorkspace()
   }, [initializeWorkspace])
@@ -60,6 +60,7 @@ export default function KnowledgeBasePage() {
       <KnowledgeHeader
         onOpenAddModal={addModalHandlers.open}
         onOpenPlayground={playgroundHandlers.open}
+        onOpenCrawlModal={crawlModalHandlers.open}
         faqCount={faqs.length}
       />
 
@@ -85,6 +86,8 @@ export default function KnowledgeBasePage() {
         <EmptyKnowledge onOpenAddModal={addModalHandlers.open} />
       )}
 
+      <CrawledSourcesList sources={crawledSources} />
+
       <Group justify="flex-end" mt="xl">
         <Button
           leftSection={<FiSave size={16} />}
@@ -102,6 +105,13 @@ export default function KnowledgeBasePage() {
         opened={addModalOpened}
         onClose={addModalHandlers.close}
         onAdd={addFaqItem}
+      />
+
+      <CrawlUrlModal
+        opened={crawlModalOpened}
+        onClose={crawlModalHandlers.close}
+        propertyId={activePropertyId ?? ''}
+        onSuccess={initializeWorkspace}
       />
 
       <KnowledgeEditor

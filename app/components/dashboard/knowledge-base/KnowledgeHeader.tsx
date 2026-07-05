@@ -3,17 +3,19 @@
 'use client'
 
 import { Title, Text, Button, Group } from '@mantine/core'
-import { FiPlus, FiTerminal } from 'react-icons/fi'
+import { FiPlus, FiTerminal, FiGlobe } from 'react-icons/fi'
 
 interface KnowledgeHeaderProps {
   onOpenAddModal: () => void
   onOpenPlayground: () => void
+  onOpenCrawlModal: () => void // 🎯 New Callback Prop
   faqCount: number
 }
 
 export default function KnowledgeHeader({
   onOpenAddModal,
   onOpenPlayground,
+  onOpenCrawlModal,
   faqCount,
 }: KnowledgeHeaderProps) {
   return (
@@ -36,6 +38,13 @@ export default function KnowledgeHeader({
           disabled={faqCount === 0}
         >
           Test Playground
+        </Button>
+        <Button
+          leftSection={<FiGlobe size={16} />}
+          variant="outline"
+          onClick={onOpenCrawlModal}
+        >
+          Crawl Website Urls
         </Button>
         <Button
           leftSection={<FiPlus size={16} />}

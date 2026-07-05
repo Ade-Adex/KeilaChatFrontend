@@ -54,3 +54,22 @@ export function testPlaygroundQuery(propertyId: string, message: string) {
     body: JSON.stringify({ message }),
   })
 }
+
+
+
+/**
+ * Dispatch an array of web page target links to the background crawler worker engine
+ */
+export function crawlWebsiteUrls(propertyId: string, urls: string[]) {
+  return apiClient<{ success: boolean; message: string }>(
+    `/api/v1/knowledge-base/crawl`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-property-id': propertyId,
+      },
+      body: JSON.stringify({ urls }),
+    },
+  )
+}

@@ -2,7 +2,11 @@
 
 import { create } from 'zustand'
 import { notifications } from '@mantine/notifications'
-import type { IFaqItem, IKnowledgeBase } from '@/app/types/knowledgeBase'
+import type {
+  IFaqItem,
+  IKnowledgeBase,
+  ICrawledSource,
+} from '@/app/types/knowledgeBase'
 import { getMyProperties } from '@/app/lib/api/chat.api'
 import {
   getKnowledgeBaseSettings,
@@ -15,6 +19,7 @@ interface KnowledgeBaseState {
   isAiEnabled: boolean
   threshold: number // 0-100 representation
   faqs: IFaqItem[]
+  crawledSources: ICrawledSource[] 
   rawConfig: Partial<IKnowledgeBase>
   loading: boolean
   syncing: boolean
@@ -56,6 +61,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
 
       set({
         faqs: response.data.faqs ?? [],
+        crawledSources: response.data.crawledSources ?? [], // 🎯 Update sources on update
         rawConfig: response.data,
       })
       return true
@@ -76,6 +82,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
     isAiEnabled: true,
     threshold: 80,
     faqs: [],
+    crawledSources: [], // 🎯 Initialized empty property fallback array
     rawConfig: {},
     loading: false,
     syncing: false,
@@ -110,6 +117,7 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
               (kbRes.data.confidenceThreshold ?? 0.8) * 100,
             ),
             faqs: kbRes.data.faqs ?? [],
+            crawledSources: kbRes.data.crawledSources ?? [], // 🎯 Safely parse out crawled sources array context
             rawConfig: kbRes.data,
             initialized: true,
           })
@@ -137,7 +145,6 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
 
     addFaqItem: async (newItem: IFaqItem) => {
       const freshFaqs = [...get().faqs, newItem]
-      // Pessimistic UI update: Wait for backend approval
       const success = await persistState(
         freshFaqs,
         get().isAiEnabled,
