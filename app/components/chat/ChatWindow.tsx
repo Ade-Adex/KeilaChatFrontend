@@ -65,51 +65,54 @@ export default function ChatWindow({
 
   // 🎯 Resolve the base channel fallback name dynamically from the widget setup
   const platformFallbackName = widget.name?.trim() || 'Support Agent'
-let operatorName = socketOperatorName
-let operatorAvatar = socketOperatorAvatar
 
-// 1. Detect if the active session structural state explicitly targets an AI agent
-const isCurrentlyAi =
-  session?.assignedOperatorId === 'ai' ||
-  (typeof session?.assignedOperatorId === 'object' &&
-    session?.assignedOperatorId !== null &&
-    '_id' in session.assignedOperatorId &&
-    String(session.assignedOperatorId._id).toLowerCase() === 'ai')
+  let operatorName = socketOperatorName
+  let operatorAvatar = socketOperatorAvatar // 💡 Will be reassigned below
 
-// 2. Parse out human operator snapshots ONLY if it's not structural AI
-if (isCurrentlyAi) {
-  operatorName = 'ai'
-} else if (!operatorName && session?.assignedOperatorId) {
-  const op = session.assignedOperatorId as unknown as PopulatedOperator
-  if (op && typeof op === 'object') {
+  // 🎯 FIX: Detect if the active session state requires an AI agent header name
+  const isCurrentlyAi =
+    session?.assignedOperatorId === 'ai' ||
+    (!session?.assignedOperatorId &&
+      session?.status !== 'queued' &&
+      session?.status !== 'waiting') ||
+    (typeof session?.assignedOperatorId === 'object' &&
+      session?.assignedOperatorId !== null &&
+      '_id' in session.assignedOperatorId &&
+      String(session.assignedOperatorId._id).toLowerCase() === 'ai')
+
+  // 🎯 RE-ADDED: Safely extract human avatar properties when not dealing with an AI session
+  if (isCurrentlyAi) {
+    operatorName = 'ai'
+  } else if (!operatorName && session?.assignedOperatorId) {
+    const op = session.assignedOperatorId as unknown as PopulatedOperator
+    if (op && typeof op === 'object') {
+      if (
+        'firstName' in op &&
+        typeof op.firstName === 'string' &&
+        op.firstName.trim()
+      ) {
+        operatorName = op.firstName.trim()
+      }
+      if ('avatar' in op && typeof op.avatar === 'string') {
+        operatorAvatar = op.avatar // ✅ Reassignment clears the linter rule block!
+      }
+    }
+  }
+
+  // 3. Apply baseline layout string fallbacks strictly
+  if (isCurrentlyAi || operatorName?.toLowerCase() === 'ai') {
+    operatorName = 'ai'
+  } else if (!operatorName || operatorName.toLowerCase() === 'operator') {
     if (
-      'firstName' in op &&
-      typeof op.firstName === 'string' &&
-      op.firstName.trim()
+      session?.assignedOperatorId ||
+      session?.status === 'queued' ||
+      session?.status === 'waiting'
     ) {
-      operatorName = op.firstName.trim()
-    }
-    if ('avatar' in op && typeof op.avatar === 'string') {
-      operatorAvatar = op.avatar
+      operatorName = 'Support Agent'
+    } else {
+      operatorName = platformFallbackName
     }
   }
-}
-
-// 3. Apply baseline layout string fallbacks strictly
-if (isCurrentlyAi || operatorName?.toLowerCase() === 'ai') {
-  operatorName = 'ai'
-} else if (!operatorName || operatorName.toLowerCase() === 'operator') {
-  if (
-    session?.assignedOperatorId ||
-    session?.status === 'queued' ||
-    session?.status === 'waiting'
-  ) {
-    operatorName = 'Support Agent'
-  } else {
-    // If no session or routing is active yet, default to the widget/brand name
-    operatorName = platformFallbackName
-  }
-}
 
   async function initializeConversation(forceNew = false) {
     if (!forceNew) return

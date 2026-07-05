@@ -146,10 +146,23 @@ export default function ClientChatWrapper({
 
       if (incomingSessionId !== session.sessionId) return
 
-      if (payload.senderType === 'operator' && payload.senderId) {
+      // 🎯 FIX: Check if the incoming sender is an operator or explicitly an AI bot
+      if (
+        (payload.senderType === 'operator' || payload.senderType === 'ai') &&
+        payload.senderId
+      ) {
         setSession((prev): SafeSessionConfig | null => {
           if (!prev) return null
           if (!prev.assignedOperatorId) {
+            // If the message is dispatched by the AI system, preserve 'ai' identity routing signature
+            if (payload.senderType === 'ai' || payload.senderId === 'ai') {
+              return {
+                ...prev,
+                status: 'active',
+                assignedOperatorId: 'ai',
+              }
+            }
+
             const runtimeOperator: PopulatedOperator = {
               _id: payload.senderId,
               firstName: payload.senderName || 'Support Agent',
