@@ -73,7 +73,7 @@ export default function MessageBubble({ message }: Props) {
           max-w-[80%]
           rounded-2xl
           px-4
-          py-2.5
+          py-2
           text-sm
           shadow-sm
           flex flex-col gap-2
@@ -95,7 +95,7 @@ export default function MessageBubble({ message }: Props) {
                       src={url}
                       controls
                       preload="metadata"
-                      className="w-full h-8 outline-hidden rounded-md accent-blue-600"
+                      className="w-full h-6 outline-hidden rounded-md accent-blue-600"
                     />
                   </div>
                 )
@@ -140,7 +140,7 @@ export default function MessageBubble({ message }: Props) {
 
         {/* Render text string message alongside attachments if present */}
         {message.messageText && (
-          <span className="leading-relaxed break-words">
+          <span className="leading-relaxed wrap-break-words">
             {message.messageText}
           </span>
         )}
