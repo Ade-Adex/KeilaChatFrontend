@@ -28,27 +28,33 @@ export default function CrawlUrlModal({
     if (!urlInput.trim() || !propertyId) return
 
     const urls = urlInput
-      .split(/[\n,]+/)
+      .split(/[\n,;\s]+/)
       .map((url) => url.trim())
       .filter((url) => url.startsWith('http://') || url.startsWith('https://'))
 
     if (urls.length === 0) {
-      alert('Please enter at least one valid absolute URL containing http:// or https://')
+      alert(
+        'Please enter at least one valid absolute URL containing http:// or https://',
+      )
       return
     }
 
-    setSubmitting(true)
-    try {
-      await crawlWebsiteUrls(propertyId, urls)
-      setUrlInput('')
-      onSuccess()
-      onClose()
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown crawler runtime failure'
-      console.error('Failed to trigger background site crawler:', errorMessage)
-    } finally {
-      setSubmitting(false)
-    }
+   setSubmitting(true)
+   try {
+     await crawlWebsiteUrls(propertyId, urls)
+     setUrlInput('')
+     onClose()
+
+     setTimeout(() => {
+       onSuccess()
+     }, 100)
+   } catch (err) {
+     const errorMessage =
+       err instanceof Error ? err.message : 'Unknown crawler runtime failure'
+     console.error('Failed to trigger background site crawler:', errorMessage)
+   } finally {
+     setSubmitting(false)
+   }
   }
 
   return (
@@ -62,13 +68,13 @@ export default function CrawlUrlModal({
       <form onSubmit={handleSubmit}>
         <Stack gap="md">
           <Text size="xs" c="dimmed">
-            Provide absolute links down below. The extraction engine will
-            automatically pull plain contextual data structural sections,
-            stripping headers, footers and navigation sidebars cleanly.
+            Provide absolute links down below. You can separate multiple URLs by
+            hitting Enter, or using commas and semicolons.
           </Text>
           <Textarea
             label="Target Web Site URL Links"
-            placeholder="https://www.getpayboost.com; https://www.getpayboost.com/contact-us"
+            // 🎯 Updated placeholder to accurately match the supported split variants
+            placeholder="https://christbcogbomoso.org&#10;https://christbcogbomoso.org/about-us&#10;https://christbcogbomoso.org/contact"
             value={urlInput}
             onChange={(e) => setUrlInput(e.currentTarget.value)}
             rows={5}

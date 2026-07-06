@@ -11,6 +11,7 @@ import { getMyProperties } from '@/app/lib/api/chat.api'
 import {
   getKnowledgeBaseSettings,
   updateKnowledgeBaseSettings,
+  removeCrawledSource,
 } from '@/app/lib/api/knowledgeBase.api'
 import { getErrorMessage } from '@/app/lib/utils/error'
 
@@ -33,11 +34,11 @@ interface KnowledgeBaseState {
   addFaqItem: (item: IFaqItem) => Promise<void>
   saveEditItem: (idx: number, updatedItem: IFaqItem) => Promise<void>
   removeFaqItem: (idx: number) => Promise<void>
+  removeCrawledItem: (url: string) => Promise<void>
   forceCloudSync: () => Promise<void>
 }
 
 export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
-  // Shared internal syncing mechanism
   const persistState = async (
     updatedFaqs: IFaqItem[],
     nextAiEnabled: boolean,
@@ -207,6 +208,37 @@ export const useKnowledgeBaseStore = create<KnowledgeBaseState>((set, get) => {
           message: 'Removed from data clusters permanently.',
           color: 'orange',
         })
+      }
+    },
+
+    removeCrawledItem: async (url: string) => {
+      const { activePropertyId, crawledSources } = get()
+      if (!activePropertyId) return
+
+      try {
+        const freshSources = crawledSources.filter((s) => s.url !== url)
+        set({ crawledSources: freshSources })
+
+        const res = await removeCrawledSource(activePropertyId, url)
+        if (res?.success && res.data) {
+          set({
+            crawledSources: res.data.crawledSources ?? [],
+            rawConfig: res.data,
+          })
+          notifications.show({
+            title: 'Index Removed',
+            message:
+              'The website page source and all vector chunks have been wiped.',
+            color: 'orange',
+          })
+        }
+      } catch (err) {
+        notifications.show({
+          title: 'Deletion Error',
+          message: getErrorMessage(err),
+          color: 'red',
+        })
+        get().refreshSources()
       }
     },
 

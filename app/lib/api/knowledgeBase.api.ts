@@ -73,3 +73,22 @@ export function crawlWebsiteUrls(propertyId: string, urls: string[]) {
     },
   )
 }
+
+
+
+/**
+ * Remove a specific crawled website page and its structural vector embedding chunks from records
+ */
+export function removeCrawledSource(propertyId: string, url: string) {
+  return apiClient<{ success: boolean; message: string; data: IKnowledgeBase }>(
+    `/api/v1/knowledge-base/sources/delete`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json', 
+        'x-property-id': propertyId,
+      },
+      body: JSON.stringify({ url }),
+    },
+  )
+}

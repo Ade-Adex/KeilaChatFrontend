@@ -36,6 +36,7 @@ export default function KnowledgeBasePage() {
     addFaqItem,
     saveEditItem,
     removeFaqItem,
+    removeCrawledItem,
     forceCloudSync,
   } = useKnowledgeBaseStore()
 
@@ -45,12 +46,10 @@ export default function KnowledgeBasePage() {
   const [crawlModalOpened, crawlModalHandlers] = useDisclosure(false)
   const [selectedFaqIdx, setSelectedFaqIdx] = useState<number | null>(null)
 
-  // 1. Initial workspace discovery boot hook
   useEffect(() => {
     initializeWorkspace()
   }, [initializeWorkspace])
 
-  // 🎯 Clean, loop-free polling loop checking for pending crawl requests
   useEffect(() => {
     const hasPending = crawledSources.some((s) => s.status === 'pending')
     if (!hasPending) return
@@ -100,7 +99,10 @@ export default function KnowledgeBasePage() {
         <EmptyKnowledge onOpenAddModal={addModalHandlers.open} />
       )}
 
-      <CrawledSourcesList sources={crawledSources} />
+      <CrawledSourcesList
+        sources={crawledSources}
+        onRemoveItem={removeCrawledItem}
+      />
 
       <Group justify="flex-end" mt="xl">
         <Button
@@ -125,7 +127,15 @@ export default function KnowledgeBasePage() {
         opened={crawlModalOpened}
         onClose={crawlModalHandlers.close}
         propertyId={activePropertyId ?? ''}
-        onSuccess={refreshSources}
+        onSuccess={() => {
+          refreshSources()
+          setTimeout(() => {
+            const element = document.getElementById('crawled-sources-section')
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }, 350)
+        }}
       />
 
       <KnowledgeEditor
