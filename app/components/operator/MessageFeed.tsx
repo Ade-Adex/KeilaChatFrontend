@@ -183,11 +183,11 @@ export default function MessageFeed({
           <div key={dayKey} className="flex flex-col gap-3.5">
             {/* 🎯 STEP 2: Render Industry Standard Day Separator Divider line */}
             <div className="flex items-center my-6 select-none">
-              <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border/70 to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-transparent via-border/70 to-transparent" />
               <span className="mx-4 text-[10px] font-extrabold tracking-wider text-muted-foreground/80 uppercase bg-muted px-3 py-1 rounded-full border border-border shadow-xs">
                 {dayKey}
               </span>
-              <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border/70 to-transparent" />
+              <div className="flex-1 h-px bg-linear-to-r from-transparent via-border/70 to-transparent" />
             </div>
 
             {/* Render message bubbles packed inside this timeframe bucket */}
@@ -203,11 +203,11 @@ export default function MessageFeed({
                     key={message._id}
                     className="flex items-center my-2 w-full select-none"
                   >
-                    <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+                    <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
                     <span className="mx-4 text-[11px] font-semibold tracking-wide text-muted-foreground bg-muted px-3 py-1 rounded-full border border-border shadow-xs animate-in scale-in-95 duration-200">
                       🔄 {message.messageText}
                     </span>
-                    <div className="flex-1 h-[1px] bg-linear-to-r from-transparent via-border to-transparent" />
+                    <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
                   </div>
                 )
               }

@@ -162,16 +162,20 @@ export interface ChatMessage {
     | 'event'
     | 'note'
     | 'ai_suggestion'
+    | 'media'
 
   status: 'sent' | 'delivered' | 'seen' | 'failed'
 
   isFromAI: boolean
 
+  media?: string[]
+
+  attachments?: ChatAttachment[]
+  
   createdAt: string
 
   updatedAt?: string
 
-  attachments?: ChatAttachment[]
 }
 
 export type OperatorMessage = ChatMessage

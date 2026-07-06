@@ -104,9 +104,11 @@ export interface SendOperatorMessageRequest {
 
   messageText: string
 
-  messageType: 'text'
+  messageType: 'text' | 'media'
 
   isFromAI: false
+
+  media?: string[]
 }
 
 export interface SendOperatorMessageResponse {

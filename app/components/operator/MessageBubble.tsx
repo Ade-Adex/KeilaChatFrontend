@@ -18,7 +18,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
   const isAI = message.senderType === 'ai'
   const isSystem = message.senderType === 'system'
 
-  // 🎯 FIX: Group AI and Operator together on the right side workspace stream context layout
   const alignRight = isOperator || isAI
 
   const formattedTime = message.createdAt
@@ -75,24 +74,32 @@ function MessageBubble({ message }: MessageBubbleProps) {
             {message.attachments && message.attachments.length > 0 && (
               <div className="space-y-2 mt-2">
                 {message.attachments.map((attachment, index) => {
-                  if (attachment.fileType.startsWith('image/')) {
+                  if (attachment.fileType?.startsWith('image/')) {
+                    const isGif = attachment.fileUrl
+                      .toLowerCase()
+                      .split('?')[0]
+                      .endsWith('.gif')
+
                     return (
-                      <div
+                      <a
                         key={index}
-                        className="overflow-hidden rounded-lg border border-border/40 shadow-sm bg-background/20 max-w-xs"
+                        href={attachment.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="overflow-hidden rounded-lg border border-border/40 shadow-sm bg-background/20 block hover:opacity-90 transition-opacity relative w-64 h-44"
                       >
                         <Image
                           src={attachment.fileUrl}
-                          alt={attachment.fileName}
-                          width={300}
-                          height={200}
-                          className="object-cover max-w-full h-auto hover:scale-[1.02] transition-transform duration-200"
-                          unoptimized
+                          alt={attachment.fileName || 'Image attachment'}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 256px"
+                          className="object-cover rounded-lg hover:scale-[1.02] transition-transform duration-200"
+                          unoptimized={isGif}
                         />
-                      </div>
+                      </a>
                     )
                   }
-                  if (attachment.fileType.startsWith('video/')) {
+                  if (attachment.fileType?.startsWith('video/')) {
                     return (
                       <div key={index} className="mt-1.5 max-w-xs">
                         <video
@@ -104,7 +111,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
                       </div>
                     )
                   }
-                  if (attachment.fileType.startsWith('audio/')) {
+                  if (attachment.fileType?.startsWith('audio/')) {
                     return (
                       <div
                         key={index}
@@ -114,8 +121,14 @@ function MessageBubble({ message }: MessageBubbleProps) {
                           className="text-muted-foreground/80"
                           size={12}
                         />
-                        <audio controls className="h-7 max-w-full">
-                          <source src={attachment.fileUrl} />
+                        <audio
+                          controls
+                          className="h-7 max-w-full focus:outline-hidden"
+                        >
+                          <source
+                            src={attachment.fileUrl}
+                            type={attachment.fileType}
+                          />
                         </audio>
                       </div>
                     )
