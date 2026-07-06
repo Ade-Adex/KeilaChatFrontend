@@ -5,7 +5,7 @@
 import Image from 'next/image'
 import { memo } from 'react'
 import { FaRobot, FaUser, FaUserTie, FaFile, FaMusic } from 'react-icons/fa'
-import type { ChatMessage } from '@/app/types/dashboard'
+import type { ChatMessage, ChatAttachment } from '@/app/types/dashboard'
 import MessageStatusTicks from '@/app/components/MessageStatusTicks'
 
 export interface MessageBubbleProps {
@@ -36,6 +36,24 @@ function MessageBubble({ message }: MessageBubbleProps) {
       </div>
     )
   }
+
+  // 🎯 FIX: Strictly typed fallback loop using the unified ChatAttachment schema interface
+  const fallbackAttachments: ChatAttachment[] =
+    message.attachments && message.attachments.length > 0
+      ? message.attachments
+      : (message.media || []).map((url: string): ChatAttachment => {
+          let fileType = 'application/octet-stream'
+          if (url.match(/\.(jpeg|jpg|gif|png|webp)/i)) fileType = 'image/jpeg'
+          else if (url.match(/\.(webm|ogg|mp4|mp3|wav|aac|m4a)/i))
+            fileType = 'audio/webm'
+          else if (url.match(/\.(mov|mkv|wmv)/i)) fileType = 'video/mp4'
+
+          return {
+            fileUrl: url,
+            fileName: url.substring(url.lastIndexOf('/') + 1) || 'attachment',
+            fileType,
+          }
+        })
 
   return (
     <div
@@ -71,84 +89,86 @@ function MessageBubble({ message }: MessageBubbleProps) {
               </p>
             )}
 
-            {message.attachments && message.attachments.length > 0 && (
+            {fallbackAttachments.length > 0 && (
               <div className="space-y-2 mt-2">
-                {message.attachments.map((attachment, index) => {
-                  if (attachment.fileType?.startsWith('image/')) {
-                    const isGif = attachment.fileUrl
-                      .toLowerCase()
-                      .split('?')[0]
-                      .endsWith('.gif')
+                {fallbackAttachments.map(
+                  (attachment: ChatAttachment, index: number) => {
+                    if (attachment.fileType?.startsWith('image/')) {
+                      const isGif = attachment.fileUrl
+                        .toLowerCase()
+                        .split('?')[0]
+                        .endsWith('.gif')
 
+                      return (
+                        <a
+                          key={index}
+                          href={attachment.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="overflow-hidden rounded-lg border border-border/40 shadow-sm bg-background/20 block hover:opacity-90 transition-opacity relative w-64 h-44"
+                        >
+                          <Image
+                            src={attachment.fileUrl}
+                            alt={attachment.fileName || 'Image attachment'}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 256px"
+                            className="object-cover rounded-lg hover:scale-[1.02] transition-transform duration-200"
+                            unoptimized={isGif}
+                          />
+                        </a>
+                      )
+                    }
+                    if (attachment.fileType?.startsWith('video/')) {
+                      return (
+                        <div key={index} className="mt-1.5 max-w-xs">
+                          <video
+                            controls
+                            className="max-w-full rounded-lg border border-border/40 shadow-sm"
+                          >
+                            <source src={attachment.fileUrl} />
+                          </video>
+                        </div>
+                      )
+                    }
+                    if (attachment.fileType?.startsWith('audio/')) {
+                      return (
+                        <div
+                          key={index}
+                          className="mt-1.5 flex items-center gap-2 bg-background/40 p-1.5 rounded-lg border border-border/30"
+                        >
+                          <FaMusic
+                            className="text-muted-foreground/80"
+                            size={12}
+                          />
+                          <audio
+                            controls
+                            className="h-7 max-w-full focus:outline-none"
+                          >
+                            <source
+                              src={attachment.fileUrl}
+                              type={attachment.fileType}
+                            />
+                          </audio>
+                        </div>
+                      )
+                    }
                     return (
                       <a
                         key={index}
                         href={attachment.fileUrl}
                         target="_blank"
-                        rel="noopener noreferrer"
-                        className="overflow-hidden rounded-lg border border-border/40 shadow-sm bg-background/20 block hover:opacity-90 transition-opacity relative w-64 h-44"
+                        rel="noreferrer"
+                        className="mt-1.5 inline-flex items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-[11px] font-medium text-foreground hover:bg-muted transition-colors max-w-xs truncate"
                       >
-                        <Image
-                          src={attachment.fileUrl}
-                          alt={attachment.fileName || 'Image attachment'}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 256px"
-                          className="object-cover rounded-lg hover:scale-[1.02] transition-transform duration-200"
-                          unoptimized={isGif}
-                        />
-                      </a>
-                    )
-                  }
-                  if (attachment.fileType?.startsWith('video/')) {
-                    return (
-                      <div key={index} className="mt-1.5 max-w-xs">
-                        <video
-                          controls
-                          className="max-w-full rounded-lg border border-border/40 shadow-sm"
-                        >
-                          <source src={attachment.fileUrl} />
-                        </video>
-                      </div>
-                    )
-                  }
-                  if (attachment.fileType?.startsWith('audio/')) {
-                    return (
-                      <div
-                        key={index}
-                        className="mt-1.5 flex items-center gap-2 bg-background/40 p-1.5 rounded-lg border border-border/30"
-                      >
-                        <FaMusic
-                          className="text-muted-foreground/80"
+                        <FaFile
+                          className="text-muted-foreground shrink-0"
                           size={12}
                         />
-                        <audio
-                          controls
-                          className="h-7 max-w-full focus:outline-hidden"
-                        >
-                          <source
-                            src={attachment.fileUrl}
-                            type={attachment.fileType}
-                          />
-                        </audio>
-                      </div>
+                        <span className="truncate">{attachment.fileName}</span>
+                      </a>
                     )
-                  }
-                  return (
-                    <a
-                      key={index}
-                      href={attachment.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1.5 inline-flex items-center gap-2 rounded-lg border border-border bg-background/50 px-3 py-2 text-[11px] font-medium text-foreground hover:bg-muted transition-colors max-w-xs truncate"
-                    >
-                      <FaFile
-                        className="text-muted-foreground shrink-0"
-                        size={12}
-                      />
-                      <span className="truncate">{attachment.fileName}</span>
-                    </a>
-                  )
-                })}
+                  },
+                )}
               </div>
             )}
           </div>
