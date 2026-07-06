@@ -219,7 +219,7 @@ export default function ChatInput({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
+          className="flex h-11 w-11 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground"
         >
           <FiPaperclip size={20} />
         </button>
@@ -228,7 +228,7 @@ export default function ChatInput({
         <button
           type="button"
           onClick={() => setShowEmojiPicker((prev) => !prev)}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
+          className="flex h-11 w-11 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground"
         >
           <FiSmile size={20} />
         </button>
@@ -261,10 +261,10 @@ export default function ChatInput({
         <button
           type="button"
           onClick={isRecording ? stopRecording : startRecording}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
+          className={`flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
             isRecording
               ? 'bg-red-600 text-white animate-pulse'
-              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              : 'text-foreground hover:bg-accent hover:text-foreground'
           }`}
         >
           {isRecording ? <FiSquare size={18} /> : <FiMic size={20} />}
@@ -275,9 +275,9 @@ export default function ChatInput({
           type="button"
           disabled={!canSend}
           onClick={triggerSend}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <FiSend size={18} />
+          <FiSend size={16} />
         </button>
       </div>
 
