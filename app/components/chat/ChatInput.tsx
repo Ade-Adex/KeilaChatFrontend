@@ -324,7 +324,7 @@ export default function ChatInput({
           onClick={triggerSend}
           className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <FiSend size={15} className="sm:w-[16px] sm:h-[16px]" />
+          <FiSend size={15} className="sm:w-4 sm:h-4" />
         </button>
       </div>
 
