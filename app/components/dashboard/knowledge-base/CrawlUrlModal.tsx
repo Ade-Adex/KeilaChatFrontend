@@ -68,7 +68,7 @@ export default function CrawlUrlModal({
           </Text>
           <Textarea
             label="Target Web Site URL Links"
-            placeholder="https://christbcogbomoso.org/about&#10;https://christbcogbomoso.org/contact"
+            placeholder="https://www.getpayboost.com; https://www.getpayboost.com/contact-us"
             value={urlInput}
             onChange={(e) => setUrlInput(e.currentTarget.value)}
             rows={5}
