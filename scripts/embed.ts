@@ -82,15 +82,16 @@
     const iframe = document.createElement('iframe')
     iframe.title = 'Keila Chat Widget'
     iframe.loading = 'lazy'
-    iframe.allow = 'clipboard-read; clipboard-write; autoplay'
+    iframe.allow = 'clipboard-read; clipboard-write; autoplay; microphone'
     iframe.referrerPolicy = 'strict-origin-when-cross-origin'
 
-    iframe.sandbox.add(
-      'allow-scripts',
-      'allow-same-origin',
-      'allow-forms',
-      'allow-popups',
-    )
+   iframe.sandbox.add(
+     'allow-scripts',
+     'allow-same-origin',
+     'allow-forms',
+     'allow-popups',
+     'allow-modals',
+   )
 
     const params = new URLSearchParams({
       widgetId,
