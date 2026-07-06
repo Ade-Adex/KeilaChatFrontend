@@ -9,7 +9,7 @@ interface ICrawledSource {
   url: string
   title?: string
   status: 'pending' | 'scraped' | 'failed'
-  errorMessage?: string // 🎯 Capture and display descriptive backend failure strings
+  errorMessage?: string 
   lastScrapedAt?: string | Date
 }
 
