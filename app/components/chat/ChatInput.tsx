@@ -115,7 +115,7 @@ export default function ChatInput({
             items-center
             justify-center
             rounded-full
-            text-muted-foreground
+            text-foreground
             transition
             hover:bg-accent
             hover:text-foreground
