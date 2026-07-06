@@ -286,6 +286,9 @@ export default function ChatWindow({
     operatorName,
     setInitialMessages,
     widget.settings?.aiName,
+    widget.widgetSettings?.aiName,
+    confirmModalOpen,
+    isClosing,
   ])
 
   // Handle Chat Session Closure manually from Visitor Side
@@ -367,7 +370,7 @@ export default function ChatWindow({
         )}
       </div>
 
-      {!loading && session && (
+      {/* {!loading && session && (
         <ChatInput
           value={message}
           disabled={session.status === 'closed'}
@@ -390,6 +393,74 @@ export default function ChatWindow({
               senderId: session.visitorId,
               messageText: message.trim(),
             })
+            setMessage('')
+          }}
+        />
+      )} */}
+
+      {!loading && session && (
+        <ChatInput
+          value={message}
+          disabled={session.status === 'closed'}
+          onChange={(val) => {
+            setMessage(val)
+            if (socket.connected && session) {
+              socket.emit('typing', {
+                sessionId: session.sessionId,
+                senderName: 'Visitor',
+                isTyping: val.length > 0,
+              })
+            }
+          }}
+          // 🚀 UPDATED: Capture and handle the array of files
+          onSend={async (attachments) => {
+            if (!message.trim() && (!attachments || attachments.length === 0))
+              return
+
+            const uploadedMediaUrls: string[] = []
+
+            // 1. If there are attachments, upload them to your API first
+            if (attachments && attachments.length > 0) {
+              try {
+                for (const item of attachments) {
+                  const formData = new FormData()
+                  // Append the raw File or Blob binary
+                  formData.append('file', item.file)
+                  formData.append('type', item.type)
+                  formData.append('sessionId', session.sessionId)
+
+                  // Replace with your real upload endpoint
+                  const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
+                    {
+                      method: 'POST',
+                      body: formData,
+                      // Do not set Content-Type header manually when sending FormData;
+                      // the browser needs to insert its own multipart boundary string automatically.
+                    },
+                  )
+
+                  const result = await response.json()
+                  if (result.status === 'success' && result.url) {
+                    uploadedMediaUrls.push(result.url)
+                  }
+                }
+              } catch (error) {
+                console.error('[KeilaChat] Attachment upload failed:', error)
+                // Decide whether to block the text message from sending if attachment fails
+              }
+            }
+
+            // 2. Emit the finalized event payload over the real-time websocket
+            socket.emit('send_message', {
+              sessionId: session.sessionId,
+              propertyId: session.propertyId,
+              senderType: 'visitor',
+              senderId: session.visitorId,
+              messageText: message.trim(),
+              media: uploadedMediaUrls, // ✨ Sent along with text payload!
+            })
+
             setMessage('')
           }}
         />
