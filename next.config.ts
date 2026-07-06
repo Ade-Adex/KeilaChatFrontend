@@ -1,25 +1,6 @@
-// import type { NextConfig } from 'next'
-
-// const nextConfig: NextConfig = {
-//   images: {
-//     remotePatterns: [
-//       {
-//         protocol: 'https',
-//         hostname: 'res.cloudinary.com',
-//         pathname: '/**',
-//       },
-//     ],
-//   },
-// }
-
-// export default nextConfig
-
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /*
-   * Keep your existing Cloudinary configuration intact
-   */
   images: {
     remotePatterns: [
       {
