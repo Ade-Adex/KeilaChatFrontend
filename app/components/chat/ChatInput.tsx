@@ -1,4 +1,5 @@
 //  /app/components/chat/ChatInput.tsx
+
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
@@ -11,6 +12,7 @@ import {
   FiX,
 } from 'react-icons/fi'
 import EmojiPicker, { Theme, EmojiClickData } from 'emoji-picker-react'
+import Image from 'next/image'
 
 interface ChatInputProps {
   value: string
@@ -69,7 +71,6 @@ export default function ChatInput({
     inputRef.current?.focus()
   }
 
-  // --- Image Attachment Handler ---
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files) return
     const files = Array.from(e.target.files)
@@ -83,10 +84,8 @@ export default function ChatInput({
     setAttachments((prev) => [...prev, ...newAttachments])
   }
 
-  // --- Voice Recording Handlers ---
   async function startRecording() {
     try {
-      // 1. Request audio access with robust hardware configurations
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -95,16 +94,19 @@ export default function ChatInput({
         },
       })
 
-      // 2. Cross-browser MIME Type sniffing fallback suite
-      let options = {}
-      if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm' }
-      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-        options = { mimeType: 'audio/ogg' }
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        options = { mimeType: 'audio/mp4' }
-      } else if (MediaRecorder.isTypeSupported('audio/aac')) {
-        options = { mimeType: 'audio/aac' }
+      // 🎯 FIX: Explicitly fall back to undefined instead of {} so constructor doesn't crash
+      let options: MediaRecorderOptions | undefined = undefined
+
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' }
+        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+          options = { mimeType: 'audio/ogg' }
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options = { mimeType: 'audio/mp4' }
+        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+          options = { mimeType: 'audio/aac' }
+        }
       }
 
       const mediaRecorder = new MediaRecorder(stream, options)
@@ -118,21 +120,18 @@ export default function ChatInput({
       }
 
       mediaRecorder.onstop = () => {
-        // Fallback context type assignment based on matching sniffing options chosen above
         const recordedMimeType = mediaRecorder.mimeType || 'audio/wav'
         const audioBlob = new Blob(audioChunksRef.current, {
           type: recordedMimeType,
         })
 
-        // Skip adding if the recording is empty or corrupted
         if (audioBlob.size > 0) {
-          // Create an actual File object from Blob so backend parsers handle names cleanly
+          const extension =
+            recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'
           const audioFile = new File(
             [audioBlob],
-            `voice-note-${Date.now()}.${recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'}`,
-            {
-              type: recordedMimeType,
-            },
+            `voice-note-${Date.now()}.${extension}`,
+            { type: recordedMimeType },
           )
 
           setAttachments((prev) => [
@@ -145,11 +144,9 @@ export default function ChatInput({
           ])
         }
 
-        // Clean up hardware resources instantly
         stream.getTracks().forEach((track) => track.stop())
       }
 
-      // Collect data fragments continuously every 250ms for performance stability
       mediaRecorder.start(250)
       setIsRecording(true)
       setRecordingDuration(0)
@@ -161,7 +158,7 @@ export default function ChatInput({
     } catch (err) {
       console.error('[KeilaChat] Advanced Microphone Access Failed:', err)
       alert(
-        'Could not access microphone. Please check your browser privacy permissions.',
+        'Could not access microphone. Ensure you are on HTTPS or localhost and have allowed mic permissions.',
       )
       setIsRecording(false)
     }
@@ -191,7 +188,6 @@ export default function ChatInput({
 
   function triggerSend() {
     if (!canSend) return
-    // Forward text and raw binaries up to parent component pipeline
     onSend(attachments.map((a) => ({ type: a.type, file: a.file })))
     setAttachments([])
     onChange('')
@@ -208,7 +204,6 @@ export default function ChatInput({
 
   return (
     <div className="relative border-t border-border bg-card p-3">
-      {/* Attachment Previews */}
       {attachments.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2 p-2 bg-background rounded-xl border border-border">
           {attachments.map((attachment, idx) => (
@@ -217,8 +212,7 @@ export default function ChatInput({
               className="relative group h-14 w-14 rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center"
             >
               {attachment.type === 'image' ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={attachment.previewUrl}
                   alt="preview"
                   className="h-full w-full object-cover"
@@ -240,7 +234,6 @@ export default function ChatInput({
         </div>
       )}
 
-      {/* Emoji Picker Panel */}
       {showEmojiPicker && (
         <div
           ref={pickerRef}
@@ -257,7 +250,6 @@ export default function ChatInput({
       )}
 
       <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-full min-w-0">
-        {/* Hidden File Input */}
         <input
           type="file"
           ref={fileInputRef}
@@ -267,7 +259,6 @@ export default function ChatInput({
           className="hidden"
         />
 
-        {/* Attachment Pin Trigger — Hidden on mobile while recording to maximize viewport space */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -278,7 +269,6 @@ export default function ChatInput({
           <FiPaperclip size={18} className="sm:w-[20px] sm:h-[20px]" />
         </button>
 
-        {/* Emoji Trigger — Hidden on mobile while recording */}
         <button
           type="button"
           onClick={() => setShowEmojiPicker((prev) => !prev)}
@@ -289,7 +279,6 @@ export default function ChatInput({
           <FiSmile size={18} className="sm:w-[20px] sm:h-[20px]" />
         </button>
 
-        {/* Input Text Field or Voice Recorder Metadata Overlay */}
         {isRecording ? (
           <div className="flex-1 min-w-0 flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-red-500 font-medium truncate">
             <span className="animate-pulse flex items-center gap-1.5 min-w-0 truncate">
@@ -313,7 +302,6 @@ export default function ChatInput({
           />
         )}
 
-        {/* Voice Recording Microphone Trigger */}
         <button
           type="button"
           onClick={isRecording ? stopRecording : startRecording}
@@ -330,17 +318,13 @@ export default function ChatInput({
           )}
         </button>
 
-        {/* Send Action Trigger */}
         <button
           type="button"
           disabled={!canSend}
           onClick={triggerSend}
           className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <FiSend
-            size={15}
-            className="sm:w-[16px] sm:h-[16px] translation-x-[0.5px]"
-          />
+          <FiSend size={15} className="sm:w-[16px] sm:h-[16px]" />
         </button>
       </div>
 
