@@ -204,7 +204,7 @@ export default function ChatInput({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-full min-w-0">
         {/* Hidden File Input */}
         <input
           type="file"
@@ -215,32 +215,36 @@ export default function ChatInput({
           className="hidden"
         />
 
-        {/* Attachment Pin Trigger */}
+        {/* Attachment Pin Trigger — Hidden on mobile while recording to maximize viewport space */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex h-11 w-11 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground"
+          className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground ${
+            isRecording ? 'hidden sm:flex' : 'flex'
+          }`}
         >
-          <FiPaperclip size={20} />
+          <FiPaperclip size={18} className="sm:w-[20px] sm:h-[20px]" />
         </button>
 
-        {/* Emoji Trigger */}
+        {/* Emoji Trigger — Hidden on mobile while recording */}
         <button
           type="button"
           onClick={() => setShowEmojiPicker((prev) => !prev)}
-          className="flex h-11 w-11 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground"
+          className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground ${
+            isRecording ? 'hidden sm:flex' : 'flex'
+          }`}
         >
-          <FiSmile size={20} />
+          <FiSmile size={18} className="sm:w-[20px] sm:h-[20px]" />
         </button>
 
         {/* Input Text Field or Voice Recorder Metadata Overlay */}
         {isRecording ? (
-          <div className="flex-1 flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-full px-4 py-2 text-sm text-red-500 font-medium">
-            <span className="animate-pulse flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-              Recording Voice...
+          <div className="flex-1 min-w-0 flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-red-500 font-medium truncate">
+            <span className="animate-pulse flex items-center gap-1.5 min-w-0 truncate">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
+              <span className="truncate">Recording...</span>
             </span>
-            <span>
+            <span className="shrink-0 font-mono pl-2">
               {Math.floor(recordingDuration / 60)}:
               {(recordingDuration % 60).toString().padStart(2, '0')}
             </span>
@@ -253,7 +257,7 @@ export default function ChatInput({
             placeholder="Type a message..."
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 rounded-full border border-border bg-background text-foreground px-4 py-2.5 text-sm outline-none transition focus:border-primary"
+            className="flex-1 min-w-0 rounded-full border border-border bg-background text-foreground px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm outline-none transition focus:border-primary placeholder:text-muted-foreground"
           />
         )}
 
@@ -261,13 +265,17 @@ export default function ChatInput({
         <button
           type="button"
           onClick={isRecording ? stopRecording : startRecording}
-          className={`flex h-11 w-11 items-center justify-center rounded-full transition cursor-pointer ${
+          className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full transition cursor-pointer ${
             isRecording
               ? 'bg-red-600 text-white animate-pulse'
               : 'text-foreground hover:bg-accent hover:text-foreground'
           }`}
         >
-          {isRecording ? <FiSquare size={18} /> : <FiMic size={20} />}
+          {isRecording ? (
+            <FiSquare size={16} className="sm:w-[18px] sm:h-[18px]" />
+          ) : (
+            <FiMic size={18} className="sm:w-[20px] sm:h-[20px]" />
+          )}
         </button>
 
         {/* Send Action Trigger */}
@@ -275,9 +283,12 @@ export default function ChatInput({
           type="button"
           disabled={!canSend}
           onClick={triggerSend}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <FiSend size={16} />
+          <FiSend
+            size={15}
+            className="sm:w-[16px] sm:h-[16px] translation-x-[0.5px]"
+          />
         </button>
       </div>
 
