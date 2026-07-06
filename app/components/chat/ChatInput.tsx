@@ -119,6 +119,7 @@ export default function ChatInput({
             transition
             hover:bg-accent
             hover:text-foreground
+            cursor-pointer
           "
         >
           <FiSmile size={20} />
