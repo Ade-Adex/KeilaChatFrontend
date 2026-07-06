@@ -74,7 +74,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
           className={`space-y-1 flex flex-col ${alignRight ? 'items-end' : 'items-start'}`}
         >
           <div
-            className={`rounded-2xl px-3.5 py-2.5 shadow-sm text-xs leading-relaxed transition-all
+            className={`rounded-2xl px-3 py-2 shadow-sm text-xs leading-relaxed transition-all
               ${
                 isOperator
                   ? 'bg-primary text-white rounded-tr-none'
