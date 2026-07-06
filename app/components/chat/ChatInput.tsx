@@ -86,46 +86,98 @@ export default function ChatInput({
   // --- Voice Recording Handlers ---
   async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
+      // 1. Request audio access with robust hardware configurations
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
+
+      // 2. Cross-browser MIME Type sniffing fallback suite
+      let options = {}
+      if (MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm' }
+      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+        options = { mimeType: 'audio/ogg' }
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        options = { mimeType: 'audio/mp4' }
+      } else if (MediaRecorder.isTypeSupported('audio/aac')) {
+        options = { mimeType: 'audio/aac' }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options)
       mediaRecorderRef.current = mediaRecorder
       audioChunksRef.current = []
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data)
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
       }
 
       mediaRecorder.onstop = () => {
+        // Fallback context type assignment based on matching sniffing options chosen above
+        const recordedMimeType = mediaRecorder.mimeType || 'audio/wav'
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: 'audio/webm',
+          type: recordedMimeType,
         })
-        setAttachments((prev) => [
-          ...prev,
-          {
-            type: 'audio',
-            file: audioBlob,
-            previewUrl: URL.createObjectURL(audioBlob),
-          },
-        ])
+
+        // Skip adding if the recording is empty or corrupted
+        if (audioBlob.size > 0) {
+          // Create an actual File object from Blob so backend parsers handle names cleanly
+          const audioFile = new File(
+            [audioBlob],
+            `voice-note-${Date.now()}.${recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'}`,
+            {
+              type: recordedMimeType,
+            },
+          )
+
+          setAttachments((prev) => [
+            ...prev,
+            {
+              type: 'audio',
+              file: audioFile,
+              previewUrl: URL.createObjectURL(audioBlob),
+            },
+          ])
+        }
+
+        // Clean up hardware resources instantly
         stream.getTracks().forEach((track) => track.stop())
       }
 
-      mediaRecorder.start()
+      // Collect data fragments continuously every 250ms for performance stability
+      mediaRecorder.start(250)
       setIsRecording(true)
       setRecordingDuration(0)
+
+      if (timerRef.current) clearInterval(timerRef.current)
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1)
       }, 1000)
     } catch (err) {
-      console.error('Failed to access microphone:', err)
+      console.error('[KeilaChat] Advanced Microphone Access Failed:', err)
+      alert(
+        'Could not access microphone. Please check your browser privacy permissions.',
+      )
+      setIsRecording(false)
     }
   }
 
   function stopRecording() {
-    if (mediaRecorderRef.current && isRecording) {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
       mediaRecorderRef.current.stop()
-      setIsRecording(false)
-      if (timerRef.current) clearInterval(timerRef.current)
+    }
+    setIsRecording(false)
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
     }
   }
 
