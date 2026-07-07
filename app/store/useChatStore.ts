@@ -23,6 +23,7 @@ interface ChatState {
   setInitialMessages: (
     messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[]),
   ) => void
+  addIncomingMessage: (message: ChatMessage) => Promise<void> // 🎯 Added clean pipeline
   setOperatorTyping: (typing: boolean) => void
   setSocketOperatorName: (name: string | undefined) => void
   setSocketOperatorAvatar: (avatar: string | undefined) => void
@@ -30,7 +31,6 @@ interface ChatState {
   // Cryptographic Key Handshaking Actions
   initiateE2EEHandshake: () => Promise<void>
   handleIncomingPublicKey: (receivedPublicJwk: JsonWebKey) => Promise<void>
-  decryptIncomingMessage: (message: ChatMessage) => Promise<ChatMessage>
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -51,6 +51,39 @@ export const useChatStore = create<ChatState>((set, get) => ({
       messages:
         typeof updater === 'function' ? updater(state.messages) : updater,
     })),
+
+  addIncomingMessage: async (message) => {
+    const { messages } = get()
+    // Skip duplicate entries
+    if (
+      messages.some(
+        (m) =>
+          m._id === message._id ||
+          (m.createdAt === message.createdAt &&
+            m.messageText === message.messageText),
+      )
+    )
+      return
+
+    const processedMsg = { ...message }
+
+    if (message.iv && message.messageText && !message.isDecrypted) {
+      try {
+        const decryptedText = await ChatEncryptionEngine.decryptMessage(
+          message.messageText,
+          message.iv,
+        )
+        processedMsg.messageText = decryptedText
+        processedMsg.isDecrypted = true
+      } catch (err) {
+        console.error('[E2EE] Live decryption failure:', err)
+      }
+    }
+
+    set((state) => ({
+      messages: [...state.messages, processedMsg],
+    }))
+  },
 
   setOperatorTyping: (typing) => set({ operatorTyping: typing }),
   setSocketOperatorName: (name) => set({ socketOperatorName: name }),
@@ -79,7 +112,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       await ChatEncryptionEngine.deriveSharedSecret(receivedPublicJwk)
       set({ publicKeyExchanged: true })
 
-      // Decrypt any back-buffered messages now that keys match
       const { messages } = get()
       const decryptedList = await Promise.all(
         messages.map(async (msg) => {
@@ -103,35 +135,5 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (err) {
       console.error('[E2EE] Secret derivation breakdown:', err)
     }
-  },
-
-  decryptIncomingMessage: async (message) => {
-    if (message.iv && message.messageText && !message.isDecrypted) {
-      const decryptedText = await ChatEncryptionEngine.decryptMessage(
-        message.messageText,
-        message.iv,
-      )
-      const decryptedMsg = {
-        ...message,
-        messageText: decryptedText,
-        isDecrypted: true,
-      }
-
-      // 🎯 FIX: Explicitly append to state message array so real-time elements update reactively
-      set((state) => {
-        if (state.messages.some((m) => m._id === message._id)) return {}
-        return { messages: [...state.messages, decryptedMsg] }
-      })
-
-      return decryptedMsg
-    }
-
-    // If not encrypted or already decrypted, ensure it's saved to state safely
-    set((state) => {
-      if (state.messages.some((m) => m._id === message._id)) return {}
-      return { messages: [...state.messages, message] }
-    })
-
-    return message
   },
 }))

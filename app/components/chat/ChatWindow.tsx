@@ -461,8 +461,13 @@
 
 
 
-// /app/components/chat/ChatWindow.tsx
 
+
+
+
+
+
+// /app/components/chat/ChatWindow.tsx
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
@@ -515,12 +520,12 @@ export default function ChatWindow({
     publicKeyExchanged,
     setSession,
     setInitialMessages,
+    addIncomingMessage,
     setOperatorTyping,
     setSocketOperatorName,
     setSocketOperatorAvatar,
     initiateE2EEHandshake,
     handleIncomingPublicKey,
-    decryptIncomingMessage,
   } = useChatStore()
 
   // Sync incoming props directly with state engine
@@ -660,13 +665,12 @@ export default function ChatWindow({
     }
 
     const handleNewMessage = async (msg: ChatMessage) => {
-      const parsed = await decryptIncomingMessage(msg)
-      setInitialMessages((prev) => {
-        if (prev.some((m) => m._id === parsed._id)) return prev
-        const next = [...prev, parsed]
-        memoPropSetInitialMessages(next)
-        return next
-      })
+      // 🎯 Directly add message to the Zustand centralized store array
+      await addIncomingMessage(msg)
+
+      // Keep parent tracking props synced up cleanly without breaking reactivity
+      const latestMessages = useChatStore.getState().messages
+      memoPropSetInitialMessages(latestMessages)
     }
 
     const handleTyping = (payload: {
@@ -764,10 +768,9 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          setInitialMessages((prev) => {
-            const next = [...prev, visitorNotice]
-            memoPropSetInitialMessages(next)
-            return next
+          // Mirroring system notice back to store array safely
+          addIncomingMessage(visitorNotice).then(() => {
+            memoPropSetInitialMessages(useChatStore.getState().messages)
           })
         } else {
           const runtimeAiDisplayName =
@@ -789,10 +792,8 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          setInitialMessages((prev) => {
-            const next = [...prev, terminalNotice]
-            memoPropSetInitialMessages(next)
-            return next
+          addIncomingMessage(terminalNotice).then(() => {
+            memoPropSetInitialMessages(useChatStore.getState().messages)
           })
         }
       }
@@ -825,7 +826,7 @@ export default function ChatWindow({
     isClosing,
     initiateE2EEHandshake,
     handleIncomingPublicKey,
-    decryptIncomingMessage,
+    addIncomingMessage,
     setOperatorTyping,
     setSocketOperatorName,
     setSocketOperatorAvatar,
@@ -860,11 +861,8 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          setInitialMessages((prev) => {
-            const next = [...prev, visitorNotice]
-            memoPropSetInitialMessages(next)
-            return next
-          })
+          await addIncomingMessage(visitorNotice)
+          memoPropSetInitialMessages(useChatStore.getState().messages)
         }
 
         setSession((prev) => {
@@ -919,78 +917,7 @@ export default function ChatWindow({
         )}
       </div>
 
-      {/* {!loading && session && (
-        <ChatInput
-          value={message}
-          disabled={session.status === 'closed'}
-          onChange={(val) => {
-            setMessage(val)
-            if (socket.connected && session) {
-              socket.emit('typing', {
-                sessionId: session.sessionId,
-                senderName: 'Visitor',
-                isTyping: val.length > 0,
-              })
-            }
-          }}
-          onSend={async (attachments) => {
-            if (!message.trim() && (!attachments || attachments.length === 0))
-              return
-
-            const uploadedMediaUrls: string[] = []
-
-            if (attachments && attachments.length > 0) {
-              try {
-                for (const item of attachments) {
-                  const formData = new FormData()
-                  formData.append('file', item.file)
-                  formData.append('type', item.type)
-                  formData.append('sessionId', session.sessionId)
-
-                  const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
-                    {
-                      method: 'POST',
-                      body: formData,
-                    },
-                  )
-
-                  const result = await response.json()
-                  if (result.status === 'success' && result.url) {
-                    uploadedMediaUrls.push(result.url)
-                  }
-                }
-              } catch (error) {
-                console.error('[KeilaChat] Attachment upload failed:', error)
-              }
-            }
-
-            let finalPayloadText = message.trim()
-            let outboundIv = ''
-
-            if (finalPayloadText && publicKeyExchanged) {
-              const pack =
-                await ChatEncryptionEngine.encryptMessage(finalPayloadText)
-              finalPayloadText = pack.ciphertext
-              outboundIv = pack.iv
-            }
-
-            socket.emit('send_message', {
-              sessionId: session.sessionId,
-              propertyId: session.propertyId,
-              senderType: 'visitor',
-              senderId: session.visitorId,
-              messageText: finalPayloadText,
-              iv: outboundIv,
-              media: uploadedMediaUrls,
-            })
-
-            setMessage('')
-          }}
-        />
-      )} */}
-
-      {/* 🎯 FIXED: Falls back to initialSession if Zustand hasn't completed its frame update cycle */}
+      {/* Falls back to initialSession if Zustand hasn't completed its frame update cycle */}
       {!loading && (session || initialSession) && (
         <ChatInput
           value={message}
