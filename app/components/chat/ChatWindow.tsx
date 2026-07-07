@@ -919,7 +919,7 @@ export default function ChatWindow({
         )}
       </div>
 
-      {!loading && session && (
+      {/* {!loading && session && (
         <ChatInput
           value={message}
           disabled={session.status === 'closed'}
@@ -980,6 +980,81 @@ export default function ChatWindow({
               propertyId: session.propertyId,
               senderType: 'visitor',
               senderId: session.visitorId,
+              messageText: finalPayloadText,
+              iv: outboundIv,
+              media: uploadedMediaUrls,
+            })
+
+            setMessage('')
+          }}
+        />
+      )} */}
+
+      {/* 🎯 FIXED: Falls back to initialSession if Zustand hasn't completed its frame update cycle */}
+      {!loading && (session || initialSession) && (
+        <ChatInput
+          value={message}
+          disabled={(session?.status || initialSession?.status) === 'closed'}
+          onChange={(val) => {
+            const activeSession = session || initialSession
+            setMessage(val)
+            if (socket.connected && activeSession) {
+              socket.emit('typing', {
+                sessionId: activeSession.sessionId,
+                senderName: 'Visitor',
+                isTyping: val.length > 0,
+              })
+            }
+          }}
+          onSend={async (attachments) => {
+            const activeSession = session || initialSession
+            if (!activeSession) return
+            if (!message.trim() && (!attachments || attachments.length === 0))
+              return
+
+            const uploadedMediaUrls: string[] = []
+
+            if (attachments && attachments.length > 0) {
+              try {
+                for (const item of attachments) {
+                  const formData = new FormData()
+                  formData.append('file', item.file)
+                  formData.append('type', item.type)
+                  formData.append('sessionId', activeSession.sessionId)
+
+                  const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
+                    {
+                      method: 'POST',
+                      body: formData,
+                    },
+                  )
+
+                  const result = await response.json()
+                  if (result.status === 'success' && result.url) {
+                    uploadedMediaUrls.push(result.url)
+                  }
+                }
+              } catch (error) {
+                console.error('[KeilaChat] Attachment upload failed:', error)
+              }
+            }
+
+            let finalPayloadText = message.trim()
+            let outboundIv = ''
+
+            if (finalPayloadText && publicKeyExchanged) {
+              const pack =
+                await ChatEncryptionEngine.encryptMessage(finalPayloadText)
+              finalPayloadText = pack.ciphertext
+              outboundIv = pack.iv
+            }
+
+            socket.emit('send_message', {
+              sessionId: activeSession.sessionId,
+              propertyId: activeSession.propertyId,
+              senderType: 'visitor',
+              senderId: activeSession.visitorId,
               messageText: finalPayloadText,
               iv: outboundIv,
               media: uploadedMediaUrls,
