@@ -460,7 +460,9 @@
 // }
 
 
+
 // /app/components/chat/ChatWindow.tsx
+
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
@@ -476,7 +478,7 @@ import { getChatSocket } from '@/app/hooks/useChatSocket'
 import ChatHeader from './ChatHeader'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
-import { useVisitorChatStore } from '@/app/store/useVisitorChatStore'
+import { useVisitorChatStore } from '@/app/store/useVisitorChatStore' // 🔑 Fixed Path
 
 interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
   initialSession: SafeSessionConfig | null
@@ -681,7 +683,6 @@ export default function ChatWindow({
       setSession(nextState)
       setLegacySession(nextState)
 
-      // 🔑 Fire up E2EE keys automatically if a live agent connects
       if (!isPayloadAi) {
         initiateE2EEHandshake()
       }
@@ -799,7 +800,7 @@ export default function ChatWindow({
       }
     } catch (error) {
       console.error('[KeilaChat] Error closing conversation session:', error)
-    } bits: {
+    } finally {
       setIsClosing(false)
     }
   }
@@ -860,9 +861,8 @@ export default function ChatWindow({
 
             const uploadedMediaUrls: string[] = []
             const plaintextToSend = message.trim()
-            setMessage('') // Clear immediately for snappier UI transitions
+            setMessage('')
 
-            // Run historical asset generation for multipart assets safely
             if (attachments && attachments.length > 0) {
               try {
                 for (const item of attachments) {
@@ -886,7 +886,6 @@ export default function ChatWindow({
               }
             }
 
-            // Route execution down directly into the store wrapper to transparently encrypt context payloads
             const sendMessageAction = useVisitorChatStore.getState().sendMessage
             await sendMessageAction(plaintextToSend, uploadedMediaUrls)
           }}
