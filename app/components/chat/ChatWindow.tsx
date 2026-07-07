@@ -812,7 +812,9 @@ export default function ChatWindow({
         propertyId={session?.propertyId}
         visitorTrackingId={visitorTrackingId}
         operatorName={session?.status === 'closed' ? undefined : operatorName}
-        operatorAvatar={session?.status === 'closed' ? undefined : operatorAvatar}
+        operatorAvatar={
+          session?.status === 'closed' ? undefined : operatorAvatar
+        }
         queueSubtext={session?.status === 'closed' ? undefined : queueSubtext}
         isSessionActive={session?.status !== 'closed'}
         onOpenEndModal={() => setConfirmModalOpen(true)}
@@ -841,21 +843,35 @@ export default function ChatWindow({
         )}
       </div>
 
-      {!loading && session && (
+      {!loading && initialSession && (
         <ChatInput
           value={message}
-          disabled={session.status === 'closed'}
+          disabled={
+            session?.status === 'closed' || initialSession.status === 'closed'
+          }
           onChange={(val) => {
             setMessage(val)
-            if (socket.connected) {
+            // Use fallback tracking parameters safely if state hook sync is still processing
+            const activeSessionId =
+              session?.sessionId || initialSession.sessionId
+            const activePropertyId =
+              session?.propertyId || initialSession.propertyId
+
+            if (socket.connected && activeSessionId) {
               socket.emit('typing', {
-                sessionId: session.sessionId,
+                sessionId: activeSessionId,
                 senderName: 'Visitor',
                 isTyping: val.length > 0,
               })
             }
           }}
           onSend={async (attachments) => {
+            const activeSessionId =
+              session?.sessionId || initialSession.sessionId
+            const activePropertyId =
+              session?.propertyId || initialSession.propertyId
+            if (!activeSessionId) return
+
             if (!message.trim() && (!attachments || attachments.length === 0))
               return
 
@@ -869,7 +885,7 @@ export default function ChatWindow({
                   const formData = new FormData()
                   formData.append('file', item.file)
                   formData.append('type', item.type)
-                  formData.append('sessionId', session.sessionId)
+                  formData.append('sessionId', activeSessionId)
 
                   const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
