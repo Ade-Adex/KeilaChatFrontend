@@ -124,6 +124,7 @@ export interface ChatMessage {
   isEncrypted?: boolean
   iv?: string // Used on frontend for crypto operations
   encryptionIv?: string
+  isDecrypted?: boolean
 }
 
 export interface PresenceNotificationPayload {

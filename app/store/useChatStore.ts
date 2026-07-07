@@ -1,4 +1,5 @@
 // /app/store/useChatStore.ts
+
 import { create } from 'zustand'
 import type { ChatMessage, SafeSessionConfig } from '@/app/types/chat'
 import { ChatEncryptionEngine } from '@/app/lib/utils/crypto'
@@ -86,13 +87,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
             msg.iv &&
             msg.messageText &&
             !msg.messageText.startsWith('🚫') &&
-            !msg.messageText.startsWith('⚠️')
+            !msg.messageText.startsWith('⚠️') &&
+            !msg.isDecrypted
           ) {
             const dec = await ChatEncryptionEngine.decryptMessage(
               msg.messageText,
               msg.iv,
             )
-            return { ...msg, messageText: dec }
+            return { ...msg, messageText: dec, isDecrypted: true }
           }
           return msg
         }),
@@ -104,13 +106,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   decryptIncomingMessage: async (message) => {
-    if (message.iv && message.messageText) {
+    if (message.iv && message.messageText && !message.isDecrypted) {
       const decryptedText = await ChatEncryptionEngine.decryptMessage(
         message.messageText,
         message.iv,
       )
-      return { ...message, messageText: decryptedText }
+      const decryptedMsg = {
+        ...message,
+        messageText: decryptedText,
+        isDecrypted: true,
+      }
+
+      // 🎯 FIX: Explicitly append to state message array so real-time elements update reactively
+      set((state) => {
+        if (state.messages.some((m) => m._id === message._id)) return {}
+        return { messages: [...state.messages, decryptedMsg] }
+      })
+
+      return decryptedMsg
     }
+
+    // If not encrypted or already decrypted, ensure it's saved to state safely
+    set((state) => {
+      if (state.messages.some((m) => m._id === message._id)) return {}
+      return { messages: [...state.messages, message] }
+    })
+
     return message
   },
 }))
