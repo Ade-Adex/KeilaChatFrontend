@@ -461,6 +461,7 @@
 
 
 
+
 // /app/components/chat/ChatWindow.tsx
 
 'use client'
@@ -475,10 +476,11 @@ import type {
 } from '@/app/types/chat'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { useChatStore } from '@/app/store/useChatStore'
+import { ChatEncryptionEngine } from '@/app/lib/utils/crypto'
 import ChatHeader from './ChatHeader'
 import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
-import { useVisitorChatStore } from '@/app/store/useVisitorChatStore' // 🔑 Fixed Path
 
 interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
   initialSession: SafeSessionConfig | null
@@ -495,49 +497,52 @@ export default function ChatWindow({
   widgetId,
   visitorTrackingId,
   initialSession,
-  setSession: setLegacySession,
-  initialMessages,
-  setInitialMessages: setLegacyMessages,
+  setSession: propSetSession,
+  initialMessages: propInitialMessages,
+  setInitialMessages: propSetInitialMessages,
   loading,
   onClose,
   queueSubtext,
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
-
-  // 🔒 Connect our Zustand E2EE reactive layer actions and states
+  
+  // Connect directly to Zustand centralized slice state
   const {
     session,
-    messages,
+    messages: storeMessages,
     operatorTyping,
+    socketOperatorName,
+    socketOperatorAvatar,
+    publicKeyExchanged,
     setSession,
     setInitialMessages,
-    appendLiveMessage,
-    setOperatorTypingStatus,
+    setOperatorTyping,
+    setSocketOperatorName,
+    setSocketOperatorAvatar,
     initiateE2EEHandshake,
-  } = useVisitorChatStore()
+    handleIncomingPublicKey,
+    decryptIncomingMessage,
+  } = useChatStore()
 
+  // Sync incoming props directly with state engine
   const [prevSessionId, setPrevSessionId] = useState<string | undefined>(
     initialSession?.sessionId,
   )
 
-  // ⚡ React 19 Inline Prop Synchronization Pattern (Safely preserves state parity)
   if (initialSession?.sessionId !== prevSessionId) {
     setSession(initialSession)
-    setLegacySession(initialSession)
+    propSetSession(initialSession)
     setPrevSessionId(initialSession?.sessionId)
   }
 
-  // Hydrate history into the engine once when a new chat interface session mounts
+  // Populate component render layout with store data
   useEffect(() => {
-    if (initialMessages.length > 0) {
-      setInitialMessages(initialMessages)
+    if (propInitialMessages && storeMessages.length === 0) {
+      setInitialMessages(propInitialMessages)
     }
-  }, [initialSession?.sessionId])
+  }, [propInitialMessages])
 
   const [message, setMessage] = useState('')
-  const [socketOperatorName, setSocketOperatorName] = useState<string>()
-  const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
-
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
@@ -609,9 +614,9 @@ export default function ChatWindow({
       if (result.status === 'success' && result.data) {
         handledClosedSessionRef.current = null
         setSession(result.data as SafeSessionConfig)
-        setLegacySession(result.data as SafeSessionConfig)
+        propSetSession(result.data as SafeSessionConfig)
         setInitialMessages([])
-        setLegacyMessages([])
+        propSetInitialMessages([])
         setSocketOperatorName(undefined)
         setSocketOperatorAvatar(undefined)
       }
@@ -628,12 +633,24 @@ export default function ChatWindow({
         sessionId: session.sessionId,
         clientType: 'visitor',
       })
+      initiateE2EEHandshake()
     }
 
-    const handleNewMessage = (msg: ChatMessage) => {
-      if (msg.sessionId === session.sessionId) {
-        appendLiveMessage(msg)
+    // Capture explicit public key exchanges natively across channels
+    const handlePublicKeyReceived = async (payload: { publicKey: JsonWebKey; clientType: string }) => {
+      if (payload.clientType === 'operator') {
+        await handleIncomingPublicKey(payload.publicKey)
       }
+    }
+
+    const handleNewMessage = async (msg: ChatMessage) => {
+      const parsed = await decryptIncomingMessage(msg)
+      setInitialMessages((prev) => {
+        if (prev.some((m) => m._id === parsed._id)) return prev
+        const next = [...prev, parsed]
+        propSetInitialMessages(next)
+        return next
+      })
     }
 
     const handleTyping = (payload: {
@@ -642,7 +659,7 @@ export default function ChatWindow({
       senderName?: string
     }) => {
       if (payload.actor === 'visitor') return
-      setOperatorTypingStatus(payload.isTyping)
+      setOperatorTyping(payload.isTyping)
 
       if (
         payload.senderName &&
@@ -666,35 +683,42 @@ export default function ChatWindow({
       setSocketOperatorName(cleanName)
       if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
 
-      const operatorMock: PopulatedOperator = {
-        _id: payload.operatorId,
-        firstName: cleanName,
-        email: '',
-        avatar: payload.avatar || '',
-      }
+      setSession((prev): SafeSessionConfig | null => {
+        if (!prev) return null
+        const operatorMock: PopulatedOperator = {
+          _id: payload.operatorId,
+          firstName: cleanName,
+          email: '',
+          avatar: payload.avatar || '',
+        }
+        const updated: SafeSessionConfig = {
+          ...prev,
+          status: 'active' as const,
+          assignedOperatorId:
+            operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
+        }
+        propSetSession(updated)
+        return updated
+      })
 
-      const nextState: SafeSessionConfig = {
-        ...session,
-        status: 'active',
-        assignedOperatorId:
-          operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
-      }
-
-      setSession(nextState)
-      setLegacySession(nextState)
-
-      if (!isPayloadAi) {
-        initiateE2EEHandshake()
-      }
+      // Re-trigger handshakes to sync with the new operator
+      initiateE2EEHandshake()
     }
 
     const handleOperatorLeft = () => {
       setSocketOperatorName(undefined)
       setSocketOperatorAvatar(undefined)
-      const leftState: SafeSessionConfig = { ...session, status: 'queued', assignedOperatorId: null }
-      setSession(leftState)
-      setLegacySession(leftState)
-    }
+      setSession((prev) => {
+        if (!prev) return null
+        const updated: SafeSessionConfig = { 
+          ...prev, 
+          status: 'queued' as const, 
+          assignedOperatorId: null 
+        }
+        propSetSession(updated)
+        return updated
+      })
+    } 
 
     const handleStatusChanged = (payload: {
       sessionId: string
@@ -702,42 +726,64 @@ export default function ChatWindow({
     }) => {
       if (payload.sessionId !== session.sessionId) return
 
-      const updatedState: SafeSessionConfig = { ...session, status: payload.status }
-      setSession(updatedState)
-      setLegacySession(updatedState)
+      setSession((prev) => {
+        const updated = prev ? { ...prev, status: payload.status } : null
+        propSetSession(updated)
+        return updated
+      })
 
       if (
         payload.status === 'closed' &&
         handledClosedSessionRef.current !== payload.sessionId
       ) {
         handledClosedSessionRef.current = payload.sessionId
-        setOperatorTypingStatus(false)
+        setOperatorTyping(false)
 
-        const runtimeAiDisplayName =
-          widget.widgetSettings?.aiName?.trim() ||
-          widget.settings?.aiName?.trim() ||
-          'AI Assistant'
+        if (confirmModalOpen || isClosing) {
+          const visitorNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: payload.sessionId,
+            senderType: 'ai',
+            senderId: 'system',
+            messageText: '🚫 You have ended this support session.',
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => {
+            const next = [...prev, visitorNotice]
+            propSetInitialMessages(next)
+            return next
+          })
+        } else {
+          const runtimeAiDisplayName =
+            widget.widgetSettings?.aiName?.trim() ||
+            widget.settings?.aiName?.trim() ||
+            'AI Assistant'
 
-        const displayTerminalName =
-          operatorName?.toLowerCase() === 'ai'
-            ? runtimeAiDisplayName
-            : operatorName || 'the support agent'
+          const displayTerminalName =
+            operatorName?.toLowerCase() === 'ai'
+              ? runtimeAiDisplayName
+              : operatorName || 'the support agent'
 
-        const terminalNotice: ChatMessage = {
-          _id: `sys-${Date.now()}`,
-          sessionId: payload.sessionId,
-          senderType: 'ai',
-          senderId: 'system',
-          messageText: confirmModalOpen || isClosing 
-            ? '🚫 You have ended this support session.' 
-            : `🚫 Conversation ended by ${displayTerminalName}.`,
-          status: 'seen',
-          createdAt: new Date().toISOString(),
+          const terminalNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: payload.sessionId,
+            senderType: 'ai',
+            senderId: 'system',
+            messageText: `🚫 Conversation ended by ${displayTerminalName}.`,
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => {
+            const next = [...prev, terminalNotice]
+            propSetInitialMessages(next)
+            return next
+          })
         }
-        appendLiveMessage(terminalNotice)
       }
     }
 
+    socket.on('public_key_received', handlePublicKeyReceived)
     socket.on('new_message', handleNewMessage)
     socket.on('user_typing', handleTyping)
     socket.on('operator_joined', handleOperatorJoined)
@@ -745,6 +791,7 @@ export default function ChatWindow({
     socket.on('session_status_changed', handleStatusChanged)
 
     return () => {
+      socket.off('public_key_received', handlePublicKeyReceived)
       socket.off('new_message', handleNewMessage)
       socket.off('user_typing', handleTyping)
       socket.off('operator_joined', handleOperatorJoined)
@@ -754,12 +801,14 @@ export default function ChatWindow({
   }, [
     session?.sessionId,
     socket,
+    setSession,
     operatorName,
+    setInitialMessages,
     widget.settings?.aiName,
     widget.widgetSettings?.aiName,
     confirmModalOpen,
     isClosing,
-  ])
+  ]) 
 
   async function handleEndChat() {
     if (!session?.sessionId) return
@@ -779,8 +828,6 @@ export default function ChatWindow({
       if (result.status === 'success') {
         if (handledClosedSessionRef.current !== session.sessionId) {
           handledClosedSessionRef.current = session.sessionId
-          setOperatorTypingStatus(false)
-          
           const visitorNotice: ChatMessage = {
             _id: `sys-${Date.now()}`,
             sessionId: session.sessionId,
@@ -790,12 +837,18 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          appendLiveMessage(visitorNotice)
+          setInitialMessages((prev) => {
+            const next = [...prev, visitorNotice]
+            propSetInitialMessages(next)
+            return next
+          })
         }
 
-        const closedState: SafeSessionConfig = { ...session, status: 'closed' }
-        setSession(closedState)
-        setLegacySession(closedState)
+        setSession((prev) => {
+          const updated = prev ? { ...prev, status: 'closed' as const } : null
+          propSetSession(updated)
+          return updated
+        })
         setConfirmModalOpen(false)
       }
     } catch (error) {
@@ -837,47 +890,31 @@ export default function ChatWindow({
         {!loading && (
           <ChatMessages
             widget={widget}
-            messages={messages}
+            messages={storeMessages}
             operatorTyping={operatorTyping}
           />
         )}
       </div>
 
-      {!loading && initialSession && (
+      {!loading && session && (
         <ChatInput
           value={message}
-          disabled={
-            session?.status === 'closed' || initialSession.status === 'closed'
-          }
+          disabled={session.status === 'closed'}
           onChange={(val) => {
             setMessage(val)
-            // Use fallback tracking parameters safely if state hook sync is still processing
-            const activeSessionId =
-              session?.sessionId || initialSession.sessionId
-            const activePropertyId =
-              session?.propertyId || initialSession.propertyId
-
-            if (socket.connected && activeSessionId) {
+            if (socket.connected && session) {
               socket.emit('typing', {
-                sessionId: activeSessionId,
+                sessionId: session.sessionId,
                 senderName: 'Visitor',
                 isTyping: val.length > 0,
               })
             }
           }}
           onSend={async (attachments) => {
-            const activeSessionId =
-              session?.sessionId || initialSession.sessionId
-            const activePropertyId =
-              session?.propertyId || initialSession.propertyId
-            if (!activeSessionId) return
-
             if (!message.trim() && (!attachments || attachments.length === 0))
               return
 
             const uploadedMediaUrls: string[] = []
-            const plaintextToSend = message.trim()
-            setMessage('')
 
             if (attachments && attachments.length > 0) {
               try {
@@ -885,11 +922,14 @@ export default function ChatWindow({
                   const formData = new FormData()
                   formData.append('file', item.file)
                   formData.append('type', item.type)
-                  formData.append('sessionId', activeSessionId)
+                  formData.append('sessionId', session.sessionId)
 
                   const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
-                    { method: 'POST', body: formData },
+                    {
+                      method: 'POST',
+                      body: formData,
+                    },
                   )
 
                   const result = await response.json()
@@ -902,8 +942,26 @@ export default function ChatWindow({
               }
             }
 
-            const sendMessageAction = useVisitorChatStore.getState().sendMessage
-            await sendMessageAction(plaintextToSend, uploadedMediaUrls)
+            let finalPayloadText = message.trim()
+            let outboundIv = ''
+
+            if (finalPayloadText && publicKeyExchanged) {
+              const pack = await ChatEncryptionEngine.encryptMessage(finalPayloadText)
+              finalPayloadText = pack.ciphertext
+              outboundIv = pack.iv
+            }
+
+            socket.emit('send_message', {
+              sessionId: session.sessionId,
+              propertyId: session.propertyId,
+              senderType: 'visitor',
+              senderId: session.visitorId,
+              messageText: finalPayloadText,
+              iv: outboundIv,
+              media: uploadedMediaUrls,
+            })
+
+            setMessage('')
           }}
         />
       )}
