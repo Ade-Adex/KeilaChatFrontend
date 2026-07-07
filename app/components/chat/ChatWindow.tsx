@@ -461,12 +461,11 @@
 
 
 
-
 // /app/components/chat/ChatWindow.tsx
 
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Modal, Button, Group, Text, LoadingOverlay } from '@mantine/core'
 import type {
   ChatMessage,
@@ -505,7 +504,7 @@ export default function ChatWindow({
   queueSubtext,
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
-  
+
   // Connect directly to Zustand centralized slice state
   const {
     session,
@@ -540,7 +539,7 @@ export default function ChatWindow({
     if (propInitialMessages && storeMessages.length === 0) {
       setInitialMessages(propInitialMessages)
     }
-  }, [propInitialMessages])
+  }, [propInitialMessages, storeMessages.length, setInitialMessages])
 
   const [message, setMessage] = useState('')
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
@@ -625,6 +624,21 @@ export default function ChatWindow({
     }
   }
 
+  // Memoize parent prop dispatch updates to prevent loop instability
+  const memoPropSetInitialMessages = useCallback(
+    (msgs: ChatMessage[]) => {
+      propSetInitialMessages(msgs)
+    },
+    [propSetInitialMessages],
+  )
+
+  const memoPropSetSession = useCallback(
+    (sess: SafeSessionConfig | null) => {
+      propSetSession(sess)
+    },
+    [propSetSession],
+  )
+
   useEffect(() => {
     if (!session?.sessionId) return
 
@@ -636,8 +650,10 @@ export default function ChatWindow({
       initiateE2EEHandshake()
     }
 
-    // Capture explicit public key exchanges natively across channels
-    const handlePublicKeyReceived = async (payload: { publicKey: JsonWebKey; clientType: string }) => {
+    const handlePublicKeyReceived = async (payload: {
+      publicKey: JsonWebKey
+      clientType: string
+    }) => {
       if (payload.clientType === 'operator') {
         await handleIncomingPublicKey(payload.publicKey)
       }
@@ -648,7 +664,7 @@ export default function ChatWindow({
       setInitialMessages((prev) => {
         if (prev.some((m) => m._id === parsed._id)) return prev
         const next = [...prev, parsed]
-        propSetInitialMessages(next)
+        memoPropSetInitialMessages(next)
         return next
       })
     }
@@ -697,11 +713,10 @@ export default function ChatWindow({
           assignedOperatorId:
             operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
         }
-        propSetSession(updated)
+        memoPropSetSession(updated)
         return updated
       })
 
-      // Re-trigger handshakes to sync with the new operator
       initiateE2EEHandshake()
     }
 
@@ -710,15 +725,15 @@ export default function ChatWindow({
       setSocketOperatorAvatar(undefined)
       setSession((prev) => {
         if (!prev) return null
-        const updated: SafeSessionConfig = { 
-          ...prev, 
-          status: 'queued' as const, 
-          assignedOperatorId: null 
+        const updated: SafeSessionConfig = {
+          ...prev,
+          status: 'queued' as const,
+          assignedOperatorId: null,
         }
-        propSetSession(updated)
+        memoPropSetSession(updated)
         return updated
       })
-    } 
+    }
 
     const handleStatusChanged = (payload: {
       sessionId: string
@@ -728,7 +743,7 @@ export default function ChatWindow({
 
       setSession((prev) => {
         const updated = prev ? { ...prev, status: payload.status } : null
-        propSetSession(updated)
+        memoPropSetSession(updated)
         return updated
       })
 
@@ -751,7 +766,7 @@ export default function ChatWindow({
           }
           setInitialMessages((prev) => {
             const next = [...prev, visitorNotice]
-            propSetInitialMessages(next)
+            memoPropSetInitialMessages(next)
             return next
           })
         } else {
@@ -776,7 +791,7 @@ export default function ChatWindow({
           }
           setInitialMessages((prev) => {
             const next = [...prev, terminalNotice]
-            propSetInitialMessages(next)
+            memoPropSetInitialMessages(next)
             return next
           })
         }
@@ -808,7 +823,15 @@ export default function ChatWindow({
     widget.widgetSettings?.aiName,
     confirmModalOpen,
     isClosing,
-  ]) 
+    initiateE2EEHandshake,
+    handleIncomingPublicKey,
+    decryptIncomingMessage,
+    setOperatorTyping,
+    setSocketOperatorName,
+    setSocketOperatorAvatar,
+    memoPropSetInitialMessages,
+    memoPropSetSession,
+  ])
 
   async function handleEndChat() {
     if (!session?.sessionId) return
@@ -839,14 +862,14 @@ export default function ChatWindow({
           }
           setInitialMessages((prev) => {
             const next = [...prev, visitorNotice]
-            propSetInitialMessages(next)
+            memoPropSetInitialMessages(next)
             return next
           })
         }
 
         setSession((prev) => {
           const updated = prev ? { ...prev, status: 'closed' as const } : null
-          propSetSession(updated)
+          memoPropSetSession(updated)
           return updated
         })
         setConfirmModalOpen(false)
@@ -946,7 +969,8 @@ export default function ChatWindow({
             let outboundIv = ''
 
             if (finalPayloadText && publicKeyExchanged) {
-              const pack = await ChatEncryptionEngine.encryptMessage(finalPayloadText)
+              const pack =
+                await ChatEncryptionEngine.encryptMessage(finalPayloadText)
               finalPayloadText = pack.ciphertext
               outboundIv = pack.iv
             }

@@ -266,7 +266,7 @@ export default function ChatInput({
             isRecording ? 'hidden sm:flex' : 'flex'
           }`}
         >
-          <FiPaperclip size={18} className="sm:w-[20px] sm:h-[20px]" />
+          <FiPaperclip size={18} className="sm:w-5 sm:h-5" />
         </button>
 
         <button
@@ -276,7 +276,7 @@ export default function ChatInput({
             isRecording ? 'hidden sm:flex' : 'flex'
           }`}
         >
-          <FiSmile size={18} className="sm:w-[20px] sm:h-[20px]" />
+          <FiSmile size={18} className="sm:w-5 sm:h-5" />
         </button>
 
         {isRecording ? (
@@ -312,9 +312,9 @@ export default function ChatInput({
           }`}
         >
           {isRecording ? (
-            <FiSquare size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <FiSquare size={16} className="sm:w-4.5 sm:h-4.5" />
           ) : (
-            <FiMic size={18} className="sm:w-[20px] sm:h-[20px]" />
+            <FiMic size={18} className="sm:w-5 sm:h-5" />
           )}
         </button>
 
