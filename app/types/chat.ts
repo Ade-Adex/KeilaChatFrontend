@@ -119,12 +119,6 @@ export interface ChatMessage {
   updatedAt?: string
   deliveredAt?: string
   seenAt?: string
-
-  // --- 🔒 END-TO-END ENCRYPTION FRONTEND COMPATIBILITY CORES ---
-  isEncrypted?: boolean
-  iv?: string // Used on frontend for crypto operations
-  encryptionIv?: string
-  isDecrypted?: boolean
 }
 
 export interface PresenceNotificationPayload {
