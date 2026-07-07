@@ -207,8 +207,8 @@ export default function ClientChatWrapper({
 
           if (widget?.widgetSettings?.soundEnabled) {
             try {
-              const audio = new Audio('/public/sound/notification.wav')
-              audio.volume = 0.7
+              const audio = new Audio('/sound/notification.wav')
+              audio.volume = 0.9
               audio
                 .play()
                 .catch((err) => console.warn('[KeilaChat] Audio block:', err))
