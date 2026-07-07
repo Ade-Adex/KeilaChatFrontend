@@ -143,15 +143,10 @@ export interface ChatAttachment {
 
 export interface ChatMessage {
   _id: string
-
   sessionId: string
-
   senderType: 'visitor' | 'operator' | 'ai' | 'system'
-
   senderId: string
-
   messageText: string
-
   messageType:
     | 'text'
     | 'image'
@@ -163,19 +158,18 @@ export interface ChatMessage {
     | 'note'
     | 'ai_suggestion'
     | 'media'
-
   status: 'sent' | 'delivered' | 'seen' | 'failed'
-
   isFromAI: boolean
-
   media?: string[]
-
   attachments?: ChatAttachment[]
-  
   createdAt: string
-
   updatedAt?: string
 
+  // --- 🔒 END-TO-END ENCRYPTION FRONTEND COMPATIBILITY CORES ---
+  isEncrypted?: boolean
+  iv?: string // Used locally by your frontend engine
+  encryptionIv?: string // Match what the database/API sends down
+  isDecrypted?: boolean // 🎯 ADDED: Stops loops from double-decrypting cleartext
 }
 
 export type OperatorMessage = ChatMessage
@@ -207,38 +201,27 @@ export interface OperatorVisitor {
 
 export interface OperatorConversation {
   _id: string
-
   status: 'queued' | 'active' | 'waiting' | 'closed' | 'transferred'
-
   priority: 'low' | 'normal' | 'high'
-
   channel: 'widget' | 'api'
-
   aiHandled: boolean
-
   unreadOperator: number
-
   lastMessage?: string
-
   lastMessageAt?: string
-
   assignedOperatorId?: string
-
-  // Can be a raw string ID from unpopulated MongoDB documents, or a rich object document block
   visitorId?: string | OperatorVisitor
-
-  // Union type safely prevents runtime properties extraction errors
-  propertyId?: string | {
-    _id: string
-    name?: string
-    domain?: string
-  }
-
+  propertyId?:
+    | string
+    | {
+        _id: string
+        name?: string
+        domain?: string
+      }
   startedAt?: string
-
   createdAt?: string
-
   updatedAt?: string
+
+  isEncrypted?: boolean 
 }
 
 export interface OperatorProfile {

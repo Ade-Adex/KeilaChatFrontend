@@ -109,6 +109,10 @@ export interface SendOperatorMessageRequest {
   isFromAI: false
 
   media?: string[]
+
+  // --- 🔒 E2EE PAYLOAD CONFIGURATION FIELDS ---
+  isEncrypted?: boolean
+  encryptionIv?: string
 }
 
 export interface SendOperatorMessageResponse {
