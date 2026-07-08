@@ -2,31 +2,32 @@
 
 'use client'
 
-import { useState } from 'react'
+import { updateVisitorProfile } from '@/app/lib/api/chat.api'
+import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
+import type { WidgetConfig } from '@/app/types/chat'
 import {
-  FiX,
-  FiMoreVertical,
-  FiLogOut,
-  FiEdit2,
-  FiPlusCircle,
-  FiSun,
-  FiMoon,
-  FiCheck,
-  FiAlertCircle,
-} from 'react-icons/fi'
-import {
-  Menu,
   ActionIcon,
-  Modal,
-  TextInput,
   Button,
+  Menu,
+  Modal,
   Stack,
+  TextInput,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import type { WidgetConfig } from '@/app/types/chat'
-import Image from 'next/image'
 import { useTheme } from 'next-themes'
-import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
+import Image from 'next/image'
+import { useState } from 'react'
+import {
+  FiAlertCircle,
+  FiCheck,
+  FiEdit2,
+  FiLogOut,
+  FiMoon,
+  FiMoreVertical,
+  FiPlusCircle,
+  FiSun,
+  FiX,
+} from 'react-icons/fi'
 
 interface ChatHeaderProps {
   widget: WidgetConfig | null
@@ -63,12 +64,11 @@ export default function ChatHeader({
   // 🎯 Theme Hook Integration
   const { resolvedTheme, setTheme } = useTheme()
 
- const structuralAiName =
-   widget?.widgetSettings?.aiName?.trim() ||
-   widget?.settings?.aiName?.trim() ||
-   'AI Assistant'
+  const structuralAiName =
+    widget?.widgetSettings?.aiName?.trim() ||
+    widget?.settings?.aiName?.trim() ||
+    'AI Assistant'
   const isAiSession = operatorName?.toLowerCase() === 'ai'
-
 
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -83,23 +83,14 @@ export default function ChatHeader({
     setUpdating(true)
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/visitors/profile`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            propertyId,
-            visitorTrackingId,
-            name: visitorName.trim(),
-            email: visitorEmail.trim().toLowerCase(),
-          }),
-        },
-      )
+      const result = await updateVisitorProfile({
+        propertyId,
+        visitorTrackingId,
+        name: visitorName.trim(),
+        email: visitorEmail.trim().toLowerCase(),
+      })
 
-      const result = await response.json()
-
-      if (response.ok && (result.success || result.status === 'success')) {
+      if (result.status === 'success' || result.success) {
         notifications.show({
           title: 'Profile Updated',
           message: getSuccessMessage(result),

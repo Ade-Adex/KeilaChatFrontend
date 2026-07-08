@@ -4,7 +4,6 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL!
 
 let refreshPromise: Promise<boolean> | null = null
 
-
 /**
  * Refresh the access token using the refresh_token httpOnly cookie.
  */
@@ -36,12 +35,18 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const isFormData = options.body instanceof FormData
+
   const makeRequest = () =>
     fetch(`${BACKEND_URL}${endpoint}`, {
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
         ...(options.headers ?? {}),
+        ...(isFormData
+          ? {}
+          : {
+              'Content-Type': 'application/json',
+            }),
       },
       ...options,
     })
@@ -76,13 +81,6 @@ export async function apiClient<T>(
   return data
 }
 
-
-
-
-
-
-
-
 /* -------------------------------------------------------------------------- */
 /*                               Helper Methods                               */
 /* -------------------------------------------------------------------------- */
@@ -97,6 +95,13 @@ export function apiPost<T>(endpoint: string, body?: unknown) {
   return apiClient<T>(endpoint, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
+  })
+}
+
+export function apiUpload<T>(endpoint: string, body: FormData) {
+  return apiClient<T>(endpoint, {
+    method: 'POST',
+    body,
   })
 }
 

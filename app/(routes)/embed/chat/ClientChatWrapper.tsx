@@ -5,12 +5,12 @@
 import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
 import ChatWindow from '@/app/components/chat/ChatWindow'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { getSessionMessages, initiateSession } from '@/app/lib/api/chat.api'
 import { useVisitorChatStore } from '@/app/store/useVisitorChatStore'
 import type {
   ChatMessage,
   PopulatedOperator,
   SafeSessionConfig,
-  SessionInitResponse,
   WidgetConfig,
 } from '@/app/types/chat'
 import { useEffect, useState } from 'react'
@@ -62,15 +62,7 @@ export default function ClientChatWrapper({
   useEffect(() => {
     async function initializeConversation() {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ widgetId, visitorTrackingId }),
-          },
-        )
-        const result: SessionInitResponse = await response.json()
+        const result = await initiateSession({ widgetId, visitorTrackingId })
         if (result.status === 'success' && result.data) {
           setSession(result.data)
         } else {
@@ -87,15 +79,12 @@ export default function ClientChatWrapper({
   // 3. Fetch database message logs as soon as session context maps out
   useEffect(() => {
     if (!session?.sessionId) return
+    const sessionId = session.sessionId
 
     async function fetchHistory() {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/messages/session/${session?.sessionId}`,
-          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
-        )
-        const result = await response.json()
-        if (result.status === 'success' && Array.isArray(result.data)) {
+        const result = await getSessionMessages(sessionId)
+        if (Array.isArray(result.data)) {
           setMessages(result.data as ChatMessage[])
         }
       } catch (error) {

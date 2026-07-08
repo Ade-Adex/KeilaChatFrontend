@@ -2,20 +2,24 @@
 
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import MessageFeed from './MessageFeed'
-import OperatorInput from './OperatorInput'
-import { getSessionMessages, getActiveOperators } from '@/app/lib/api/chat.api'
-import { getChatSocket } from '@/app/hooks/useChatSocket'
-import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 import TypingIndicator from '@/app/components/TypingIndicator'
-import { useAuthStore } from '@/app/store/useAuthStore'
+import { getChatSocket } from '@/app/hooks/useChatSocket'
 import {
+  closeSession,
+  getActiveOperators,
+  getSessionMessages,
+} from '@/app/lib/api/chat.api'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import type { ChatMessage, OperatorConversation } from '@/app/types/dashboard'
+import { useEffect, useRef, useState } from 'react'
+import {
+  FiAlertTriangle,
   FiShuffle,
   FiUserPlus,
   FiXCircle,
-  FiAlertTriangle,
 } from 'react-icons/fi'
+import MessageFeed from './MessageFeed'
+import OperatorInput from './OperatorInput'
 
 interface OperatorWorkspaceProps {
   session: OperatorConversation
@@ -49,8 +53,8 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const [loading, setLoading] = useState(true)
   const [visitorTyping, setVisitorTyping] = useState(false)
   const [operators, setOperators] = useState<OperatorTeammate[]>([])
-const [loadingOperators, setLoadingOperators] = useState(false) 
-const [showTransferDropdown, setShowTransferDropdown] = useState(false)
+  const [loadingOperators, setLoadingOperators] = useState(false)
+  const [showTransferDropdown, setShowTransferDropdown] = useState(false)
   const [isTerminating, setIsTerminating] = useState(false)
   const [showEndModal, setShowEndModal] = useState(false) // 🎯 Custom Modal visibility state
 
@@ -158,7 +162,6 @@ const [showTransferDropdown, setShowTransferDropdown] = useState(false)
       clientType: 'operator',
     })
   }, [session, currentSessionId, socket, user?._id])
-
 
   useEffect(() => {
     const handleMessage = (message: ChatMessage) => {
@@ -268,23 +271,7 @@ const [showTransferDropdown, setShowTransferDropdown] = useState(false)
   const handleEndChatSession = async () => {
     setIsTerminating(true)
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${currentSessionId}/close`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ closedBy: 'operator' }),
-          credentials: 'include',
-        },
-      )
-
-      if (!response.ok) {
-        const errData = await response.json()
-        throw new Error(errData.message || 'Failed to close chat session')
-      }
-
+      await closeSession(currentSessionId, 'operator')
       setShowEndModal(false)
     } catch (error) {
       console.error('❌ Failed terminating channel sequence:', error)

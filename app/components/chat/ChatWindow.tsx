@@ -12,6 +12,11 @@ import { Button, Group, LoadingOverlay, Modal, Text } from '@mantine/core'
 import { useEffect, useRef, useState } from 'react'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import {
+  closeSession,
+  initiateSession,
+  uploadMedia,
+} from '@/app/lib/api/chat.api'
 import { useVisitorChatStore } from '@/app/store/useVisitorChatStore'
 import ChatHeader from './ChatHeader'
 import ChatInput from './ChatInput'
@@ -100,20 +105,12 @@ export default function ChatWindow({
   async function initializeConversation(forceNew = false) {
     if (!forceNew) return
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            widgetId,
-            visitorTrackingId,
-            createNew: true,
-          }),
-        },
-      )
+      const result = await initiateSession({
+        widgetId,
+        visitorTrackingId,
+        createNew: true,
+      })
 
-      const result = await response.json()
       if (result.status === 'success' && result.data) {
         handledClosedSessionRef.current = null
         setSession(result.data as SafeSessionConfig)
@@ -276,17 +273,7 @@ export default function ChatWindow({
     if (!session?.sessionId) return
     setIsClosing(true)
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ closedBy: 'visitor' }),
-          credentials: 'include',
-        },
-      )
-
-      const result = await response.json()
+      const result = await closeSession(session.sessionId, 'visitor')
       if (result.status === 'success') {
         if (handledClosedSessionRef.current !== session.sessionId) {
           handledClosedSessionRef.current = session.sessionId
@@ -375,17 +362,14 @@ export default function ChatWindow({
                   formData.append('type', item.type)
                   formData.append('sessionId', session.sessionId)
 
-                  const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
-                    {
-                      method: 'POST',
-                      body: formData,
-                    },
-                  )
-
-                  const result = await response.json()
+                  const result = await uploadMedia(formData)
                   if (result.status === 'success' && result.url) {
                     uploadedMediaUrls.push(result.url)
+                  } else {
+                    console.error(
+                      '[KeilaChat] Attachment upload failed:',
+                      result,
+                    )
                   }
                 }
               } catch (error) {

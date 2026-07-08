@@ -1,11 +1,12 @@
 // /app/lib/api/chat.api.ts
 
-import { apiGet, apiPost, apiPatch } from '@/app/lib/api/apiClient'
+import { apiGet, apiPatch, apiPost, apiUpload } from '@/app/lib/api/apiClient'
 
+import type { SessionInitResponse } from '@/app/types/chat'
 import type {
+  ChatMessage,
   OperatorConversation,
   OperatorProfile,
-  ChatMessage,
 } from '@/app/types/dashboard'
 
 /* -------------------------------------------------------------------------- */
@@ -104,7 +105,7 @@ export interface SendOperatorMessageRequest {
 
   messageText: string
 
-  messageType: 'text' | 'media'
+  messageType: 'text' | 'media' | 'image' | 'audio' | 'video' | 'file'
 
   isFromAI: false
 
@@ -120,6 +121,52 @@ export function sendOperatorMessage(payload: SendOperatorMessageRequest) {
   return apiPost<SendOperatorMessageResponse>('/api/v1/messages', payload)
 }
 
+export interface InitiateSessionRequest {
+  widgetId: string
+  visitorTrackingId: string
+  createNew?: boolean
+}
+
+export function initiateSession(payload: InitiateSessionRequest) {
+  return apiPost<SessionInitResponse>('/api/v1/sessions/initiate', payload)
+}
+
+export interface CloseSessionRequest {
+  closedBy: 'visitor' | 'operator'
+}
+
+export function closeSession(
+  sessionId: string,
+  closedBy: CloseSessionRequest['closedBy'],
+) {
+  return apiPatch<{ status: string }>(`/api/v1/sessions/${sessionId}/close`, {
+    closedBy,
+  })
+}
+
+export interface MediaUploadResponse {
+  status: string
+  url: string
+}
+
+export function uploadMedia(formData: FormData) {
+  return apiUpload<MediaUploadResponse>('/api/v1/media/upload', formData)
+}
+
+export interface UpdateVisitorProfileRequest {
+  propertyId: string
+  visitorTrackingId: string
+  name: string
+  email: string
+}
+
+export function updateVisitorProfile(payload: UpdateVisitorProfileRequest) {
+  return apiPatch<{ status: string; success?: boolean }>(
+    '/api/v1/visitors/profile',
+    payload,
+  )
+}
+
 export interface TypingRequest {
   actor: 'operator'
   typing: boolean
@@ -128,8 +175,6 @@ export interface TypingRequest {
 export function sendTypingStatus(sessionId: string, payload: TypingRequest) {
   return apiPatch(`/api/v1/chat/${sessionId}/typing`, payload)
 }
-
-
 
 /* -------------------------------------------------------------------------- */
 /* TEAMMATES / OPERATORS                                                      */
@@ -155,9 +200,6 @@ export function getActiveOperators() {
   return apiGet<ActiveOperatorsResponse>('/api/v1/operators/active')
 }
 
-
-
-
 /* -------------------------------------------------------------------------- */
 /* KNOWLEDGE BASE / AI CONTROL LAYER                                         */
 /* -------------------------------------------------------------------------- */
@@ -173,7 +215,7 @@ export interface ToggleAIResponse {
 }
 
 /**
- * Allows a human live agent to instantly override and pause/resume the AI bot 
+ * Allows a human live agent to instantly override and pause/resume the AI bot
  * for a specific active chat window.
  */
 export function toggleSessionAI(sessionId: string, aiEnabled: boolean) {

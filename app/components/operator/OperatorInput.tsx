@@ -2,20 +2,18 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import {
-  FiSend,
-  FiSmile,
-  FiMic,
-  FiSquare,
-  FiX,
-} from 'react-icons/fi'
-import EmojiPicker, { Theme, EmojiClickData } from 'emoji-picker-react'
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react'
 import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
+import { FiMic, FiSend, FiSmile, FiSquare, FiX } from 'react-icons/fi'
 
-import { sendOperatorMessage, sendTypingStatus } from '@/app/lib/api/chat.api'
-import { useAuthStore } from '@/app/store/useAuthStore'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import {
+  sendOperatorMessage,
+  sendTypingStatus,
+  uploadMedia,
+} from '@/app/lib/api/chat.api'
+import { useAuthStore } from '@/app/store/useAuthStore'
 import { FaPaperclip } from 'react-icons/fa'
 
 export interface OperatorInputProps {
@@ -38,7 +36,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
   const isCurrentlyTyping = useRef(false)
-  
+
   const pickerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -49,7 +47,10 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   const operator = useAuthStore((state) => state.operator)
   const socket = getChatSocket()
 
-  const canSend = !sending && operator && (message.trim().length > 0 || attachments.length > 0)
+  const canSend =
+    !sending &&
+    operator &&
+    (message.trim().length > 0 || attachments.length > 0)
 
   // Clean up Object URLs to prevent memory leaks
   useEffect(() => {
@@ -63,7 +64,10 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   // Close emoji menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false)
       }
     }
@@ -125,10 +129,13 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
       mediaRecorder.onstop = () => {
         const recordedMimeType = mediaRecorder.mimeType || 'audio/wav'
-        const audioBlob = new Blob(audioChunksRef.current, { type: recordedMimeType })
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: recordedMimeType,
+        })
 
         if (audioBlob.size > 0) {
-          const extension = recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'
+          const extension =
+            recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'
           const audioFile = new File(
             [audioBlob],
             `voice-note-${Date.now()}.${extension}`,
@@ -163,7 +170,10 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   }
 
   function stopRecording() {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
       mediaRecorderRef.current.stop()
     }
     setIsRecording(false)
@@ -203,25 +213,27 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
           formData.append('file', att.file)
           formData.append('sessionId', sessionId)
 
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
-          })
-
-          if (!response.ok) throw new Error('File upload failed')
-          const resData = await response.json()
-          return resData.url
+          const result = await uploadMedia(formData)
+          if (!result || result.status !== 'success' || !result.url) {
+            throw new Error('File upload failed')
+          }
+          return result.url
         })
         uploadedUrls = await Promise.all(uploadPromises)
       }
+
+      const messageType = attachments.some((att) => att.type === 'audio')
+        ? 'audio'
+        : attachments.some((att) => att.type === 'image')
+          ? 'image'
+          : 'text'
 
       await sendOperatorMessage({
         sessionId,
         senderType: 'operator',
         senderId: operatorId,
         messageText: trimmed,
-        messageType: uploadedUrls.length > 0 ? 'media' : 'text',
+        messageType,
         isFromAI: false,
         media: uploadedUrls.length > 0 ? uploadedUrls : undefined,
       })
@@ -241,7 +253,11 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
     try {
       await sendTypingStatus(sessionId, { actor: 'operator', typing })
       if (socket?.connected) {
-        socket.emit('typing', { sessionId, senderName: 'Operator', isTyping: typing })
+        socket.emit('typing', {
+          sessionId,
+          senderName: 'Operator',
+          isTyping: typing,
+        })
       }
     } catch (error) {
       console.error('❌ Failed to emit typing tracking payload data:', error)
