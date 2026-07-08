@@ -15,6 +15,29 @@ export default function MessageBubble({ message }: Props) {
   const isSystem =
     message.senderType === 'system' || message.sessionId === 'system'
 
+  const resolveMessageText = (payload: Props['message']) => {
+    const record = payload as Props['message'] & Record<string, unknown>
+
+    const candidates = [
+      record.messageText,
+      record.content,
+      record.text,
+      record.message,
+      record.body,
+      record.plainText,
+    ]
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim()
+      }
+    }
+
+    return ''
+  }
+
+  const resolvedText = resolveMessageText(message)
+
   const time = new Date(message.createdAt).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -34,7 +57,7 @@ export default function MessageBubble({ message }: Props) {
             text-center
           "
         >
-          {message.messageText}
+          {resolvedText || 'System event'}
         </div>
       </div>
     )
@@ -64,7 +87,7 @@ export default function MessageBubble({ message }: Props) {
     )
   }
 
-  const hasText = Boolean(message.messageText && message.messageText.trim())
+  const hasText = Boolean(resolvedText)
   const hasMedia = Boolean(message.media && message.media.length > 0)
 
   return (
@@ -144,7 +167,7 @@ export default function MessageBubble({ message }: Props) {
         {/* Render text string message alongside attachments if present */}
         {hasText ? (
           <span className="leading-relaxed wrap-break-words">
-            {message.messageText}
+            {resolvedText}
           </span>
         ) : hasMedia ? (
           <span className="leading-relaxed wrap-break-words text-muted-foreground">

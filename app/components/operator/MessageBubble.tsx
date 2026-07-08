@@ -18,6 +18,29 @@ function MessageBubble({ message }: MessageBubbleProps) {
   const isAI = message.senderType === 'ai'
   const isSystem = message.senderType === 'system'
 
+  const resolveMessageText = (payload: ChatMessage) => {
+    const record = payload as ChatMessage & Record<string, unknown>
+
+    const candidates = [
+      record.messageText,
+      record.content,
+      record.text,
+      record.message,
+      record.body,
+      record.plainText,
+    ]
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim()
+      }
+    }
+
+    return ''
+  }
+
+  const resolvedText = resolveMessageText(message)
+
   const alignRight = isOperator || isAI
 
   const formattedTime = message.createdAt
@@ -45,14 +68,14 @@ function MessageBubble({ message }: MessageBubbleProps) {
           }
         })
 
-  const hasText = Boolean(message.messageText && message.messageText.trim())
+  const hasText = Boolean(resolvedText)
   const hasMedia = fallbackAttachments.length > 0
 
   if (isSystem) {
     return (
       <div className="flex justify-center my-1 animate-in fade-in duration-200">
         <div className="rounded-full bg-muted/60 border border-border/40 px-4 py-1.5 text-[11px] text-muted-foreground shadow-sm">
-          {message.messageText || 'System event'}
+          {resolvedText || 'System event'}
         </div>
       </div>
     )
@@ -88,7 +111,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
           >
             {hasText ? (
               <p className="whitespace-pre-wrap wrap-break-word">
-                {message.messageText}
+                {resolvedText}
               </p>
             ) : hasMedia ? (
               <p className="text-[11px] font-medium text-muted-foreground">
