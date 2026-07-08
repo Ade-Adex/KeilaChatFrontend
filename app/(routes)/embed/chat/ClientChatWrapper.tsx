@@ -35,12 +35,16 @@ export default function ClientChatWrapper({
   })
 
   const handleOpenChat = async () => {
+    setOpen(true)
+    setChatWindowKey((prev) => prev + 1)
+    markSessionSeen()
+
     if (!session?.sessionId || session.status === 'closed') {
       try {
         const result = await initiateSession({
           widgetId,
           visitorTrackingId,
-          // createNew: true,
+          createNew: true,
         })
 
         if (result.status === 'success' && result.data) {
@@ -54,10 +58,6 @@ export default function ClientChatWrapper({
         )
       }
     }
-
-    setOpen(true)
-    setChatWindowKey((prev) => prev + 1)
-    markSessionSeen()
   }
 
   const handleCloseChat = () => {
@@ -66,8 +66,14 @@ export default function ClientChatWrapper({
   }
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-transparent">
-      {open ? (
+    <div className="relative w-full h-full flex items-center justify-center bg-transparent overflow-hidden">
+      <div
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+          open
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      >
         <ChatWindow
           key={chatWindowKey}
           widget={widget}
@@ -81,13 +87,21 @@ export default function ClientChatWrapper({
               : undefined
           }
         />
-      ) : (
+      </div>
+
+      <div
+        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+          open
+            ? 'opacity-0 pointer-events-none'
+            : 'opacity-100 pointer-events-auto'
+        }`}
+      >
         <ChatLauncher
           onClick={handleOpenChat}
           widget={widget}
           unreadCount={unreadCount}
         />
-      )}
+      </div>
     </div>
   )
 }
