@@ -124,7 +124,7 @@ export function sendOperatorMessage(payload: SendOperatorMessageRequest) {
 export interface InitiateSessionRequest {
   widgetId: string
   visitorTrackingId: string
-  createNew?: boolean
+  // createNew?: boolean
 }
 
 export function initiateSession(payload: InitiateSessionRequest) {

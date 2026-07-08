@@ -40,7 +40,7 @@ export default function ClientChatWrapper({
         const result = await initiateSession({
           widgetId,
           visitorTrackingId,
-          createNew: true,
+          // createNew: true,
         })
 
         if (result.status === 'success' && result.data) {
