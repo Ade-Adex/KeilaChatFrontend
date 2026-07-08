@@ -60,7 +60,7 @@ export default function ChatWindow({
       const result = await initiateSession({
         widgetId,
         visitorTrackingId,
-        createNew: true,
+        // createNew: true,
       })
 
       if (result.status === 'success' && result.data) {
