@@ -2,10 +2,10 @@
 
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import MessageBubble from './MessageBubble'
 import type { ChatMessage } from '@/app/types/dashboard'
-import { FiClock, FiCheck, FiCheckSquare, FiInfo, FiX } from 'react-icons/fi'
+import { useEffect, useRef, useState } from 'react'
+import { FiCheck, FiCheckSquare, FiClock, FiInfo, FiX } from 'react-icons/fi'
+import MessageBubble from './MessageBubble'
 
 export interface MessageFeedProps {
   messages: ChatMessage[]
@@ -191,7 +191,11 @@ export default function MessageFeed({
             </div>
 
             {/* Render message bubbles packed inside this timeframe bucket */}
-            {groups[dayKey].map((message) => {
+            {groups[dayKey].map((message, index) => {
+              const messageKey =
+                message._id ??
+                `${message.senderId}-${message.createdAt}-${index}`
+
               const isTransferNotice =
                 message.senderType === 'system' ||
                 (message.messageText &&
@@ -200,7 +204,7 @@ export default function MessageFeed({
               if (isTransferNotice) {
                 return (
                   <div
-                    key={message._id}
+                    key={messageKey}
                     className="flex items-center my-2 w-full select-none"
                   >
                     <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />

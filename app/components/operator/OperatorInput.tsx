@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FiMic, FiSend, FiSmile, FiSquare, FiX } from 'react-icons/fi'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { useMessageAttachments } from '@/app/hooks/useMessageAttachments'
 import {
   sendOperatorMessage,
   sendTypingStatus,
@@ -20,29 +21,28 @@ export interface OperatorInputProps {
   sessionId: string
 }
 
-interface LocalAttachment {
-  type: 'image' | 'audio'
-  file: File | Blob
-  previewUrl: string
-}
-
 export default function OperatorInput({ sessionId }: OperatorInputProps) {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [attachments, setAttachments] = useState<LocalAttachment[]>([])
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingDuration, setRecordingDuration] = useState(0)
 
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
   const isCurrentlyTyping = useRef(false)
 
   const pickerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const {
+    attachments,
+    fileInputRef,
+    isRecording,
+    recordingDuration,
+    handleFileChange,
+    removeAttachment,
+    startRecording: startRecordingAttachment,
+    stopRecording: stopRecordingAttachment,
+    clearAttachments,
+  } = useMessageAttachments()
 
   const operator = useAuthStore((state) => state.operator)
   const socket = getChatSocket()
@@ -56,10 +56,8 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   useEffect(() => {
     return () => {
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
-      if (timerRef.current) clearInterval(timerRef.current)
-      attachments.forEach((att) => URL.revokeObjectURL(att.previewUrl))
     }
-  }, [attachments])
+  }, [])
 
   // Close emoji menu when clicking outside
   useEffect(() => {
@@ -80,115 +78,16 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
     textareaRef.current?.focus()
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files) return
-    const files = Array.from(e.target.files)
-
-    const newAttachments = files.map((file) => ({
-      type: 'image' as const,
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }))
-
-    setAttachments((prev) => [...prev, ...newAttachments])
-    e.target.value = ''
+  const handleStartRecording = async () => {
+    await startRecordingAttachment()
   }
 
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      })
-
-      let options: MediaRecorderOptions | undefined = undefined
-      if (typeof MediaRecorder !== 'undefined') {
-        if (MediaRecorder.isTypeSupported('audio/webm')) {
-          options = { mimeType: 'audio/webm' }
-        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-          options = { mimeType: 'audio/ogg' }
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          options = { mimeType: 'audio/mp4' }
-        } else if (MediaRecorder.isTypeSupported('audio/aac')) {
-          options = { mimeType: 'audio/aac' }
-        }
-      }
-
-      const mediaRecorder = new MediaRecorder(stream, options)
-      mediaRecorderRef.current = mediaRecorder
-      audioChunksRef.current = []
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
-        }
-      }
-
-      mediaRecorder.onstop = () => {
-        const recordedMimeType = mediaRecorder.mimeType || 'audio/wav'
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: recordedMimeType,
-        })
-
-        if (audioBlob.size > 0) {
-          const extension =
-            recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'
-          const audioFile = new File(
-            [audioBlob],
-            `voice-note-${Date.now()}.${extension}`,
-            { type: recordedMimeType },
-          )
-
-          setAttachments((prev) => [
-            ...prev,
-            {
-              type: 'audio',
-              file: audioFile,
-              previewUrl: URL.createObjectURL(audioBlob),
-            },
-          ])
-        }
-        stream.getTracks().forEach((track) => track.stop())
-      }
-
-      mediaRecorder.start(250)
-      setIsRecording(true)
-      setRecordingDuration(0)
-
-      if (timerRef.current) clearInterval(timerRef.current)
-      timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1)
-      }, 1000)
-    } catch (err) {
-      console.error('❌ Operator Microphone Access Failed:', err)
-      alert('Could not access microphone. Ensure permissions are granted.')
-      setIsRecording(false)
-    }
+  const handleStopRecording = () => {
+    stopRecordingAttachment()
   }
 
-  function stopRecording() {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== 'inactive'
-    ) {
-      mediaRecorderRef.current.stop()
-    }
-    setIsRecording(false)
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-  }
-
-  function removeAttachment(index: number) {
-    setAttachments((prev) => {
-      const target = prev[index]
-      if (target) URL.revokeObjectURL(target.previewUrl)
-      return prev.filter((_, i) => i !== index)
-    })
+  const removeAttachmentAtIndex = (index: number) => {
+    removeAttachment(index)
   }
 
   const sendMessage = async () => {
@@ -206,7 +105,6 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
       let uploadedUrls: string[] = []
 
-      // Media Pipeline processing
       if (attachments.length > 0) {
         const uploadPromises = attachments.map(async (att) => {
           const formData = new FormData()
@@ -239,7 +137,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
       })
 
       setMessage('')
-      setAttachments([])
+      clearAttachments()
       setShowEmojiPicker(false)
     } catch (error) {
       console.error('❌ Message deployment error:', error)
@@ -313,7 +211,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
               )}
               <button
                 type="button"
-                onClick={() => removeAttachment(idx)}
+                onClick={() => removeAttachmentAtIndex(idx)}
                 className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 hover:bg-rose-600 transition-colors"
               >
                 <FiX size={10} />
@@ -390,7 +288,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
         {/* 🎯 MICROPHONE ACTION RUNNER */}
         <button
           type="button"
-          onClick={isRecording ? stopRecording : startRecording}
+          onClick={isRecording ? handleStopRecording : handleStartRecording}
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition cursor-pointer ${
             isRecording
               ? 'bg-red-600 text-white animate-pulse'

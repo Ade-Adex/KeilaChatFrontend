@@ -2,11 +2,11 @@
 
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
-import type { ChatMessage, WidgetConfig } from '@/app/types/chat'
-import MessageBubble from './MessageBubble'
 import TypingIndicator from '@/app/components/TypingIndicator'
-import { FiClock, FiCheck, FiCheckSquare, FiInfo, FiX } from 'react-icons/fi'
+import type { ChatMessage, WidgetConfig } from '@/app/types/chat'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { FiCheck, FiCheckSquare, FiClock, FiInfo, FiX } from 'react-icons/fi'
+import MessageBubble from './MessageBubble'
 
 interface Props {
   widget: WidgetConfig | null
@@ -41,16 +41,18 @@ export default function ChatMessages({
     Set<string>
   >(new Set())
 
-  // ⚡ React 19 Inline Prop Synchronization Pattern
-  const [prevMessagesLength, setPrevMessagesLength] = useState(messages.length)
-  if (messages.length !== prevMessagesLength) {
-    setPrevMessagesLength(messages.length)
-    if (messages.length === 0) {
-      setCompletedAiMessageIds(new Set())
-    }
-  }
-
   const lastMessage = messages[messages.length - 1]
+
+  useEffect(() => {
+    if (messages.length !== 0) return
+
+    const resetTimer = window.setTimeout(() => {
+      setCompletedAiMessageIds(new Set())
+    }, 0)
+
+    return () => window.clearTimeout(resetTimer)
+  }, [messages.length])
+
   const lastMessageId = lastMessage
     ? lastMessage._id || `${lastMessage.senderId}-${lastMessage.createdAt}`
     : null
@@ -241,7 +243,11 @@ export default function ChatMessages({
             </div>
 
             {/* Print messages bound to this calendar group */}
-            {groupedTimeline[dayKey].map((message) => {
+            {groupedTimeline[dayKey].map((message, index) => {
+              const messageKey =
+                message._id ??
+                `${message.senderId}-${message.createdAt}-${index}`
+
               const isSystemNotice =
                 message.senderType === 'system' ||
                 message.sessionId === 'system' ||
@@ -257,9 +263,7 @@ export default function ChatMessages({
               if (isSystemNotice) {
                 return (
                   <div
-                    key={
-                      message._id ?? `${message.senderId}-${message.createdAt}`
-                    }
+                    key={messageKey}
                     className="flex items-center my-2 w-full select-none"
                   >
                     <div className="flex-1 h-px bg-linear-to-r from-transparent via-border to-transparent" />
@@ -273,9 +277,7 @@ export default function ChatMessages({
 
               return (
                 <div
-                  key={
-                    message._id ?? `${message.senderId}-${message.createdAt}`
-                  }
+                  key={messageKey}
                   className="cursor-help"
                   onContextMenu={(e) => triggerMessageInfo(e, message)}
                   onTouchStart={(e) => {

@@ -64,6 +64,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
   const user = useAuthStore((state) => state.operator)
   const socket = getChatSocket()
   const currentSessionId = session._id
+  const [sessionStatus, setSessionStatus] = useState(session.status)
 
   useEffect(() => {
     if (!socket.connected) socket.connect()
@@ -233,15 +234,12 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
       }
     }
 
-    // 🎯 ADDED: Handle live status changes (like waiting -> active handoffs) inside an already active workspace view
     const handleSessionStatusChanged = (payload: {
       sessionId: string
       status: string
     }) => {
       if (payload.sessionId !== currentSessionId) return
-
-      // Type-safe cast ensuring the incoming status matches the permitted union values of the schema
-      session.status = payload.status as OperatorConversation['status']
+      setSessionStatus(payload.status as OperatorConversation['status'])
     }
 
     socket.on('new_message', handleMessage)
@@ -317,7 +315,7 @@ export default function OperatorWorkspace({ session }: OperatorWorkspaceProps) {
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] font-medium capitalize text-muted-foreground tracking-wide">
-              {session.status} Thread
+              {sessionStatus} Thread
             </span>
           </div>
         </div>

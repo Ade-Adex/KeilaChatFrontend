@@ -2,9 +2,9 @@
 
 'use client'
 
-import Image from 'next/image'
 import MessageStatusTicks from '@/app/components/MessageStatusTicks'
 import type { ChatMessage } from '@/app/types/chat'
+import Image from 'next/image'
 
 interface Props {
   message: ChatMessage & { media?: string[]; messageType?: string }
@@ -63,6 +63,9 @@ export default function MessageBubble({ message }: Props) {
       cleanUrl.endsWith('.webp')
     )
   }
+
+  const hasText = Boolean(message.messageText && message.messageText.trim())
+  const hasMedia = Boolean(message.media && message.media.length > 0)
 
   return (
     <div
@@ -139,11 +142,15 @@ export default function MessageBubble({ message }: Props) {
         )}
 
         {/* Render text string message alongside attachments if present */}
-        {message.messageText && (
+        {hasText ? (
           <span className="leading-relaxed wrap-break-words">
             {message.messageText}
           </span>
-        )}
+        ) : hasMedia ? (
+          <span className="leading-relaxed wrap-break-words text-muted-foreground">
+            Media attachment
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-1 flex items-center gap-1 px-1">

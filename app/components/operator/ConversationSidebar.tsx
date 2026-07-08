@@ -2,21 +2,21 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
-import {
-  getQueuedSessions,
-  getActiveSessions,
-  getMySessions,
-  getMyProperties,
-} from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import {
+  getActiveSessions,
+  getMyProperties,
+  getMySessions,
+  getQueuedSessions,
+} from '@/app/lib/api/chat.api'
 import { useAuthStore } from '@/app/store/useAuthStore'
-import { FiUser, FiActivity, FiLayers } from 'react-icons/fi'
-import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
+import type { ChatMessage, OperatorConversation } from '@/app/types/dashboard'
+import { useEffect, useState } from 'react'
+import { FiActivity, FiLayers, FiUser } from 'react-icons/fi'
 
 interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
-  onSelect: (conversation: OperatorConversation | null) => void 
+  onSelect: (conversation: OperatorConversation | null) => void
   refreshKey?: number
 }
 
@@ -45,7 +45,6 @@ export default function ConversationSidebar({
 
   const socket = getChatSocket()
   const currentOperator = useAuthStore((state) => state.operator)
-
 
   const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
     if (!visitor) return 'Anonymous Visitor'
@@ -174,9 +173,6 @@ export default function ConversationSidebar({
         if (selectedConversation?._id === payload.sessionId) {
           onSelect(null)
         }
-      } else {
-        // If it shifts from waiting to active or queued, fire the refresh trigger hook to cleanly reload state definitions
-        onSelect(null) // Unselect current stale instance view models
       }
     }
 

@@ -2,11 +2,11 @@
 
 'use client'
 
+import MessageStatusTicks from '@/app/components/MessageStatusTicks'
+import type { ChatAttachment, ChatMessage } from '@/app/types/dashboard'
 import Image from 'next/image'
 import { memo } from 'react'
-import { FaRobot, FaUser, FaUserTie, FaFile, FaMusic } from 'react-icons/fa'
-import type { ChatMessage, ChatAttachment } from '@/app/types/dashboard'
-import MessageStatusTicks from '@/app/components/MessageStatusTicks'
+import { FaFile, FaMusic, FaRobot, FaUser, FaUserTie } from 'react-icons/fa'
 
 export interface MessageBubbleProps {
   message: ChatMessage
@@ -27,16 +27,6 @@ function MessageBubble({ message }: MessageBubbleProps) {
       })
     : ''
 
-  if (isSystem) {
-    return (
-      <div className="flex justify-center my-1 animate-in fade-in duration-200">
-        <div className="rounded-full bg-muted/60 border border-border/40 px-4 py-1.5 text-[11px] text-muted-foreground shadow-sm">
-          {message.messageText || 'System event'}
-        </div>
-      </div>
-    )
-  }
-
   // 🎯 FIX: Strictly typed fallback loop using the unified ChatAttachment schema interface
   const fallbackAttachments: ChatAttachment[] =
     message.attachments && message.attachments.length > 0
@@ -54,6 +44,19 @@ function MessageBubble({ message }: MessageBubbleProps) {
             fileType,
           }
         })
+
+  const hasText = Boolean(message.messageText && message.messageText.trim())
+  const hasMedia = fallbackAttachments.length > 0
+
+  if (isSystem) {
+    return (
+      <div className="flex justify-center my-1 animate-in fade-in duration-200">
+        <div className="rounded-full bg-muted/60 border border-border/40 px-4 py-1.5 text-[11px] text-muted-foreground shadow-sm">
+          {message.messageText || 'System event'}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -83,9 +86,17 @@ function MessageBubble({ message }: MessageBubbleProps) {
                     : 'bg-muted/70 text-foreground rounded-tl-none'
               }`}
           >
-            {message.messageText && (
+            {hasText ? (
               <p className="whitespace-pre-wrap wrap-break-word">
                 {message.messageText}
+              </p>
+            ) : hasMedia ? (
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Media attachment
+              </p>
+            ) : (
+              <p className="text-[11px] font-medium text-muted-foreground">
+                No message content
               </p>
             )}
 
