@@ -1,5 +1,6 @@
 // app/(routes)/embed/chat/page.tsx
 
+import { WidgetConfig } from '@/app/types/chat'
 import ClientChatWrapper from './ClientChatWrapper'
 import { headers } from 'next/headers'
 
@@ -9,8 +10,8 @@ interface Props {
   searchParams: Promise<{
     widgetId?: string
     visitorTrackingId?: string
-    apiUrl?: string
-    frontendUrl?: string
+    // apiUrl?: string
+    // frontendUrl?: string
   }>
 }
 
@@ -32,7 +33,9 @@ export default async function EmbedPage({ searchParams }: Props) {
 
   const referer = headerStore.get('referer') ?? ''
 
-  let widget = null
+  // let widget = null
+
+  let widget: WidgetConfig | null = null
   let errorMessage: string | null = null
 
   try {
@@ -51,7 +54,8 @@ export default async function EmbedPage({ searchParams }: Props) {
       errorMessage = 'Unauthorized Widget'
     } else {
       const result = await response.json()
-      widget = result.data
+      // widget = result.data
+      widget = result.data as WidgetConfig
     }
   } catch (error) {
     console.error('Widget verification failed:', error)

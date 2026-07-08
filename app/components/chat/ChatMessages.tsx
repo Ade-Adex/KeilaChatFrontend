@@ -9,7 +9,7 @@ import TypingIndicator from '@/app/components/TypingIndicator'
 import { FiClock, FiCheck, FiCheckSquare, FiInfo, FiX } from 'react-icons/fi'
 
 interface Props {
-  widget: WidgetConfig
+  widget: WidgetConfig | null
   messages: ChatMessage[]
   operatorTyping: boolean
 }
@@ -222,7 +222,7 @@ export default function ChatMessages({
             senderId: 'system',
             senderType: 'system',
             messageText:
-              widget.settings?.welcomeMessage ??
+              widget?.settings?.welcomeMessage ??
               'Hi! How can we help you today?',
             createdAt: new Date().toISOString(),
           }}

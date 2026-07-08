@@ -29,7 +29,7 @@ import { useTheme } from 'next-themes'
 import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
 
 interface ChatHeaderProps {
-  widget: WidgetConfig
+  widget: WidgetConfig | null
   propertyId?: string
   visitorTrackingId?: string
   operatorName?: string
@@ -64,8 +64,8 @@ export default function ChatHeader({
   const { resolvedTheme, setTheme } = useTheme()
 
  const structuralAiName =
-   widget.widgetSettings?.aiName?.trim() ||
-   widget.settings?.aiName?.trim() ||
+   widget?.widgetSettings?.aiName?.trim() ||
+   widget?.settings?.aiName?.trim() ||
    'AI Assistant'
   const isAiSession = operatorName?.toLowerCase() === 'ai'
 
@@ -140,12 +140,12 @@ export default function ChatHeader({
       <div
         className="flex items-center justify-between px-4 py-4 text-white shadow-sm"
         style={{
-          background: widget.theme?.primaryColor ?? '#2563eb',
+          background: widget?.theme?.primaryColor ?? '#2563eb',
         }}
       >
         <div className="flex flex-col">
           <h2 className="text-sm font-semibold">
-            {widget.name ?? 'Live Support'}
+            {widget?.name ?? 'Live Support'}
           </h2>
           <p className="text-xs opacity-80">
             {isSessionActive ? "We're online" : 'Conversation Closed'}
@@ -330,7 +330,7 @@ export default function ChatHeader({
               size="xs"
               fullWidth
               loading={updating}
-              style={{ background: widget.theme?.primaryColor ?? '#2563eb' }}
+              style={{ background: widget?.theme?.primaryColor ?? '#2563eb' }}
             >
               Save Profile
             </Button>

@@ -149,7 +149,7 @@ export interface PresenceNotification {
 }
 
 export interface ChatWindowProps {
-  widget: WidgetConfig
+  widget: WidgetConfig | null
   widgetId: string
   visitorTrackingId: string
   onClose: () => void

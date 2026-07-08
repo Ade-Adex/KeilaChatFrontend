@@ -2,27 +2,23 @@
 
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { Modal, Button, Group, Text, LoadingOverlay } from '@mantine/core'
 import type {
   ChatMessage,
   ChatWindowProps,
   PopulatedOperator,
   SafeSessionConfig,
 } from '@/app/types/chat'
+import { Button, Group, LoadingOverlay, Modal, Text } from '@mantine/core'
+import { useEffect, useRef, useState } from 'react'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { useVisitorChatStore } from '@/app/store/useVisitorChatStore'
 import ChatHeader from './ChatHeader'
-import ChatMessages from './ChatMessages'
 import ChatInput from './ChatInput'
+import ChatMessages from './ChatMessages'
 
-interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
-  initialSession: SafeSessionConfig | null
-  initialMessages: ChatMessage[]
-  setInitialMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
-  setSession: React.Dispatch<React.SetStateAction<SafeSessionConfig | null>>
+interface ExtendedChatWindowProps extends ChatWindowProps {
   loading: boolean
-  onClose: () => void
   queueSubtext?: string
 }
 
@@ -30,28 +26,22 @@ export default function ChatWindow({
   widget,
   widgetId,
   visitorTrackingId,
-  initialSession,
-  setSession,
-  initialMessages,
-  setInitialMessages,
   loading,
   onClose,
   queueSubtext,
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
-  const session = initialSession
-
-  const [prevSessionId, setPrevSessionId] = useState<string | undefined>(
-    initialSession?.sessionId,
+  const session = useVisitorChatStore((state) => state.session)
+  const messages = useVisitorChatStore((state) => state.messages)
+  const setSession = useVisitorChatStore((state) => state.setSession)
+  const setMessages = useVisitorChatStore((state) => state.setMessages)
+  const addMessage = useVisitorChatStore((state) => state.addMessage)
+  const operatorTyping = useVisitorChatStore((state) => state.operatorTyping)
+  const setOperatorTyping = useVisitorChatStore(
+    (state) => state.setOperatorTyping,
   )
 
-  if (initialSession?.sessionId !== prevSessionId) {
-    setSession(initialSession)
-    setPrevSessionId(initialSession?.sessionId)
-  }
-
   const [message, setMessage] = useState('')
-  const [operatorTyping, setOperatorTyping] = useState(false)
 
   const [socketOperatorName, setSocketOperatorName] = useState<string>()
   const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
@@ -60,7 +50,7 @@ export default function ChatWindow({
   const [isClosing, setIsClosing] = useState(false)
 
   const handledClosedSessionRef = useRef<string | null>(null)
-  const platformFallbackName = widget.name?.trim() || 'Support Agent'
+  const platformFallbackName = widget?.name?.trim() || 'Support Agent'
 
   let operatorName = socketOperatorName
   let operatorAvatar = socketOperatorAvatar
@@ -127,7 +117,7 @@ export default function ChatWindow({
       if (result.status === 'success' && result.data) {
         handledClosedSessionRef.current = null
         setSession(result.data as SafeSessionConfig)
-        setInitialMessages([])
+        setMessages([])
         setSocketOperatorName(undefined)
         setSocketOperatorAvatar(undefined)
       }
@@ -176,30 +166,32 @@ export default function ChatWindow({
       setSocketOperatorName(cleanName)
       if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
 
-      setSession((prev): SafeSessionConfig | null => {
-        if (!prev) return null
+      if (session) {
         const operatorMock: PopulatedOperator = {
           _id: payload.operatorId,
           firstName: cleanName,
           email: '',
           avatar: payload.avatar || '',
         }
-        return {
-          ...prev,
+        setSession({
+          ...session,
           status: 'active',
           assignedOperatorId:
             operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
-        }
-      })
+        })
+      }
     }
 
     const handleOperatorLeft = () => {
       setSocketOperatorName(undefined)
       setSocketOperatorAvatar(undefined)
-      setSession((prev) => {
-        if (!prev) return null
-        return { ...prev, status: 'queued', assignedOperatorId: null }
-      })
+      if (session) {
+        setSession({
+          ...session,
+          status: 'queued',
+          assignedOperatorId: null,
+        })
+      }
     }
 
     const handleStatusChanged = (payload: {
@@ -208,7 +200,9 @@ export default function ChatWindow({
     }) => {
       if (payload.sessionId !== session.sessionId) return
 
-      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
+      if (session) {
+        setSession({ ...session, status: payload.status })
+      }
 
       if (
         payload.status === 'closed' &&
@@ -227,11 +221,11 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          setInitialMessages((prev) => [...prev, visitorNotice])
+          addMessage(visitorNotice)
         } else {
           const runtimeAiDisplayName =
-            widget.widgetSettings?.aiName?.trim() ||
-            widget.settings?.aiName?.trim() ||
+            widget?.widgetSettings?.aiName?.trim() ||
+            widget?.settings?.aiName?.trim() ||
             'AI Assistant'
 
           const displayTerminalName =
@@ -248,7 +242,7 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          setInitialMessages((prev) => [...prev, terminalNotice])
+          addMessage(terminalNotice)
         }
       }
     }
@@ -265,13 +259,15 @@ export default function ChatWindow({
       socket.off('session_status_changed', handleStatusChanged)
     }
   }, [
+    session,
     session?.sessionId,
     socket,
     setSession,
+    setOperatorTyping,
+    addMessage,
     operatorName,
-    setInitialMessages,
-    widget.settings?.aiName,
-    widget.widgetSettings?.aiName,
+    widget?.settings?.aiName,
+    widget?.widgetSettings?.aiName,
     confirmModalOpen,
     isClosing,
   ])
@@ -303,11 +299,8 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          setInitialMessages((prev) => [...prev, visitorNotice])
+          addMessage(visitorNotice)
         }
-
-        setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
-        setConfirmModalOpen(false)
       }
     } catch (error) {
       console.error('[KeilaChat] Error closing conversation session:', error)
@@ -348,7 +341,7 @@ export default function ChatWindow({
         {!loading && (
           <ChatMessages
             widget={widget}
-            messages={initialMessages}
+            messages={messages}
             operatorTyping={operatorTyping}
           />
         )}

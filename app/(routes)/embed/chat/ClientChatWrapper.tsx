@@ -2,22 +2,23 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
-import ChatWindow from '@/app/components/chat/ChatWindow'
 import { ChatLauncher } from '@/app/components/chat/ChatLauncher'
+import ChatWindow from '@/app/components/chat/ChatWindow'
+import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { useVisitorChatStore } from '@/app/store/useVisitorChatStore'
 import type {
-  WidgetConfig,
   ChatMessage,
+  PopulatedOperator,
   SafeSessionConfig,
   SessionInitResponse,
-  PopulatedOperator,
+  WidgetConfig,
 } from '@/app/types/chat'
-import { getChatSocket } from '@/app/hooks/useChatSocket'
+import { useEffect, useState } from 'react'
 
 interface Props {
   widgetId: string
   visitorTrackingId: string
-  widget: WidgetConfig
+  widget: WidgetConfig | null
 }
 
 interface MessageStatusPayload {
@@ -38,8 +39,11 @@ export default function ClientChatWrapper({
 }: Props) {
   const [open, setOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [session, setSession] = useState<SafeSessionConfig | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const session = useVisitorChatStore((state) => state.session)
+  const messages = useVisitorChatStore((state) => state.messages)
+  const setSession = useVisitorChatStore((state) => state.setSession)
+  const setMessages = useVisitorChatStore((state) => state.setMessages)
+  const addMessage = useVisitorChatStore((state) => state.addMessage)
   const [loading, setLoading] = useState(true)
 
   // 1. Manage layout dimensions with the parent website embed frame
@@ -78,7 +82,7 @@ export default function ClientChatWrapper({
       }
     }
     initializeConversation()
-  }, [widgetId, visitorTrackingId])
+  }, [widgetId, visitorTrackingId, setSession])
 
   // 3. Fetch database message logs as soon as session context maps out
   useEffect(() => {
@@ -104,7 +108,7 @@ export default function ClientChatWrapper({
       }
     }
     fetchHistory()
-  }, [session?.sessionId])
+  }, [session?.sessionId, setMessages])
 
   // 4. Persistent Core Socket Engine Link + Real-Time Decoupled Status Delivery Check
   useEffect(() => {
@@ -151,18 +155,14 @@ export default function ClientChatWrapper({
         (payload.senderType === 'operator' || payload.senderType === 'ai') &&
         payload.senderId
       ) {
-        setSession((prev): SafeSessionConfig | null => {
-          if (!prev) return null
-          if (!prev.assignedOperatorId) {
-            // If the message is dispatched by the AI system, preserve 'ai' identity routing signature
-            if (payload.senderType === 'ai' || payload.senderId === 'ai') {
-              return {
-                ...prev,
-                status: 'active',
-                assignedOperatorId: 'ai',
-              }
-            }
-
+        if (session && !session.assignedOperatorId) {
+          if (payload.senderType === 'ai' || payload.senderId === 'ai') {
+            setSession({
+              ...session,
+              status: 'active',
+              assignedOperatorId: 'ai',
+            })
+          } else {
             const runtimeOperator: PopulatedOperator = {
               _id: payload.senderId,
               firstName: payload.senderName || 'Support Agent',
@@ -170,29 +170,32 @@ export default function ClientChatWrapper({
               email: '',
             }
 
-            return {
-              ...prev,
+            setSession({
+              ...session,
               status: 'active',
               assignedOperatorId:
                 runtimeOperator as unknown as SafeSessionConfig['assignedOperatorId'],
-            }
+            })
           }
-          return prev
-        })
+        }
       }
 
-      setMessages((prev) => {
-        if (!payload._id) return [...prev, payload]
-        const matchIndex = prev.findIndex((m) => m._id === payload._id)
+      if (!payload._id) {
+        addMessage(payload)
+      } else {
+        const matchIndex = messages.findIndex((m) => m._id === payload._id)
         if (matchIndex !== -1) {
-          return prev.map((m) =>
-            m._id === payload._id
-              ? { ...m, status: payload.status ?? m.status }
-              : m,
+          setMessages(
+            messages.map((m) =>
+              m._id === payload._id
+                ? { ...m, status: payload.status ?? m.status }
+                : m,
+            ),
           )
+        } else {
+          addMessage(payload)
         }
-        return [...prev, payload]
-      })
+      }
 
       if (payload.senderType === 'operator' || payload.senderType === 'ai') {
         if (!open) {
@@ -227,8 +230,8 @@ export default function ClientChatWrapper({
 
     const handleStatusUpdated = (data: MessageStatusPayload) => {
       if (data.sessionId !== session.sessionId) return
-      setMessages((prev) =>
-        prev.map((m) =>
+      setMessages(
+        messages.map((m) =>
           m._id === data.messageId ? { ...m, status: data.status } : m,
         ),
       )
@@ -237,8 +240,8 @@ export default function ClientChatWrapper({
     const handleMessagesSeen = (data: MessagesSeenPayload) => {
       if (data.sessionId !== session.sessionId) return
       if (data.reader === 'operator') {
-        setMessages((prev) =>
-          prev.map((m) =>
+        setMessages(
+          messages.map((m) =>
             m.senderType === 'visitor' ? { ...m, status: 'seen' as const } : m,
           ),
         )
@@ -250,8 +253,8 @@ export default function ClientChatWrapper({
       senderType: string
     }) => {
       if (data.sessionId !== session.sessionId) return
-      setMessages((prev) =>
-        prev.map((m) =>
+      setMessages(
+        messages.map((m) =>
           m.senderType === 'operator' || m.senderType === 'ai'
             ? { ...m, status: m.status === 'seen' ? 'seen' : 'delivered' }
             : m,
@@ -264,7 +267,9 @@ export default function ClientChatWrapper({
       status: SafeSessionConfig['status']
     }) => {
       if (payload.sessionId !== session.sessionId) return
-      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
+      if (session) {
+        setSession({ ...session, status: payload.status })
+      }
     }
 
     const handleOperatorJoinedLive = (payload: {
@@ -272,20 +277,18 @@ export default function ClientChatWrapper({
       name: string
       avatar?: string
     }) => {
-      setSession((prev): SafeSessionConfig | null => {
-        if (!prev) return null
-        const runtimeOperator: PopulatedOperator = {
-          _id: payload.operatorId,
-          firstName: payload.name?.trim() || 'Support Agent',
-          avatar: payload.avatar || '',
-          email: '',
-        }
-        return {
-          ...prev,
-          status: 'active',
-          assignedOperatorId:
-            runtimeOperator as unknown as SafeSessionConfig['assignedOperatorId'],
-        }
+      if (!session) return
+      const runtimeOperator: PopulatedOperator = {
+        _id: payload.operatorId,
+        firstName: payload.name?.trim() || 'Support Agent',
+        avatar: payload.avatar || '',
+        email: '',
+      }
+      setSession({
+        ...session,
+        status: 'active',
+        assignedOperatorId:
+          runtimeOperator as unknown as SafeSessionConfig['assignedOperatorId'],
       })
     }
 
@@ -304,7 +307,7 @@ export default function ClientChatWrapper({
       socket.off('session_status_changed', handleStatusChanged)
       socket.off('operator_joined', handleOperatorJoinedLive)
     }
-  }, [session, open, widget, messages.length])
+  }, [session, open, widget, messages, setMessages, setSession, addMessage])
 
   const handleOpenChat = () => {
     setUnreadCount(0)
@@ -326,10 +329,6 @@ export default function ClientChatWrapper({
           widget={widget}
           widgetId={widgetId}
           visitorTrackingId={visitorTrackingId}
-          initialSession={session}
-          setSession={setSession}
-          setInitialMessages={setMessages}
-          initialMessages={messages}
           loading={loading}
           onClose={() => setOpen(false)}
           queueSubtext={

@@ -5,7 +5,7 @@
 import type { WidgetConfig } from '@/app/types/chat'
 
 interface Props {
-  widget: WidgetConfig
+  widget: WidgetConfig | null
   onClick: () => void
   unreadCount: number
 }
@@ -32,7 +32,7 @@ export function ChatLauncher({ widget, onClick, unreadCount }: Props) {
           border-none
         "
         style={{
-          background: widget.theme?.primaryColor ?? '#2563eb',
+          background: widget?.theme?.primaryColor ?? '#2563eb',
         }}
       >
         💬
