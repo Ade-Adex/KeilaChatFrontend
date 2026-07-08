@@ -101,7 +101,7 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
+    <div className="flex h-[600px] w-[380px] flex-col overflow-hidden bg-background shadow-2xl rounded-2xl max-sm:h-[100dvh] max-sm:w-screen max-sm:rounded-none max-sm:shadow-none">
       <ChatHeader
         widget={widget}
         propertyId={session?.propertyId}
