@@ -75,8 +75,8 @@ export default function WidgetIdCard({
             >
               <ActionIcon
                 variant="subtle"
-                color="gray"
                 onClick={onToggle}
+                className="text-foreground!"
               >
                 {revealed ? (
                   <FiEyeOff size={16} />
