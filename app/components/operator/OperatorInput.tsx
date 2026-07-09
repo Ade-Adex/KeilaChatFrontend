@@ -1,15 +1,10 @@
 // /components/operator/OperatorInput.tsx
 
+
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import {
-  FiSend,
-  FiSmile,
-  FiMic,
-  FiSquare,
-  FiX,
-} from 'react-icons/fi'
+import { FiSend, FiSmile, FiMic, FiSquare, FiX } from 'react-icons/fi'
 import EmojiPicker, { Theme, EmojiClickData } from 'emoji-picker-react'
 import Image from 'next/image'
 
@@ -20,6 +15,8 @@ import { FaPaperclip } from 'react-icons/fa'
 
 export interface OperatorInputProps {
   sessionId: string
+  allowFileUpload?: boolean
+  allowVoiceRecordings?: boolean
 }
 
 interface LocalAttachment {
@@ -28,7 +25,11 @@ interface LocalAttachment {
   previewUrl: string
 }
 
-export default function OperatorInput({ sessionId }: OperatorInputProps) {
+export default function OperatorInput({
+  sessionId,
+  allowFileUpload = true,
+  allowVoiceRecordings = true,
+}: OperatorInputProps) {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -38,7 +39,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
   const typingTimeout = useRef<NodeJS.Timeout | null>(null)
   const isCurrentlyTyping = useRef(false)
-  
+
   const pickerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -49,9 +50,11 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   const operator = useAuthStore((state) => state.operator)
   const socket = getChatSocket()
 
-  const canSend = !sending && operator && (message.trim().length > 0 || attachments.length > 0)
+  const canSend =
+    !sending &&
+    operator &&
+    (message.trim().length > 0 || attachments.length > 0)
 
-  // Clean up Object URLs to prevent memory leaks
   useEffect(() => {
     return () => {
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
@@ -60,10 +63,12 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
     }
   }, [attachments])
 
-  // Close emoji menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
         setShowEmojiPicker(false)
       }
     }
@@ -77,7 +82,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files) return
+    if (!allowFileUpload || !e.target.files) return
     const files = Array.from(e.target.files)
 
     const newAttachments = files.map((file) => ({
@@ -91,6 +96,7 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   }
 
   async function startRecording() {
+    if (!allowVoiceRecordings) return
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -125,10 +131,13 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
       mediaRecorder.onstop = () => {
         const recordedMimeType = mediaRecorder.mimeType || 'audio/wav'
-        const audioBlob = new Blob(audioChunksRef.current, { type: recordedMimeType })
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: recordedMimeType,
+        })
 
         if (audioBlob.size > 0) {
-          const extension = recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'
+          const extension =
+            recordedMimeType.split('/')[1]?.split(';')[0] || 'wav'
           const audioFile = new File(
             [audioBlob],
             `voice-note-${Date.now()}.${extension}`,
@@ -163,7 +172,10 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
   }
 
   function stopRecording() {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
       mediaRecorderRef.current.stop()
     }
     setIsRecording(false)
@@ -196,18 +208,20 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
       let uploadedUrls: string[] = []
 
-      // Media Pipeline processing
       if (attachments.length > 0) {
         const uploadPromises = attachments.map(async (att) => {
           const formData = new FormData()
           formData.append('file', att.file)
           formData.append('sessionId', sessionId)
 
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
-          })
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
+            {
+              method: 'POST',
+              body: formData,
+              credentials: 'include',
+            },
+          )
 
           if (!response.ok) throw new Error('File upload failed')
           const resData = await response.json()
@@ -241,7 +255,11 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
     try {
       await sendTypingStatus(sessionId, { actor: 'operator', typing })
       if (socket?.connected) {
-        socket.emit('typing', { sessionId, senderName: 'Operator', isTyping: typing })
+        socket.emit('typing', {
+          sessionId,
+          senderName: 'Operator',
+          isTyping: typing,
+        })
       }
     } catch (error) {
       console.error('❌ Failed to emit typing tracking payload data:', error)
@@ -274,7 +292,6 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
         className="hidden"
       />
 
-      {/* 🎯 ATTACHMENT CAROUSEL PREVIEW BAR */}
       {attachments.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2 p-2 bg-background rounded-xl border border-border max-w-7xl mx-auto">
           {attachments.map((attachment, idx) => (
@@ -307,7 +324,6 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
         </div>
       )}
 
-      {/* 🎯 FLOATING EMOJI PICKER EMBED */}
       {showEmojiPicker && (
         <div
           ref={pickerRef}
@@ -325,14 +341,17 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
 
       <div className="flex items-end gap-2 md:gap-3 max-w-7xl mx-auto relative">
         <div className="flex items-center gap-1 pb-1">
-          <button
-            type="button"
-            disabled={isRecording}
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-muted-foreground transition hover:text-foreground rounded-lg hover:bg-muted/80 disabled:opacity-30 cursor-pointer"
-          >
-            <FaPaperclip size={16} />
-          </button>
+          {/* 🎯 UPDATED: Hide or show file clip button depending on workspace permissions */}
+          {allowFileUpload && (
+            <button
+              type="button"
+              disabled={isRecording}
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-muted-foreground transition hover:text-foreground rounded-lg hover:bg-muted/80 disabled:opacity-30 cursor-pointer"
+            >
+              <FaPaperclip size={16} />
+            </button>
+          )}
 
           <button
             type="button"
@@ -344,7 +363,6 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
           </button>
         </div>
 
-        {/* 🎯 CONDITIONAL INPUT STREAM VIEWS */}
         {isRecording ? (
           <div className="flex-1 flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2 text-xs text-red-500 font-medium min-h-9.5">
             <span className="animate-pulse flex items-center gap-1.5">
@@ -371,20 +389,21 @@ export default function OperatorInput({ sessionId }: OperatorInputProps) {
           </div>
         )}
 
-        {/* 🎯 MICROPHONE ACTION RUNNER */}
-        <button
-          type="button"
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition cursor-pointer ${
-            isRecording
-              ? 'bg-red-600 text-white animate-pulse'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-          }`}
-        >
-          {isRecording ? <FiSquare size={14} /> : <FiMic size={16} />}
-        </button>
+        {/* 🎯 UPDATED: Hide or show microphone recorder trigger button context entirely */}
+        {allowVoiceRecordings && (
+          <button
+            type="button"
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition cursor-pointer ${
+              isRecording
+                ? 'bg-red-600 text-white animate-pulse'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            {isRecording ? <FiSquare size={14} /> : <FiMic size={16} />}
+          </button>
+        )}
 
-        {/* 🎯 SEND MESSAGE BUTTON */}
         <button
           type="button"
           disabled={!canSend}

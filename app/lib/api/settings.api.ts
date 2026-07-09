@@ -9,9 +9,8 @@ import type {
 
 import type { AccountData, OperatorData } from '@/app/types/auth'
 
-
 /* -------------------------------------------------------------------------- */
-/*                                  PROFILE                                   */
+/* PROFILE                                   */
 /* -------------------------------------------------------------------------- */
 
 export interface ProfileResponse {
@@ -27,14 +26,11 @@ export function getProfile() {
 }
 
 export function updateProfile(data: ProfileFormValues) {
-  return apiPut<ProfileResponse>(
-    `/api/v1/operators/profile`,
-    data,
-  )
+  return apiPut<ProfileResponse>(`/api/v1/operators/profile`, data)
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 WORKSPACE                                  */
+/* WORKSPACE                                  */
 /* -------------------------------------------------------------------------- */
 
 export interface WorkspaceResponse {
@@ -49,35 +45,33 @@ export function getWorkspace() {
 }
 
 export function updateWorkspace(data: WorkspaceFormValues) {
-  return apiPut<WorkspaceResponse>(
-    `/api/v1/account/workspace`,
-    data,
-  )
+  return apiPut<WorkspaceResponse>(`/api/v1/account/workspace`, data)
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  WEBSITE                                   */
+/* WEBSITE                                   */
 /* -------------------------------------------------------------------------- */
 
 export interface WebsiteData {
   id: string
-
   accountId: string
-
   widgetId: string
-
   apiKey: string
-
   name: string
-
   domain: string
-
   allowedDomains: string[]
-
   widgetSettings?: {
     aiName?: string
+    launcherPosition?: string
+    welcomeMessage?: string
+    offlineMessage?: string
+    showAgentPhoto?: boolean
+    soundEnabled?: boolean
+    allowFileUpload?: boolean
+    allowEmoji?: boolean
+    allowScreenshots?: boolean
+    allowVoiceRecordings?: boolean
   }
-
   details: {
     category: string
     subCategory: string
@@ -85,25 +79,19 @@ export interface WebsiteData {
     description: string
     logoUrl: string
   }
-
   settings: {
     themeColor: string
     headingText: string
-
     onlineStatus: boolean
     trackIp: boolean
-
     autoAssign: boolean
     aiEnabled: boolean
     aiFallbackToHuman: boolean
-
     responseTimeGoalMs?: number
   }
-
   workingHours: {
     enabled: boolean
     timezone: string
-
     schedule: Record<
       string,
       {
@@ -113,9 +101,7 @@ export interface WebsiteData {
       }
     >
   }
-
   createdAt: string
-
   updatedAt: string
 }
 
@@ -131,12 +117,15 @@ export interface UpdateWebsiteRequest {
   domain: string
   aiName: string
   allowedDomains: string[]
-
   category: string
   subCategory: string
   region: string
   description: string
   logoUrl: string
+  widgetSettings?: {
+    allowFileUpload?: boolean
+    allowVoiceRecordings?: boolean
+  }
 }
 
 export function getWebsite() {
@@ -144,8 +133,12 @@ export function getWebsite() {
 }
 
 export function updateWebsite(data: UpdateWebsiteRequest) {
-  return apiPut<WebsiteResponse>(
-    '/api/v1/properties/settings',
-    data,
-  )
+  return apiPut<WebsiteResponse>('/api/v1/properties/settings', data)
+}
+
+// 🎯 ADDED: Fetch dedicated property layout configuration rules with custom context headers
+export function getPropertySettings(propertyId: string) {
+  return apiGet<WebsiteResponse>('/api/v1/properties/settings', {
+    headers: { 'x-property-id': propertyId },
+  })
 }
