@@ -75,7 +75,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex items-center justify-center bg-background px-6 pt-24">
+    <div className="flex items-center justify-center text-foreground bg-background px-6 pt-24">
       <div className="w-full max-w-md border border-border shadow-2xl rounded-xl p-6">
         <h1 className="text-2xl font-bold mb-2">Create your workspace</h1>
 

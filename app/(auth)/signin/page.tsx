@@ -85,7 +85,7 @@ function LoginContent() {
     searchParams.toString().includes('accept-invite')
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center text-foreground bg-background px-4">
       <div className="w-full max-w-md rounded-xl bg-card p-8 shadow-2xl">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold">Operator Sign In</h1>

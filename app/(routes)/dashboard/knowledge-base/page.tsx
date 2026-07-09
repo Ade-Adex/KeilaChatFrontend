@@ -95,7 +95,7 @@ export default function KnowledgeBasePage() {
   }
 
   return (
-    <Box className="relative mx-auto max-w-5xl space-y-8 p-4 pb-16">
+    <Box className="relative mx-auto max-w-5xl space-y-8 md:p-4 pb-16">
       <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} />
 
       <KnowledgeHeader

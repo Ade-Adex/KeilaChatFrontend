@@ -173,7 +173,7 @@ function AcceptInviteContent() {
               <div>
                 <Title
                   order={2}
-                  className="tracking-tight bg-card! text-foreground! mb-1"
+                  className="tracking-tight text-center text-foreground! mb-3!"
                 >
                   Complete Setup
                 </Title>
@@ -207,9 +207,10 @@ function AcceptInviteContent() {
               {inviteInvalid ? (
                 <Button
                   variant="subtle"
-                  color="gray"
+                  // color="gray"
                   fullWidth
                   onClick={() => router.push('/signin')}
+                  className='text-white! bg-primary!'
                 >
                   Return to Login
                 </Button>

@@ -78,7 +78,7 @@ export default function CrawledSourcesList({
           </Group>
         ) : (
           <div className="overflow-x-auto">
-            <Table verticalSpacing="sm" horizontalSpacing="md" variant="simple">
+            <Table verticalSpacing="sm" horizontalSpacing="md" variant="simple" className='text-foreground'>
               <Table.Thead className="bg-sidebar/5">
                 <Table.Tr>
                   <Table.Th>Target URL Path</Table.Th>

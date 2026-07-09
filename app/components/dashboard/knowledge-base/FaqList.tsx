@@ -39,6 +39,7 @@ export default function FaqList({ faqs, onEdit, onRemove }: FaqListProps) {
           horizontalSpacing="md"
           highlightOnHover
           variant="simple"
+          className='text-foreground'
         >
           <Table.Thead className="bg-sidebar/5">
             <Table.Tr>
