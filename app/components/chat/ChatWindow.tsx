@@ -202,6 +202,7 @@ export default function ChatWindow({
       })
     }
 
+
     const handleStatusChanged = (payload: {
       sessionId: string
       status: SafeSessionConfig['status']

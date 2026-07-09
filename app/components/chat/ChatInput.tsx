@@ -190,7 +190,7 @@ export default function ChatInput({
             placeholder="Type a message..."
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-w-0 rounded-full border border-border bg-background text-foreground px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm outline-none transition focus:border-primary placeholder:text-muted-foreground"
+            className="flex-1 min-w-0 rounded-full border border-border bg-background text-foreground px-3 sm:px-4 py-2 sm:py-2.5 text-xs! sm:text-sm! outline-none transition focus:border-primary placeholder:text-muted-foreground"
           />
         )}
 
@@ -214,7 +214,7 @@ export default function ChatInput({
           type="button"
           disabled={!canSend}
           onClick={triggerSend}
-          className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <FiSend size={15} className="sm:w-4 sm:h-4" />
         </button>
