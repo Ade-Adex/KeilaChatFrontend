@@ -26,8 +26,7 @@ export default function InstallationTabs({
     <Paper
       withBorder
       radius="md"
-      p="xl"
-      className="relative bg-card! border-border!"
+      className="relative bg-card! border-border! px-4 py-6"
     >
       {/* Lock overlay */}
 

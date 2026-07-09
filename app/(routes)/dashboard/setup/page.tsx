@@ -114,7 +114,7 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 p-4">
+    <div className="mx-auto max-w-5xl space-y-8 md:p-4">
       {setup.isNotRegistered && <PropertyWarning />}
 
       <SetupHeader isNotRegistered={setup.isNotRegistered} />
