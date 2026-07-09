@@ -2,7 +2,7 @@
 
 import { apiGet, apiPatch, apiPost, apiUpload } from '@/app/lib/api/apiClient'
 
-import type { SessionInitResponse } from '@/app/types/chat'
+import type { SessionInitResponse, WidgetConfig } from '@/app/types/chat'
 import type {
   ChatMessage,
   OperatorConversation,
@@ -42,6 +42,22 @@ export interface PropertiesResponse {
 
 export function getMyProperties() {
   return apiGet<PropertiesResponse>('/api/v1/properties')
+}
+
+/* -------------------------------------------------------------------------- */
+/* WIDGETS                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export interface VerifyWidgetResponse {
+  status: string
+  data: WidgetConfig
+}
+
+/**
+ * Verifies a chat widget configuration via its specific unique identifier.
+ */
+export function verifyWidget(widgetId: string, headers?: Record<string, string>) {
+  return apiGet<VerifyWidgetResponse>(`/api/v1/widget/${widgetId}/verify`, { headers })
 }
 
 /* -------------------------------------------------------------------------- */
