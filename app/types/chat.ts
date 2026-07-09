@@ -198,3 +198,9 @@ export interface SessionInitResponse {
   status: string
   data: SafeSessionConfig
 }
+
+export function isPopulatedSession(
+  session: unknown,
+): session is { _id: string } {
+  return typeof session === 'object' && session !== null && '_id' in session
+}
