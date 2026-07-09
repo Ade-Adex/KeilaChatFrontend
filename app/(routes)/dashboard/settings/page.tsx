@@ -10,7 +10,7 @@ import WebsiteForm from '@/app/components/dashboard/settings/WebsiteForm'
 
 export default function SettingsPage() {
   return (
-    <div className="px-6 md:px-8">
+    <div className="md:px-8">
       <Title order={2} mb="lg">
         Settings
       </Title>
