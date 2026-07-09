@@ -10,8 +10,8 @@ interface Props {
   searchParams: Promise<{
     widgetId?: string
     visitorTrackingId?: string
-    // apiUrl?: string
-    // frontendUrl?: string
+    apiUrl?: string
+    frontendUrl?: string
   }>
 }
 
@@ -33,10 +33,8 @@ export default async function EmbedPage({ searchParams }: Props) {
 
   const referer = headerStore.get('referer') ?? ''
 
-  // let widget = null
-
-  let widget: WidgetConfig | null = null
-  let errorMessage: string | null = null
+   let widget: WidgetConfig | null = null
+   let errorMessage: string | null = null
 
   try {
     const response = await fetch(
@@ -54,8 +52,7 @@ export default async function EmbedPage({ searchParams }: Props) {
       errorMessage = 'Unauthorized Widget'
     } else {
       const result = await response.json()
-      // widget = result.data
-      widget = result.data as WidgetConfig
+      widget = result.data
     }
   } catch (error) {
     console.error('Widget verification failed:', error)

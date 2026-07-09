@@ -2,28 +2,27 @@
 
 'use client'
 
+import { useEffect, useState, useRef } from 'react'
+import { Modal, Button, Group, Text, LoadingOverlay } from '@mantine/core'
 import type {
   ChatMessage,
   ChatWindowProps,
+  PopulatedOperator,
   SafeSessionConfig,
 } from '@/app/types/chat'
-import { Button, Group, LoadingOverlay, Modal, Text } from '@mantine/core'
-import { useRef, useState } from 'react'
 
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-import { useOperatorPresence } from '@/app/hooks/useOperatorPresence'
-import {
-  closeSession,
-  initiateSession,
-  uploadMedia,
-} from '@/app/lib/api/chat.api'
-import { useVisitorChatStore } from '@/app/store/useVisitorChatStore'
 import ChatHeader from './ChatHeader'
-import ChatInput from './ChatInput'
 import ChatMessages from './ChatMessages'
+import ChatInput from './ChatInput'
 
-interface ExtendedChatWindowProps extends ChatWindowProps {
+interface ExtendedChatWindowProps extends Omit<ChatWindowProps, 'onClose'> {
+  initialSession: SafeSessionConfig | null
+  initialMessages: ChatMessage[]
+  setInitialMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+  setSession: React.Dispatch<React.SetStateAction<SafeSessionConfig | null>>
   loading: boolean
+  onClose: () => void
   queueSubtext?: string
 }
 
@@ -31,53 +30,267 @@ export default function ChatWindow({
   widget,
   widgetId,
   visitorTrackingId,
+  initialSession,
+  setSession,
+  initialMessages,
+  setInitialMessages,
   loading,
   onClose,
   queueSubtext,
 }: ExtendedChatWindowProps) {
   const socket = getChatSocket()
-  const session = useVisitorChatStore((state) => state.session)
-  const messages = useVisitorChatStore((state) => state.messages)
-  const setSession = useVisitorChatStore((state) => state.setSession)
-  const setMessages = useVisitorChatStore((state) => state.setMessages)
-  const addMessage = useVisitorChatStore((state) => state.addMessage)
-  const operatorTyping = useVisitorChatStore((state) => state.operatorTyping)
+  const session = initialSession
+
+  const [prevSessionId, setPrevSessionId] = useState<string | undefined>(
+    initialSession?.sessionId,
+  )
+
+  if (initialSession?.sessionId !== prevSessionId) {
+    setSession(initialSession)
+    setPrevSessionId(initialSession?.sessionId)
+  }
 
   const [message, setMessage] = useState('')
+  const [operatorTyping, setOperatorTyping] = useState(false)
+
+  const [socketOperatorName, setSocketOperatorName] = useState<string>()
+  const [socketOperatorAvatar, setSocketOperatorAvatar] = useState<string>()
+
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
-  const handledClosedSessionRef = useRef<string | null>(null)
 
-  const { operatorName, operatorAvatar } = useOperatorPresence({
-    session,
-    widget,
-    isClosing,
-  })
+  const handledClosedSessionRef = useRef<string | null>(null)
+  const platformFallbackName = widget?.name?.trim() || 'Support Agent'
+
+  let operatorName = socketOperatorName
+  let operatorAvatar = socketOperatorAvatar
+
+  const isCurrentlyAi =
+    session?.assignedOperatorId === 'ai' ||
+    (!session?.assignedOperatorId &&
+      session?.status !== 'queued' &&
+      session?.status !== 'waiting') ||
+    (typeof session?.assignedOperatorId === 'object' &&
+      session?.assignedOperatorId !== null &&
+      '_id' in session.assignedOperatorId &&
+      String(session.assignedOperatorId._id).toLowerCase() === 'ai')
+
+  if (isCurrentlyAi) {
+    operatorName = 'ai'
+  } else if (!operatorName && session?.assignedOperatorId) {
+    const op = session.assignedOperatorId as unknown as PopulatedOperator
+    if (op && typeof op === 'object') {
+      if (
+        'firstName' in op &&
+        typeof op.firstName === 'string' &&
+        op.firstName.trim()
+      ) {
+        operatorName = op.firstName.trim()
+      }
+      if ('avatar' in op && typeof op.avatar === 'string') {
+        operatorAvatar = op.avatar
+      }
+    }
+  }
+
+  if (isCurrentlyAi || operatorName?.toLowerCase() === 'ai') {
+    operatorName = 'ai'
+  } else if (!operatorName || operatorName.toLowerCase() === 'operator') {
+    if (
+      session?.assignedOperatorId ||
+      session?.status === 'queued' ||
+      session?.status === 'waiting'
+    ) {
+      operatorName = 'Support Agent'
+    } else {
+      operatorName = platformFallbackName
+    }
+  }
 
   async function initializeConversation(forceNew = false) {
     if (!forceNew) return
     try {
-      const result = await initiateSession({
-        widgetId,
-        visitorTrackingId,
-        createNew: true,
-      })
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/initiate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            widgetId,
+            visitorTrackingId,
+            createNew: true,
+          }),
+        },
+      )
 
+      const result = await response.json()
       if (result.status === 'success' && result.data) {
         handledClosedSessionRef.current = null
         setSession(result.data as SafeSessionConfig)
-        setMessages([])
+        setInitialMessages([])
+        setSocketOperatorName(undefined)
+        setSocketOperatorAvatar(undefined)
       }
     } catch (error) {
       console.error('[KeilaChat] Session hard-reset failed:', error)
     }
   }
 
+  useEffect(() => {
+    if (!session?.sessionId) return
+
+    if (socket.connected) {
+      socket.emit('join_chat_session', {
+        sessionId: session.sessionId,
+        clientType: 'visitor',
+      })
+    }
+
+    const handleTyping = (payload: {
+      isTyping: boolean
+      actor?: string
+      senderName?: string
+    }) => {
+      if (payload.actor === 'visitor') return
+      setOperatorTyping(payload.isTyping)
+
+      if (
+        payload.senderName &&
+        payload.senderName.toLowerCase() !== 'operator'
+      ) {
+        setSocketOperatorName(payload.senderName)
+      }
+    }
+
+    const handleOperatorJoined = (payload: {
+      operatorId: string
+      name: string
+      avatar?: string
+    }) => {
+      const isPayloadAi =
+        payload.operatorId === 'ai' || payload.name?.toLowerCase() === 'ai'
+      const cleanName = isPayloadAi
+        ? 'ai'
+        : payload.name?.trim() || 'Support Agent'
+
+      setSocketOperatorName(cleanName)
+      if (payload.avatar) setSocketOperatorAvatar(payload.avatar)
+
+      setSession((prev): SafeSessionConfig | null => {
+        if (!prev) return null
+        const operatorMock: PopulatedOperator = {
+          _id: payload.operatorId,
+          firstName: cleanName,
+          email: '',
+          avatar: payload.avatar || '',
+        }
+        return {
+          ...prev,
+          status: 'active',
+          assignedOperatorId:
+            operatorMock as unknown as SafeSessionConfig['assignedOperatorId'],
+        }
+      })
+    }
+
+    const handleOperatorLeft = () => {
+      setSocketOperatorName(undefined)
+      setSocketOperatorAvatar(undefined)
+      setSession((prev) => {
+        if (!prev) return null
+        return { ...prev, status: 'queued', assignedOperatorId: null }
+      })
+    }
+
+    const handleStatusChanged = (payload: {
+      sessionId: string
+      status: SafeSessionConfig['status']
+    }) => {
+      if (payload.sessionId !== session.sessionId) return
+
+      setSession((prev) => (prev ? { ...prev, status: payload.status } : null))
+
+      if (
+        payload.status === 'closed' &&
+        handledClosedSessionRef.current !== payload.sessionId
+      ) {
+        handledClosedSessionRef.current = payload.sessionId
+        setOperatorTyping(false)
+
+        if (confirmModalOpen || isClosing) {
+          const visitorNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: payload.sessionId,
+            senderType: 'ai',
+            senderId: 'system',
+            messageText: '🚫 You have ended this support session.',
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => [...prev, visitorNotice])
+        } else {
+          const runtimeAiDisplayName =
+            widget?.widgetSettings?.aiName?.trim() ||
+            widget?.settings?.aiName?.trim() ||
+            'AI Assistant'
+
+          const displayTerminalName =
+            operatorName?.toLowerCase() === 'ai'
+              ? runtimeAiDisplayName
+              : operatorName || 'the support agent'
+
+          const terminalNotice: ChatMessage = {
+            _id: `sys-${Date.now()}`,
+            sessionId: payload.sessionId,
+            senderType: 'ai',
+            senderId: 'system',
+            messageText: `🚫 Conversation ended by ${displayTerminalName}.`,
+            status: 'seen',
+            createdAt: new Date().toISOString(),
+          }
+          setInitialMessages((prev) => [...prev, terminalNotice])
+        }
+      }
+    }
+
+    socket.on('user_typing', handleTyping)
+    socket.on('operator_joined', handleOperatorJoined)
+    socket.on('operator_left', handleOperatorLeft)
+    socket.on('session_status_changed', handleStatusChanged)
+
+    return () => {
+      socket.off('user_typing', handleTyping)
+      socket.off('operator_joined', handleOperatorJoined)
+      socket.off('operator_left', handleOperatorLeft)
+      socket.off('session_status_changed', handleStatusChanged)
+    }
+  }, [
+    session?.sessionId,
+    socket,
+    setSession,
+    operatorName,
+    setInitialMessages,
+    widget?.settings?.aiName,
+    widget?.widgetSettings?.aiName,
+    confirmModalOpen,
+    isClosing,
+  ])
+
   async function handleEndChat() {
     if (!session?.sessionId) return
     setIsClosing(true)
     try {
-      const result = await closeSession(session.sessionId, 'visitor')
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${session.sessionId}/close`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ closedBy: 'visitor' }),
+          credentials: 'include',
+        },
+      )
+
+      const result = await response.json()
       if (result.status === 'success') {
         if (handledClosedSessionRef.current !== session.sessionId) {
           handledClosedSessionRef.current = session.sessionId
@@ -90,8 +303,11 @@ export default function ChatWindow({
             status: 'seen',
             createdAt: new Date().toISOString(),
           }
-          addMessage(visitorNotice)
+          setInitialMessages((prev) => [...prev, visitorNotice])
         }
+
+        setSession((prev) => (prev ? { ...prev, status: 'closed' } : null))
+        setConfirmModalOpen(false)
       }
     } catch (error) {
       console.error('[KeilaChat] Error closing conversation session:', error)
@@ -101,7 +317,7 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="flex h-[600px] w-[380px] flex-col overflow-hidden bg-background shadow-2xl rounded-2xl max-sm:h-[100dvh] max-sm:w-screen max-sm:rounded-none max-sm:shadow-none">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background shadow-2xl md:h-full md:w-full md:rounded-2xl">
       <ChatHeader
         widget={widget}
         propertyId={session?.propertyId}
@@ -132,7 +348,7 @@ export default function ChatWindow({
         {!loading && (
           <ChatMessages
             widget={widget}
-            messages={messages}
+            messages={initialMessages}
             operatorTyping={operatorTyping}
           />
         )}
@@ -166,14 +382,17 @@ export default function ChatWindow({
                   formData.append('type', item.type)
                   formData.append('sessionId', session.sessionId)
 
-                  const result = await uploadMedia(formData)
+                  const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/media/upload`,
+                    {
+                      method: 'POST',
+                      body: formData,
+                    },
+                  )
+
+                  const result = await response.json()
                   if (result.status === 'success' && result.url) {
                     uploadedMediaUrls.push(result.url)
-                  } else {
-                    console.error(
-                      '[KeilaChat] Attachment upload failed:',
-                      result,
-                    )
                   }
                 }
               } catch (error) {
