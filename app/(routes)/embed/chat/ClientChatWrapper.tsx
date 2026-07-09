@@ -273,7 +273,27 @@ export default function ClientChatWrapper({
       })
     }
 
+    // 🎯 FIX: Handle launcher badge notifications when minimized
+    const handleUnreadSync = (payload: {
+      sessionId: string
+      unreadCount: number
+    }) => {
+      if (payload.sessionId !== session.sessionId) return
+      if (!open) {
+        setUnreadCount(payload.unreadCount)
+        window.parent.postMessage(
+          {
+            type: 'UNREAD_UPDATE',
+            count: payload.unreadCount,
+          },
+          '*',
+        )
+      }
+    }
+
+    
     socket.on('new_message', handleIncomingMessage)
+    socket.on('unread_count_sync', handleUnreadSync)
     socket.on('message_status_updated', handleStatusUpdated)
     socket.on('messages_seen', handleMessagesSeen)
     socket.on('messages_delivered_bulk', handleBulkDelivered)
@@ -282,6 +302,7 @@ export default function ClientChatWrapper({
 
     return () => {
       socket.off('new_message', handleIncomingMessage)
+      socket.off('unread_count_sync', handleUnreadSync)
       socket.off('message_status_updated', handleStatusUpdated)
       socket.off('messages_seen', handleMessagesSeen)
       socket.off('messages_delivered_bulk', handleBulkDelivered)
@@ -293,6 +314,8 @@ export default function ClientChatWrapper({
   const handleOpenChat = () => {
     setUnreadCount(0)
     setOpen(true)
+
+    window.parent.postMessage({ type: 'UNREAD_RESET' }, '*')
 
     const socket = getChatSocket()
     if (socket.connected && session?.sessionId) {
