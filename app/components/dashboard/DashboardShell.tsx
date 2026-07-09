@@ -13,7 +13,7 @@ export default function DashboardShell({
 }: {
   children: React.ReactNode
 }) {
-  const [opened, { toggle }] = useDisclosure(false)
+  const [opened, { toggle, close }] = useDisclosure(false)
 
   return (
     <AppShell
@@ -52,7 +52,7 @@ export default function DashboardShell({
       {/* Navigation Drawer Panel */}
       <AppShell.Navbar className="border-r border-border! transition-all duration-300">
         <ScrollArea className="h-full bg-card">
-          <Sidebar isOpened={opened} />
+          <Sidebar isOpened={opened} onNavigate={close} />
         </ScrollArea>
       </AppShell.Navbar>
 

@@ -12,26 +12,26 @@ import { sidebarLinks } from '@/app/data/SidebarLinks'
 
 interface SidebarProps {
   isOpened: boolean
+  onNavigate: () => void
 }
 
-
-
-export default function Sidebar({ isOpened }: SidebarProps) {
+export default function Sidebar({ isOpened, onNavigate }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter() 
+  const router = useRouter()
   const logout = useAuthStore((state) => state.logout)
 
- const handleLogoutClick = async () => {
-   try {
-     await logout()
+  const handleLogoutClick = async () => {
+    try {
+      onNavigate()
 
-     router.replace('/signin')
+      await logout()
 
-     router.refresh()
-   } catch (err) {
-     console.error(err)
-   }
- }
+      router.replace('/signin')
+      router.refresh()
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] p-3 justify-between text-white">
@@ -52,12 +52,14 @@ export default function Sidebar({ isOpened }: SidebarProps) {
               <NavLink
                 component={Link}
                 href={link.href}
+                onClick={onNavigate}
                 label={isOpened ? link.name : null}
                 leftSection={link.icon}
-                className={`rounded-lg font-medium transition-all duration-200 py-2.5! ${
+                className={`relative rounded-lg py-2.5! transition-all duration-300
+                ${
                   isActive
-                    ? ' bg-primary! hover:opacity-80 shadow-sm'
-                    : 'bg-sidebar/70! text-foreground opacity-80 hover:opacity-70!'
+                    ? 'text-primary! font-semibold after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary'
+                    : 'text-foreground! hover:text-primary after:absolute after:left-1/2 after:-bottom-0.5 after:h-0.5 after:w-0 after:-translate-x-1/2 after:bg-primary after:transition-all after:duration-300 hover:after:w-[70%]'
                 }`}
                 styles={{
                   root: {
