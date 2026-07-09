@@ -66,15 +66,8 @@ export default function ClientChatWrapper({
   }
 
   return (
-    <div className="relative w-full h-full bg-transparent overflow-hidden">
-      {/* Chat Window Panel */}
-      <div
-        className={`absolute bottom-0 right-0 transition-all duration-300 ease-in-out ${
-          open
-            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
-            : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
-        }`}
-      >
+    <div className="w-full h-full flex items-center justify-center bg-transparent">
+      {open ? (
         <ChatWindow
           key={chatWindowKey}
           widget={widget}
@@ -88,22 +81,13 @@ export default function ClientChatWrapper({
               : undefined
           }
         />
-      </div>
-
-      {/* Chat Launcher Button */}
-      <div
-        className={`absolute bottom-4 right-4 transition-all duration-200 z-50 ${
-          open
-            ? 'opacity-0 scale-75 pointer-events-none'
-            : 'opacity-100 scale-100 pointer-events-auto'
-        }`}
-      >
+      ) : (
         <ChatLauncher
           onClick={handleOpenChat}
           widget={widget}
           unreadCount={unreadCount}
         />
-      </div>
+      )}
     </div>
   )
 }
