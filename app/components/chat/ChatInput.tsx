@@ -22,6 +22,9 @@ interface ChatInputProps {
   onSend: (
     attachments?: { type: 'image' | 'audio'; file: File | Blob }[],
   ) => void
+  // 🎯 ADDED: Add toggles to the properties interface signature
+  allowAttachments?: boolean
+  allowVoiceRecordings?: boolean
 }
 
 export default function ChatInput({
@@ -29,6 +32,8 @@ export default function ChatInput({
   disabled = false,
   onChange,
   onSend,
+  allowAttachments = true, // 🎯 Default fallbacks for safety
+  allowVoiceRecordings = true, // 🎯 Default fallbacks for safety
 }: ChatInputProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -96,7 +101,8 @@ export default function ChatInput({
 
   return (
     <div className="relative border-t border-border bg-card p-3">
-      {attachments.length > 0 && (
+      {/* 🎯 CORRECTION: Only show file previews if attachments are permitted */}
+      {allowAttachments && attachments.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2 p-2 bg-background rounded-xl border border-border">
           {attachments.map((attachment, idx) => (
             <div
@@ -142,24 +148,30 @@ export default function ChatInput({
       )}
 
       <div className="flex items-center gap-1.5 sm:gap-2 w-full max-w-full min-w-0">
-        <input
-          type="file"
-          ref={fileInputRef}
-          multiple
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+        {/* 🎯 CORRECTION: Hide standard file input field completely */}
+        {allowAttachments && (
+          <input
+            type="file"
+            ref={fileInputRef}
+            multiple
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        )}
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground ${
-            isRecording ? 'hidden sm:flex' : 'flex'
-          }`}
-        >
-          <FiPaperclip size={18} className="sm:w-5 sm:h-5" />
-        </button>
+        {/* 🎯 CORRECTION: Hide paperclip icon button component trigger */}
+        {allowAttachments && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full cursor-pointer text-foreground transition hover:bg-accent hover:text-foreground ${
+              isRecording ? 'hidden sm:flex' : 'flex'
+            }`}
+          >
+            <FiPaperclip size={18} className="sm:w-5 sm:h-5" />
+          </button>
+        )}
 
         <button
           type="button"
@@ -171,7 +183,7 @@ export default function ChatInput({
           <FiSmile size={18} className="sm:w-5 sm:h-5" />
         </button>
 
-        {isRecording ? (
+        {isRecording && allowVoiceRecordings ? (
           <div className="flex-1 min-w-0 flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-red-500 font-medium truncate">
             <span className="animate-pulse flex items-center gap-1.5 min-w-0 truncate">
               <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
@@ -194,21 +206,24 @@ export default function ChatInput({
           />
         )}
 
-        <button
-          type="button"
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full transition cursor-pointer ${
-            isRecording
-              ? 'bg-red-600 text-white animate-pulse'
-              : 'text-foreground hover:bg-accent hover:text-foreground'
-          }`}
-        >
-          {isRecording ? (
-            <FiSquare size={16} className="sm:w-4.5 sm:h-4.5" />
-          ) : (
-            <FiMic size={18} className="sm:w-5 sm:h-5" />
-          )}
-        </button>
+        {/* 🎯 CORRECTION: Hide microphone recorder element toggle */}
+        {allowVoiceRecordings && (
+          <button
+            type="button"
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full transition cursor-pointer ${
+              isRecording
+                ? 'bg-red-600 text-white animate-pulse'
+                : 'text-foreground hover:bg-accent hover:text-foreground'
+            }`}
+          >
+            {isRecording ? (
+              <FiSquare size={16} className="sm:w-4.5 sm:h-4.5" />
+            ) : (
+              <FiMic size={18} className="sm:w-5 sm:h-5" />
+            )}
+          </button>
+        )}
 
         <button
           type="button"

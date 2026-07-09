@@ -813,6 +813,12 @@ export default function ChatWindow({
         <ChatInput
           value={message}
           disabled={session.status === 'closed'}
+          // 🎯 LINKING FILE UPLOADS DIRECTLY TO THE BACKEND PROPERTY FIELD
+          allowAttachments={widget?.widgetSettings?.allowFileUpload ?? true}
+          // 🎯 LINKING VOICE RECORDINGS DIRECTLY TO THE NEW BACKEND PROPERTY FIELD
+          allowVoiceRecordings={
+            widget?.widgetSettings?.allowVoiceRecordings ?? true
+          }
           onChange={(val) => {
             setMessage(val)
             if (socket.connected && session) {

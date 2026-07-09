@@ -60,6 +60,7 @@ export interface WidgetSettingsConfig {
   allowFileUpload: boolean
   allowEmoji: boolean
   allowScreenshots: boolean
+  allowVoiceRecordings: boolean
 }
 
 export interface WidgetConfig {
@@ -73,6 +74,7 @@ export interface WidgetConfig {
     offlineMessage?: string
     onlineStatus?: boolean
     aiName?: string
+    aiEnabled?: boolean
   }
   widgetSettings?: WidgetSettingsConfig
 }
