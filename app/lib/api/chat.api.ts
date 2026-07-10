@@ -239,3 +239,23 @@ export function toggleSessionAI(sessionId: string, aiEnabled: boolean) {
     aiEnabled,
   })
 }
+
+
+
+
+
+/* -------------------------------------------------------------------------- */
+/* PRESENCE HEARTBEAT                                                         */
+/* -------------------------------------------------------------------------- */
+
+export interface HeartbeatResponse {
+  success: boolean
+  message: string
+}
+
+/**
+ * Dispatches a background heartbeat signal to update the operator's active cache lease.
+ */
+export function sendOperatorHeartbeat() {
+  return apiPost<HeartbeatResponse>('/api/v1/operators/heartbeat', {})
+}
