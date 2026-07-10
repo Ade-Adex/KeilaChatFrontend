@@ -74,7 +74,7 @@ export default function DashboardShell({
         collapsed: { mobile: !opened },
       }}
       padding="md"
-      className="bg-background text-foreground transition-all duration-300"
+      className="bg-background! text-foreground! transition-all duration-300"
     >
       {/* Header Container */}
       <AppShell.Header className="bg-card border-b border-border! px-4 transition-all duration-300 z-40">
