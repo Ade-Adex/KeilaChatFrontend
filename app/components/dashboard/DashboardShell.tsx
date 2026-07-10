@@ -77,7 +77,7 @@ export default function DashboardShell({
       className="bg-background! text-foreground! transition-all duration-300"
     >
       {/* Header Container */}
-      <AppShell.Header className="bg-card border-b border-border! px-4 transition-all duration-300 z-40">
+      <AppShell.Header className="bg-card! border-b border-border! px-4 transition-all duration-300 z-40">
         <Group h="100%" justify="space-between" wrap="nowrap">
           {/* Left Block: Brand Brand & Menu Burger Control */}
           <Group gap="xs" wrap="nowrap">
@@ -99,19 +99,27 @@ export default function DashboardShell({
           <Group className="gap-2 sm:gap-4" wrap="nowrap">
             {/* 🎯 DESKTOP ONLY: Full Presence Pill Display */}
             {profile?.operator && (
-              <Group 
-                gap="xs" 
+              <Group
+                gap="xs"
                 visibleFrom="sm"
                 className="select-none border border-border rounded-xl px-2.5 py-1 bg-muted/40"
               >
                 <FaCircle
                   className={`text-[10px] transition-colors duration-200 ${
-                    profile.operator.availabilityStatus === 'online' ? 'text-green-500' :
-                    profile.operator.availabilityStatus === 'busy' ? 'text-red-500' :
-                    profile.operator.availabilityStatus === 'away' ? 'text-yellow-500' : 'text-gray-400'
+                    profile.operator.availabilityStatus === 'online'
+                      ? 'text-green-500'
+                      : profile.operator.availabilityStatus === 'busy'
+                        ? 'text-red-500'
+                        : profile.operator.availabilityStatus === 'away'
+                          ? 'text-yellow-500'
+                          : 'text-gray-400'
                   }`}
                 />
-                <Text size="xs" fw={600} className="capitalize text-muted-foreground">
+                <Text
+                  size="xs"
+                  fw={600}
+                  className="capitalize text-muted-foreground"
+                >
                   {profile.operator.availabilityStatus ?? 'offline'}
                 </Text>
               </Group>
@@ -134,37 +142,59 @@ export default function DashboardShell({
                           name={profile.operator.firstName}
                         />
                         {/* Mobile Status Dot Element */}
-                        <div 
+                        <div
                           className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card sm:hidden ${
-                            profile.operator.availabilityStatus === 'online' ? 'bg-green-500' :
-                            profile.operator.availabilityStatus === 'busy' ? 'bg-red-500' :
-                            profile.operator.availabilityStatus === 'away' ? 'bg-yellow-500' : 'bg-gray-400'
+                            profile.operator.availabilityStatus === 'online'
+                              ? 'bg-green-500'
+                              : profile.operator.availabilityStatus === 'busy'
+                                ? 'bg-red-500'
+                                : profile.operator.availabilityStatus === 'away'
+                                  ? 'bg-yellow-500'
+                                  : 'bg-gray-400'
                           }`}
                         />
                       </div>
-                      
+
                       <div className="text-left hidden md:block max-w-25">
-                        <Text size="xs" fw={700} className="truncate leading-tight">
-                          {profile.operator.firstName}
+                        <Text
+                          size="xs"
+                          fw={700}
+                          className="truncate leading-tight"
+                        >
+                          {profile.operator.firstName}{' '}
+                          {profile.operator.lastName}
                         </Text>
-                        <Text size="10px" className="text-muted-foreground truncate capitalize">
+                        {/* <Text size="10px" className="text-muted-foreground truncate capitalize">
                           {profile.operator.availabilityStatus ?? 'offline'}
-                        </Text>
+                        </Text> */}
                       </div>
                     </Group>
                   </UnstyledButton>
                 </Menu.Target>
 
                 <Menu.Dropdown className="border-border bg-card">
-                  <Menu.Label className="font-bold text-[11px]">
-                    Logged in as {profile.operator.email}
+                  <Menu.Label className="font-bold text-[11px] pb-0">
+                    Logged in as {profile.operator.firstName}{' '}
+                    {profile.operator.lastName ?? ''}
                   </Menu.Label>
-                  <div className="px-3 py-1 sm:hidden border-b border-border mb-1">
+
+                  {profile.operator.email && (
+                    <Menu.Label className="text-[10px] text-muted-foreground pt-0 truncate max-w-45">
+                      {profile.operator.email}
+                    </Menu.Label>
+                  )}
+
+                  <div className="px-3 py-1 sm:hidden border-b border-border mb-1 mt-1">
                     <Text size="xs" fw={600} className="capitalize">
                       Status: {profile.operator.availabilityStatus ?? 'offline'}
                     </Text>
                   </div>
-                  <Menu.Item component={Link} href="/dashboard/settings" className="text-xs font-medium">
+
+                  <Menu.Item
+                    component={Link}
+                    href="/dashboard/settings"
+                    className="text-xs font-medium"
+                  >
                     Profile Settings
                   </Menu.Item>
                 </Menu.Dropdown>
