@@ -3,9 +3,10 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-import type { AccountData, OperatorData } from '@/app/types/auth'
+import type { OperatorData } from '@/app/types/auth'
 
 import { logoutOperator } from '@/app/lib/api/auth.api'
+import { AccountData } from '@/app/types/account'
 
 interface AuthState {
   account: AccountData | null

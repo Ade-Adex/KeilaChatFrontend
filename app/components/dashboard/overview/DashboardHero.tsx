@@ -1,6 +1,7 @@
 'use client'
 
-import { AccountData, OperatorData } from '@/app/types/auth'
+import { AccountData } from '@/app/types/account'
+import { OperatorData } from '@/app/types/auth'
 // import { DashboardHeroProps } from '@/app/types/dashboard'
 import {
   Badge,

@@ -6,8 +6,9 @@ import type {
   ProfileFormValues,
   WorkspaceFormValues,
 } from '@/app/lib/validation/settings/settings.schema'
+import { AccountData } from '@/app/types/account'
 
-import type { AccountData, OperatorData } from '@/app/types/auth'
+import type { OperatorData } from '@/app/types/auth'
 
 /* -------------------------------------------------------------------------- */
 /* PROFILE                                   */
@@ -53,7 +54,7 @@ export function updateWorkspace(data: WorkspaceFormValues) {
 /* -------------------------------------------------------------------------- */
 
 export interface WebsiteData {
-  id: string
+  _id: string
   accountId: string
   widgetId: string
   apiKey: string

@@ -31,7 +31,7 @@ export default function ContactsPage() {
   const operator = useAuthStore((state) => state.operator)
   const account = useAuthStore((state) => state.account)
 
-  const accountId = account?.id
+  const accountId = account?._id
   const isAdmin = operator?.role === 'admin'
 
   const [opened, { open, close }] = useDisclosure(false)
