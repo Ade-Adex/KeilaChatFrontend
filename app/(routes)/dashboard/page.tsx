@@ -36,13 +36,16 @@ export default function DashboardPage() {
   const account = useAuthStore((state) => state.account)
   const { operators } = useOperators()
 
+  // ✅ Fixed
   const [conversations, setConversations] = useState<
     DashboardRecentConversation[]
-  >((map) => [])
+  >([])
+
   const [visitors, setVisitors] = useState<DashboardRecentVisitor[]>([])
 
-  // 1. 🎯 FIXED: Compute chart metrics inline during render to prevent cascading React state updates
+  // Weekly chart data
   const totalChats = account?.usage?.totalChats ?? 0
+
   const chartData: DashboardConversationChartItem[] = [
     {
       label: 'Mon',
@@ -66,33 +69,27 @@ export default function DashboardPage() {
     },
   ]
 
-  // 2. Separate Effect: Handle property WebSocket synchronization via MongoDB _id cleanly
   useEffect(() => {
-    // 🎯 FIXED: Using MongoDB structural id mapping directly
-    const targetPropertyId = property?._id
-    if (!targetPropertyId) return
+    if (!property?._id) return
 
-    let mounted = true
     const socket = getChatSocket()
 
-    socket.on(
-      'visitor_activity_sync',
-      (updatedVisitors: DashboardRecentVisitor[]) => {
-        if (mounted) setVisitors(updatedVisitors)
-      },
-    )
+    const handleVisitors = (updatedVisitors: DashboardRecentVisitor[]) => {
+      setVisitors(updatedVisitors)
+    }
 
-    socket.on(
-      'conversation_stream_sync',
-      (updatedChats: DashboardRecentConversation[]) => {
-        if (mounted) setConversations(updatedChats)
-      },
-    )
+    const handleConversations = (
+      updatedChats: DashboardRecentConversation[],
+    ) => {
+      setConversations(updatedChats)
+    }
+
+    socket.on('visitor_activity_sync', handleVisitors)
+    socket.on('conversation_stream_sync', handleConversations)
 
     return () => {
-      mounted = false
-      socket.off('visitor_activity_sync')
-      socket.off('conversation_stream_sync')
+      socket.off('visitor_activity_sync', handleVisitors)
+      socket.off('conversation_stream_sync', handleConversations)
     }
   }, [property?._id])
 
@@ -116,7 +113,7 @@ export default function DashboardPage() {
     aiEnabled: !!property?.settings?.aiEnabled,
     autoAssign: !!property?.settings?.autoAssign,
     onlineStatus: !!property?.settings?.onlineStatus,
-    allowedDomains: property?.allowedDomains?.length || 0,
+    allowedDomains: property?.allowedDomains?.length ?? 0,
   }
 
   const computedAiDetails: DashboardAIInsights = {
@@ -129,7 +126,7 @@ export default function DashboardPage() {
     averageConfidence: 86.4,
   }
 
-  const typedOperators: DashboardOperatorPerformance[] = (operators || []).map(
+  const typedOperators: DashboardOperatorPerformance[] = (operators ?? []).map(
     (op) => ({
       id: op._id,
       firstName: op.firstName ?? '',
@@ -147,24 +144,29 @@ export default function DashboardPage() {
     }),
   )
 
-  const aiResolutionProgress = computedAiDetails.totalAIChats
-    ? Math.round(
-        (computedAiDetails.aiResolvedChats / computedAiDetails.totalAIChats) *
-          100,
-      )
-    : 0
+  const aiResolutionProgress =
+    computedAiDetails.totalAIChats > 0
+      ? Math.round(
+          (computedAiDetails.aiResolvedChats / computedAiDetails.totalAIChats) *
+            100,
+        )
+      : 0
 
   return (
     <Stack gap="lg">
       {(user || account) && <DashboardHero user={user} account={account} />}
 
       <StatsGrid
-        operators={operators || []}
+        operators={operators ?? []}
         account={account}
-        activeVisitorsCount={visitors.filter((v) => v.isOnline).length}
+        activeVisitorsCount={
+          visitors.filter((visitor) => visitor.isOnline).length
+        }
         activeChatsCount={
           conversations.filter(
-            (c) => c.status === 'active' || c.status === 'queued',
+            (conversation) =>
+              conversation.status === 'active' ||
+              conversation.status === 'queued',
           ).length
         }
         aiResolutionProgress={aiResolutionProgress}
@@ -179,6 +181,7 @@ export default function DashboardPage() {
             data={chartData}
           />
         </Grid.Col>
+
         <Grid.Col span={{ base: 12, lg: 4 }}>
           {property && <WebsiteSummary property={property} />}
         </Grid.Col>
@@ -188,6 +191,7 @@ export default function DashboardPage() {
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <RecentConversations conversations={conversations} />
         </Grid.Col>
+
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <RecentVisitors visitors={visitors} />
         </Grid.Col>
@@ -197,6 +201,7 @@ export default function DashboardPage() {
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <OperatorPerformance operators={typedOperators} />
         </Grid.Col>
+
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <AIInsights ai={computedAiDetails} />
         </Grid.Col>
@@ -206,6 +211,7 @@ export default function DashboardPage() {
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <PropertyHealth health={computedHealth} />
         </Grid.Col>
+
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <AccountSummary account={account} />
         </Grid.Col>
