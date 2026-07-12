@@ -135,7 +135,7 @@ export default function SetupPage() {
       {!setup.isNotRegistered && setup.property && (
         <div className={isUpdating ? 'opacity-80 pointer-events-none' : ''}>
           <WidgetFeatureCard
-            key={setup.property.id}
+            key={setup.property._id}
             allowFileUpload={allowFileUpload}
             allowVoiceRecordings={allowVoiceRecordings}
             onToggleUpload={(checked) =>

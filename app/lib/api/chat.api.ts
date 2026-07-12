@@ -56,8 +56,13 @@ export interface VerifyWidgetResponse {
 /**
  * Verifies a chat widget configuration via its specific unique identifier.
  */
-export function verifyWidget(widgetId: string, headers?: Record<string, string>) {
-  return apiGet<VerifyWidgetResponse>(`/api/v1/widget/${widgetId}/verify`, { headers })
+export function verifyWidget(
+  widgetId: string,
+  headers?: Record<string, string>,
+) {
+  return apiGet<VerifyWidgetResponse>(`/api/v1/widget/${widgetId}/verify`, {
+    headers,
+  })
 }
 
 /* -------------------------------------------------------------------------- */
@@ -240,10 +245,6 @@ export function toggleSessionAI(sessionId: string, aiEnabled: boolean) {
   })
 }
 
-
-
-
-
 /* -------------------------------------------------------------------------- */
 /* PRESENCE HEARTBEAT                                                         */
 /* -------------------------------------------------------------------------- */
@@ -258,4 +259,26 @@ export interface HeartbeatResponse {
  */
 export function sendOperatorHeartbeat() {
   return apiPost<HeartbeatResponse>('/api/v1/operators/heartbeat', {})
+}
+
+export interface DashboardAnalyticsResponse {
+  status: string
+  data: {
+    metrics: {
+      avgResponseTimeSec: number
+      avgDurationSec: number
+    }
+    aiInsights: {
+      totalAIChats: number
+      aiResolvedChats: number
+      escalatedChats: number
+    }
+    chartData: { label: string; conversations: number }[]
+  }
+}
+
+export function getDashboardAnalytics(propertyId: string) {
+  return apiGet<DashboardAnalyticsResponse>(
+    `/api/v1/dashboard/analytics?propertyId=${propertyId}`,
+  )
 }

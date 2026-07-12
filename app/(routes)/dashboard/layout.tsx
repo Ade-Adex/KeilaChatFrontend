@@ -9,6 +9,7 @@ import { LoadingOverlay } from '@mantine/core'
 
 import DashboardShell from '@/app/components/dashboard/DashboardShell'
 import { checkAuth } from '@/app/lib/auth/checkAuth'
+import RouteGuard from '@/app/components/guards/RouteGuard'
 
 export default function DashboardLayout({
   children,
@@ -43,5 +44,10 @@ export default function DashboardLayout({
     )
   }
 
-  return <DashboardShell>{children}</DashboardShell>
+  // return <DashboardShell>{children}</DashboardShell>
+  return (
+    <RouteGuard>
+      <DashboardShell>{children}</DashboardShell>
+    </RouteGuard>
+  )
 }
