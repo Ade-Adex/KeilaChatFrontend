@@ -13,6 +13,7 @@ export function useInviteOperator() {
   const sendInvite = async (
     email: string,
     role: 'admin' | 'supervisor' | 'agent',
+    assignedProperties: string[],
   ) => {
     try {
       setLoading(true)
@@ -20,6 +21,7 @@ export function useInviteOperator() {
       await inviteOperator({
         email,
         role,
+        assignedProperties,
       })
 
       setError(null)

@@ -130,6 +130,7 @@ export interface OperatorsResponse {
 export interface InviteOperatorRequest {
   email: string
   role: 'admin' | 'supervisor' | 'agent'
+  assignedProperties: string[]
 }
 
 export interface InviteOperatorResponse {
@@ -159,6 +160,7 @@ export interface VerifyInviteResponse {
   data: {
     email: string
     role: 'admin' | 'supervisor' | 'agent'
+    assignedProperties: string[]
   }
 }
 

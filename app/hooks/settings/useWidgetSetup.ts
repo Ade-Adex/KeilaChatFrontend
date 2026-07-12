@@ -1,4 +1,4 @@
-// hooks/settings/useWidgetSetup.ts
+// /app/hooks/settings/useWidgetSetup.ts
 
 'use client'
 

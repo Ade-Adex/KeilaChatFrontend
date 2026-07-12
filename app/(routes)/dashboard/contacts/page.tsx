@@ -6,6 +6,7 @@ import { useAuthStore } from '@/app/store/useAuthStore'
 import {
   TextInput,
   Select,
+  MultiSelect,
   Button,
   Table,
   Paper,
@@ -26,6 +27,7 @@ import {
 } from 'react-icons/fi'
 import { useOperators } from '@/app/hooks/operators/useOperators'
 import { useInviteOperator } from '@/app/hooks/operators/useInviteOperator'
+import { getMyProperties } from '@/app/lib/api/chat.api'
 
 export default function ContactsPage() {
   const operator = useAuthStore((state) => state.operator)
@@ -38,20 +40,51 @@ export default function ContactsPage() {
 
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'admin' | 'supervisor' | 'agent'>('agent')
+  const [assignedProperties, setAssignedProperties] = useState<string[]>([])
+
+  const [properties, setProperties] = useState<
+    {
+      _id: string
+      name: string
+      domain: string
+    }[]
+  >([])
+
+
+
+  useEffect(() => {
+    async function loadProperties() {
+      try {
+        const res = await getMyProperties()
+
+        setProperties(res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
+    if (isAdmin) {
+      void loadProperties()
+    }
+  }, [isAdmin])
 
   const { operators, loading, refreshOperators } = useOperators()
+
+
+  
 
   const { sendInvite, loading: submitLoading, error } = useInviteOperator()
 
   const handleInviteOperator = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const success = await sendInvite(email, role)
+    const success = await sendInvite(email, role, assignedProperties)
 
     if (!success) return
 
     setEmail('')
     setRole('agent')
+    setAssignedProperties([])
 
     close()
 
@@ -151,6 +184,24 @@ export default function ContactsPage() {
                 },
               ]}
               leftSection={<FiShield size={16} />}
+            />
+
+            <MultiSelect
+              label="Assign Properties"
+              placeholder="Select one or more properties"
+              value={assignedProperties}
+              onChange={setAssignedProperties}
+              searchable
+              clearable
+              data={properties.map((property) => ({
+                value: property._id,
+                label: `${property.name} (${property.domain})`,
+              }))}
+              classNames={{
+                input:
+                  'border border-border! outline-none! focus:border-primary! transition-colors! text-foreground! bg-transparent!',
+                dropdown: 'bg-card! text-foreground! border border-border!',
+              }}
             />
 
             <Group justify="flex-end" mt="xl">

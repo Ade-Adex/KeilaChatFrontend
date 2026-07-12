@@ -1,6 +1,5 @@
 // /app/components/guards/PropertyGuard.tsx
 
-
 'use client'
 
 import { ReactNode } from 'react'
@@ -15,9 +14,7 @@ interface Props {
   children: ReactNode
 }
 
-export default function PropertyGuard({
-  children,
-}: Props) {
+export default function PropertyGuard({ children }: Props) {
   const { property, loading } = usePropertySetup()
 
   if (loading) {
@@ -27,9 +24,8 @@ export default function PropertyGuard({
       </Center>
     )
   }
-
   if (!property?._id) {
-    return <PropertyRequired />
+    return <PropertyRequired mode="admin" />
   }
 
   return <>{children}</>

@@ -1,25 +1,111 @@
+// // /app/components/guards/PropertyRequired.tsx
+
+// 'use client'
+
+// import Link from 'next/link'
+
+// import { Button, Center, Paper, Stack, Text, Title } from '@mantine/core'
+
+// export default function PropertyRequired() {
+//   return (
+//     <Center h="70vh">
+//       <Paper withBorder p="xl" maw={520}>
+//         <Stack align="center">
+//           <Title order={3}>Property Required</Title>
+
+//           <Text ta="center" c="dimmed">
+//             You must create your first Property before using this feature.
+//           </Text>
+
+//           <Button component={Link} href="/dashboard/setup">
+//             Go to Setup
+//           </Button>
+//         </Stack>
+//       </Paper>
+//     </Center>
+//   )
+// }
+
+
+
+
 // /app/components/guards/PropertyRequired.tsx
 
 'use client'
 
 import Link from 'next/link'
 
-import { Button, Center, Paper, Stack, Text, Title } from '@mantine/core'
+import {
+  Button,
+  Center,
+  Paper,
+  Stack,
+  Text,
+  ThemeIcon,
+  Title,
+} from '@mantine/core'
 
-export default function PropertyRequired() {
+import { FiHome, FiLock } from 'react-icons/fi'
+
+interface PropertyRequiredProps {
+  mode: 'admin' | 'operator'
+}
+
+export default function PropertyRequired({
+  mode,
+}: PropertyRequiredProps) {
+  const isAdmin = mode === 'admin'
+
   return (
     <Center h="70vh">
-      <Paper withBorder p="xl" maw={520}>
+      <Paper
+        withBorder
+        radius="lg"
+        p="xl"
+        maw={560}
+      >
         <Stack align="center">
-          <Title order={3}>Property Required</Title>
+          <ThemeIcon
+            size={64}
+            radius="xl"
+            variant="light"
+            color={isAdmin ? 'blue' : 'orange'}
+          >
+            {isAdmin ? (
+              <FiHome size={28} />
+            ) : (
+              <FiLock size={28} />
+            )}
+          </ThemeIcon>
+
+          <Title order={3}>
+            {isAdmin
+              ? 'Create Your First Property'
+              : 'No Property Assigned'}
+          </Title>
 
           <Text ta="center" c="dimmed">
-            You must create your first Property before using this feature.
+            {isAdmin
+              ? 'Your account does not have any property yet.'
+              : 'Your administrator has not assigned you to any property yet.'}
           </Text>
 
-          <Button component={Link} href="/dashboard/setup">
-            Go to Setup
-          </Button>
+          {isAdmin ? (
+            <Button
+              component={Link}
+              href="/dashboard/setup"
+            >
+              Create Property
+            </Button>
+          ) : (
+            <Button
+              component={Link}
+              href="/dashboard"
+              variant="light"
+            >
+              Back to Dashboard
+            </Button>
+          )}
         </Stack>
       </Paper>
     </Center>
