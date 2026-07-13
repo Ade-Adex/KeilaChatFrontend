@@ -53,6 +53,12 @@ interface ExtendedOperatorVisitor extends Omit<OperatorVisitor, 'metadata'> {
 export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
   const rawVisitor = session.visitorId
 
+
+  console.log(
+    '[VisitorInfoPanel] rawVisitor:',
+    rawVisitor
+  )
+
   const visitor: Partial<ExtendedOperatorVisitor> | null =
     rawVisitor && typeof rawVisitor === 'object'
       ? 'visitorId' in rawVisitor
