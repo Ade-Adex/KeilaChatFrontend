@@ -1,8 +1,10 @@
 // /app/(routes)/dashboard/page.tsx
 
+
+
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Grid,
   Stack,
@@ -27,19 +29,16 @@ import PropertyHealth from '@/app/components/dashboard/overview/PropertyHealth'
 import AccountSummary from '@/app/components/dashboard/overview/AccountSummary'
 
 import { useAuthStore } from '@/app/store/useAuthStore'
+import { useDashboardStore } from '@/app/store/useDashboardStore' // 🎯 Import custom store
 import { useOperators } from '@/app/hooks/operators/useOperators'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-import { getDashboardOverviewContext } from '@/app/lib/api/dashboard.api'
-import type { WebsiteData } from '@/app/lib/api/settings.api'
 
 import type {
-  DashboardConversationChartItem,
   DashboardRecentConversation,
   DashboardRecentVisitor,
   DashboardOperatorPerformance,
   DashboardPropertyHealth,
   DashboardAIInsights,
-  DashboardOverviewMetrics,
 } from '@/app/types/dashboard'
 
 export default function DashboardPage() {
@@ -47,82 +46,32 @@ export default function DashboardPage() {
   const account = useAuthStore((state) => state.account)
   const { operators } = useOperators()
 
-  const [property, setProperty] = useState<WebsiteData | null>(null)
-  const [conversations, setConversations] = useState<
-    DashboardRecentConversation[]
-  >([])
+  // 🎯 Map global Zustand caching states
+  const { property, analytics, chartData, loading, hasLoaded, fetchDashboardData } = useDashboardStore()
+
+  const [conversations, setConversations] = useState<DashboardRecentConversation[]>([])
   const [visitors, setVisitors] = useState<DashboardRecentVisitor[]>([])
 
-  const [analytics, setAnalytics] = useState<DashboardOverviewMetrics | null>(
-    null,
-  )
-  const [chartData, setChartData] = useState<DashboardConversationChartItem[]>(
-    [],
-  )
-
-  const [pageLoading, setPageLoading] = useState(true)
-  const isFetchingRef = useRef(false)
-
   const assignedProperties = user?.assignedProperties ?? []
-
   const propertyIdContext =
     assignedProperties.length > 0
       ? assignedProperties[0]?._id || assignedProperties[0]
       : null
 
-  const fetchDashboardDataContext = useCallback(async () => {
-    if (!propertyIdContext || isFetchingRef.current) return
+  // Wrapper tracking function for websocket re-fetches
+  const triggerSocketRefresh = useCallback(async () => {
+    if (!propertyIdContext) return
+    await fetchDashboardData(propertyIdContext.toString(), true) // 🎯 Force refresh on backend request signals
+  }, [propertyIdContext, fetchDashboardData])
 
-    isFetchingRef.current = true
-    try {
-      const res = await getDashboardOverviewContext(
-        propertyIdContext.toString(),
-      )
-
-      console.log('response in dash', res)
-      if (res?.success && res.data) {
-        setProperty(res.data.property)
-        setAnalytics(res.data)
-        setChartData(res.data.chartData ?? [])
-      }
-    } catch (err) {
-      console.error(
-        'Failed fetching runtime contextual dashboard properties:',
-        err,
-      )
-    } finally {
-      isFetchingRef.current = false
-      setPageLoading(false)
-    }
-  }, [propertyIdContext])
-
-  /* -------------------------------------------------------------------------- */
-  /* 🎯 FIX: Wrapped State Updates in Microtask Execution Loop                  */
-  /* -------------------------------------------------------------------------- */
   useEffect(() => {
-    const controller = new AbortController()
+    if (!propertyIdContext) return
 
-    if (!propertyIdContext) {
-      // Defer state update to next microtask queue execution frame
-      // preventing synchronous cascading re-renders
-      Promise.resolve().then(() => {
-        if (!controller.signal.aborted) {
-          setPageLoading(false)
-        }
-      })
-      return
-    }
-
+    // Defer processing execution frame preventing synchronous cascading re-renders
     Promise.resolve().then(() => {
-      if (!controller.signal.aborted) {
-        void fetchDashboardDataContext()
-      }
+      void fetchDashboardData(propertyIdContext.toString())
     })
-
-    return () => {
-      controller.abort()
-    }
-  }, [propertyIdContext, fetchDashboardDataContext])
+  }, [propertyIdContext, fetchDashboardData])
 
   useEffect(() => {
     if (!propertyIdContext) return
@@ -133,24 +82,23 @@ export default function DashboardPage() {
       setVisitors(updatedVisitors)
     }
 
-    const handleConversations = (
-      updatedChats: DashboardRecentConversation[],
-    ) => {
+    const handleConversations = (updatedChats: DashboardRecentConversation[]) => {
       setConversations(updatedChats)
     }
 
     socket.on('visitor_activity_sync', handleVisitors)
     socket.on('conversation_stream_sync', handleConversations)
-    socket.on('dashboard_refresh_request', fetchDashboardDataContext)
+    socket.on('dashboard_refresh_request', triggerSocketRefresh)
 
     return () => {
       socket.off('visitor_activity_sync', handleVisitors)
       socket.off('conversation_stream_sync', handleConversations)
-      socket.off('dashboard_refresh_request', fetchDashboardDataContext)
+      socket.off('dashboard_refresh_request', triggerSocketRefresh)
     }
-  }, [propertyIdContext, fetchDashboardDataContext])
+  }, [propertyIdContext, triggerSocketRefresh])
 
-  if (pageLoading) {
+  // Display initial loader only when there's no cached property payload context available yet
+  if (loading && !hasLoaded) {
     return (
       <Center h={400}>
         <Loader size="md" color="blue" />
@@ -182,7 +130,7 @@ export default function DashboardPage() {
         </Paper>
       </Stack>
     )
-  }
+  }  
 
   const computedHealth: DashboardPropertyHealth = {
     websiteConfigured: !!property?.name,
@@ -193,8 +141,7 @@ export default function DashboardPage() {
     categoryConfigured: !!property?.details?.category,
     descriptionConfigured: !!property?.details?.description,
     workingHoursEnabled: !!property?.workingHours?.enabled,
-    aiEnabled:
-      !!property?.settings?.aiEnabled || !!account?.settings?.aiEnabled,
+    aiEnabled: !!property?.settings?.aiEnabled || !!account?.settings?.aiEnabled,
     autoAssign: !!property?.settings?.autoAssign,
     onlineStatus: !!property?.settings?.onlineStatus,
     allowedDomains: property?.allowedDomains?.length ?? 0,
@@ -222,18 +169,13 @@ export default function DashboardPage() {
       availabilityStatus: op.availabilityStatus ?? 'offline',
       activeChatsCount: op.activeChatsCount ?? 0,
       maxConcurrentChats: op.maxConcurrentChats ?? 5,
-      lastSeen: op.lastSeen
-        ? new Date(op.lastSeen).toLocaleDateString()
-        : 'Never',
+      lastSeen: op.lastSeen ? new Date(op.lastSeen).toLocaleDateString() : 'Never',
     }),
   )
 
   const aiResolutionProgress =
     computedAiDetails.totalAIChats > 0
-      ? Math.round(
-          (computedAiDetails.aiResolvedChats / computedAiDetails.totalAIChats) *
-            100,
-        )
+      ? Math.round((computedAiDetails.aiResolvedChats / computedAiDetails.totalAIChats) * 100)
       : 0
 
   return (
@@ -243,20 +185,10 @@ export default function DashboardPage() {
       <StatsGrid
         operators={operators ?? []}
         account={account}
-        activeVisitorsCount={
-          visitors.filter((visitor) => visitor.isOnline).length
-        }
-        activeChatsCount={
-          conversations.filter(
-            (c) => c.status === 'active' || c.status === 'queued',
-          ).length
-        }
+        activeVisitorsCount={visitors.filter((visitor) => visitor.isOnline).length}
+        activeChatsCount={conversations.filter((c) => c.status === 'active' || c.status === 'queued').length}
         aiResolutionProgress={aiResolutionProgress}
-        avgResponseTime={
-          analytics?.metrics?.avgResponseTimeSec ??
-          user?.stats?.averageResponseTime ??
-          0
-        }
+        avgResponseTime={analytics?.metrics?.avgResponseTimeSec ?? user?.stats?.averageResponseTime ?? 0}
       />
 
       <Grid>
