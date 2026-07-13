@@ -7,7 +7,6 @@ import {
   getQueuedSessions,
   getActiveSessions,
   getMySessions,
-  getMyProperties,
 } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
 import { useAuthStore } from '@/app/store/useAuthStore'
@@ -16,8 +15,9 @@ import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
 interface ConversationSidebarProps {
   selectedConversation: OperatorConversation | null
-  onSelect: (conversation: OperatorConversation | null) => void 
+  onSelect: (conversation: OperatorConversation | null) => void
   refreshKey?: number
+  propertyId: string | null 
 }
 
 interface WithId {
@@ -37,6 +37,7 @@ export default function ConversationSidebar({
   selectedConversation,
   onSelect,
   refreshKey = 0,
+  propertyId, 
 }: ConversationSidebarProps) {
   const [queuedChats, setQueuedChats] = useState<OperatorConversation[]>([])
   const [activeChats, setActiveChats] = useState<OperatorConversation[]>([])
@@ -46,12 +47,10 @@ export default function ConversationSidebar({
   const socket = getChatSocket()
   const currentOperator = useAuthStore((state) => state.operator)
 
-
   const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
     if (!visitor) return 'Anonymous Visitor'
 
     if (typeof visitor === 'object') {
-      // 1. Check if name exists directly on the object (flat structure)
       if (
         'name' in visitor &&
         typeof (visitor as { name?: unknown }).name === 'string'
@@ -59,7 +58,6 @@ export default function ConversationSidebar({
         return (visitor as { name: string }).name
       }
 
-      // 2. Check if name exists inside a nested visitorId wrapper object (nested structure)
       if ('visitorId' in visitor) {
         const nested = visitor as NestedVisitorStructure
         if (nested.visitorId?.name) {
@@ -71,20 +69,22 @@ export default function ConversationSidebar({
     return 'Anonymous Visitor'
   }
 
+  /* -------------------------------------------------------------------------- */
+  /* 🎯 FIX: Simplified data fetching logic to rely on store propertyId context*/
+  /* -------------------------------------------------------------------------- */
   useEffect(() => {
     let mounted = true
     const fetchConversations = async () => {
+      // If there is no active workspace scope resolved yet, clear loading boundaries
+      if (!propertyId) {
+        if (mounted) setLoading(false)
+        return
+      }
+
       try {
         if (refreshKey === 0) setLoading(true)
 
-        const propertiesData = await getMyProperties()
-        const propertyId = propertiesData?.data?.[0]?._id
-
-        if (!propertyId) {
-          if (mounted) setLoading(false)
-          return
-        }
-
+        // Perform parallel queries targeting the chosen workspace cleanly
         const [queued, active, mine] = await Promise.all([
           getQueuedSessions(propertyId),
           getActiveSessions(propertyId),
@@ -106,7 +106,7 @@ export default function ConversationSidebar({
     return () => {
       mounted = false
     }
-  }, [refreshKey])
+  }, [refreshKey, propertyId]) 
 
   useEffect(() => {
     if (!socket) return
@@ -159,7 +159,6 @@ export default function ConversationSidebar({
       setActiveChats((prev) => updateList(prev, 'active'))
     }
 
-    // 🎯 FIXED: Catch status variations and force immediate array shifts across side panels
     const handleStatusUpdateChange = (payload: {
       sessionId: string
       status: string
@@ -175,8 +174,7 @@ export default function ConversationSidebar({
           onSelect(null)
         }
       } else {
-        // If it shifts from waiting to active or queued, fire the refresh trigger hook to cleanly reload state definitions
-        onSelect(null) // Unselect current stale instance view models
+        onSelect(null)
       }
     }
 
@@ -254,11 +252,11 @@ export default function ConversationSidebar({
                     })
                     onSelect(chat)
                   }}
-                  className={`w-full text-left px-3 py-1.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between cursor-pointer border border-border!
+                  className={`w-full text-left px-3 py-1.5 rounded-xl transition-all text-xs font-medium relative group flex items-center justify-between cursor-pointer border
                     ${
                       isSelected
-                        ? 'bg-primary text-white shadow-sm shadow-primary/10'
-                        : 'hover:bg-muted bg-background/30 text-foreground border border-transparent hover:border-border/50'
+                        ? 'bg-primary text-white shadow-sm shadow-primary/10 border-transparent'
+                        : 'hover:bg-muted bg-background/30 text-foreground border-transparent hover:border-border/50'
                     }`}
                 >
                   <div className="flex flex-col min-w-0 flex-1 pr-2">
@@ -309,7 +307,7 @@ export default function ConversationSidebar({
         'bg-amber-500/5 text-amber-500 border-amber-500/10',
       )}
       {renderChatGroup(
-        'All Properties Active',
+        'Current Property Active',
         activeChats,
         'No concurrent channel streams',
         <FiLayers size={12} />,

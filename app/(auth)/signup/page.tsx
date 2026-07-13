@@ -52,9 +52,9 @@ export default function SignupPage() {
         password: data.password,
       })
 
-       const { account, operator } = res.data
+      //  const { account, operator } = res.data
 
-       login(account, operator)
+      //  login(account, operator)
 
       notifications.show({
         title: 'Welcome',

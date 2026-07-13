@@ -7,8 +7,8 @@ import type {
   WorkspaceFormValues,
 } from '@/app/lib/validation/settings/settings.schema'
 import { AccountData } from '@/app/types/account'
+import { OperatorData } from '@/app/types/operator'
 
-import type { OperatorData } from '@/app/types/auth'
 
 /* -------------------------------------------------------------------------- */
 /* PROFILE                                   */

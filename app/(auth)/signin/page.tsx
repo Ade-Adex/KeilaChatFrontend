@@ -1,4 +1,3 @@
-// /app/(auth)/signin/page.tsx
 
 // /app/(auth)/signin/page.tsx
 
@@ -56,13 +55,7 @@ function LoginContent() {
 
   const onSubmit = async (data: LoginSchema) => {
     try {
-      const response = await loginOperator(data)
-
-      /**
-       * Store ONLY UI identity.
-       * NEVER store tokens.
-       */
-      setAuth(response.data.account, response.data.operator)
+       await loginOperator(data)
 
       notifications.show({
         title: 'Success',

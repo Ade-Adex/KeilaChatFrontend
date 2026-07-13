@@ -1,23 +1,24 @@
 // /app/types/dashboard.ts
+
 import { WebsiteData } from '@/app/lib/api/settings.api'
 import type { MantineColor } from '@mantine/core'
 import type { ReactNode } from 'react'
 
+// --- Existing Types Preserved ---
 export interface StatCardProps {
   title: string
   value: string | number
   subtitle?: string
-
   icon: ReactNode
-
   color: MantineColor
-
   progress?: number
 }
 
+// 🎯 FIX: Updated naming constraints to align time-series chart data schema properties seamlessly
 export interface DashboardConversationChartItem {
-  label: string
-  conversations: number
+  date: string
+  chats: number
+  visitors: number
 }
 
 export interface DashboardConversationChartProps {
@@ -30,40 +31,50 @@ export interface WebsiteSummaryProps {
   property: WebsiteData
 }
 
+// 🎯 ADDED: Strongly-typed response block mapping back to DashboardService runtime overview pipelines
+export interface DashboardOverviewMetrics {
+  activeChats: number
+  queuedChats: number
+  waitingChats: number
+  totalVisitors: number
+  onlineVisitors: number
+  onlineOperators: number
+  unreadNotifications: number
+  metrics?: {
+    avgResponseTimeSec: number
+  }
+  aiInsights?: {
+    totalAIChats: number
+    aiResolvedChats: number
+    escalatedChats: number
+  }
+  chartData: DashboardConversationChartItem[]
+}
+
 export interface DashboardRecentVisitor {
   id: string
   name: string
   currentPage: string
   pageViews: number
-
   isOnline: boolean
   chatOpened: boolean
-
   country?: string
   city?: string
-
   deviceType: 'desktop' | 'mobile' | 'tablet'
-
   lastSeen: string
 }
 
 export interface DashboardOperatorPerformance {
   id: string
-
   firstName: string
   lastName: string
   email: string
   avatar: string
-
   role: 'admin' | 'supervisor' | 'agent'
-
   isOnline: boolean
-
   availabilityStatus: 'online' | 'away' | 'busy' | 'offline'
-
   activeChatsCount: number
   maxConcurrentChats: number
-
   lastSeen: string
 }
 
@@ -75,11 +86,9 @@ export interface DashboardAIInsights {
   enabled: boolean
   fallbackToHuman: boolean
   autoAssign: boolean
-
   totalAIChats: number
   aiResolvedChats: number
   escalatedChats: number
-
   averageConfidence: number
 }
 
@@ -92,17 +101,13 @@ export interface DashboardPropertyHealth {
   domainConfigured: boolean
   widgetConfigured: boolean
   apiKeyConfigured: boolean
-
   logoConfigured: boolean
   categoryConfigured: boolean
   descriptionConfigured: boolean
-
   workingHoursEnabled: boolean
-
   aiEnabled: boolean
   autoAssign: boolean
   onlineStatus: boolean
-
   allowedDomains: number
 }
 
@@ -112,22 +117,14 @@ export interface PropertyHealthProps {
 
 export interface DashboardRecentConversation {
   id: string
-
   visitorName: string
   visitorEmail?: string
-
   operatorName?: string
-
   currentPage?: string
-
   status: 'queued' | 'active' | 'waiting' | 'closed' | 'transferred'
-
   priority: 'low' | 'normal' | 'high'
-
   channel: 'widget' | 'api'
-
   aiHandled: boolean
-
   startedAt: string
 }
 
@@ -143,15 +140,10 @@ export interface ChatAttachment {
 
 export interface ChatMessage {
   _id: string
-
   sessionId: string
-
   senderType: 'visitor' | 'operator' | 'ai' | 'system'
-
   senderId: string
-
   messageText: string
-
   messageType:
     | 'text'
     | 'image'
@@ -163,19 +155,12 @@ export interface ChatMessage {
     | 'note'
     | 'ai_suggestion'
     | 'media'
-
   status: 'sent' | 'delivered' | 'seen' | 'failed'
-
   isFromAI: boolean
-
   media?: string[]
-
   attachments?: ChatAttachment[]
-  
   createdAt: string
-
   updatedAt?: string
-
 }
 
 export type OperatorMessage = ChatMessage
@@ -203,62 +188,40 @@ export interface OperatorVisitor {
   metadata?: OperatorVisitorMetadata
 }
 
-// Add or replace these lines in your /app/types/dashboard.ts layout
-
 export interface OperatorConversation {
   _id: string
-
   status: 'queued' | 'active' | 'waiting' | 'closed' | 'transferred'
-
   priority: 'low' | 'normal' | 'high'
-
   channel: 'widget' | 'api'
-
   aiHandled: boolean
-
   unreadOperator: number
-
   lastMessage?: string
-
   lastMessageAt?: string
-
   assignedOperatorId?: string
-
-  // Can be a raw string ID from unpopulated MongoDB documents, or a rich object document block
   visitorId?: string | OperatorVisitor
-
-  // Union type safely prevents runtime properties extraction errors
-  propertyId?: string | {
-    _id: string
-    name?: string
-    domain?: string
-  }
-
+  propertyId?:
+    | string
+    | {
+        _id: string
+        name?: string
+        domain?: string
+      }
   startedAt?: string
-
   createdAt?: string
-
   updatedAt?: string
 }
 
 export interface OperatorProfile {
   operator: {
     _id: string
-
     firstName?: string
     lastName?: string
-
     email: string
-
     avatar?: string
-
     role: 'admin' | 'supervisor' | 'agent'
-
     availabilityStatus: 'online' | 'away' | 'busy' | 'offline'
-
     activeChatsCount: number
   }
-
   account?: {
     name: string
   }

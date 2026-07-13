@@ -4,11 +4,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-
 import { LoadingOverlay } from '@mantine/core'
 
 import DashboardShell from '@/app/components/dashboard/DashboardShell'
 import { checkAuth } from '@/app/lib/auth/checkAuth'
+import { getCurrentProfile } from '@/app/lib/api/auth.api' 
+import { useAuthStore } from '@/app/store/useAuthStore'
 import RouteGuard from '@/app/components/guards/RouteGuard'
 
 export default function DashboardLayout({
@@ -18,33 +19,47 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-
+  
+  const setAuth = useAuthStore((state) => state.login)
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    async function verify() {
-      const authenticated = await checkAuth()
+    async function verifyAndHydrate() {
+      try {
+        // 1. Check if token cookies are valid (or refresh them)
+        const authenticated = await checkAuth()
 
-      if (!authenticated) {
+        if (!authenticated) {
+          router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
+          return
+        }
+
+        // 2. Fetch fresh user information directly from database records via /me
+        const res = await getCurrentProfile()
+
+        if (res?.success && res.data) {
+          setAuth(res.data)
+          setChecking(false)
+        } else {
+          router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
+        }
+      } catch (err) {
+        console.error('Failed to initialize operator dashboard workspace session:', err)
         router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
-        return
       }
-
-      setChecking(false)
     }
 
-    verify()
-  }, [pathname, router])
+    verifyAndHydrate()
+  }, [pathname, router, setAuth])
 
   if (checking) {
     return (
       <div className="h-screen w-screen relative">
-        <LoadingOverlay visible />
+        <LoadingOverlay visible overlayProps={{ blur: 1 }} />
       </div>
     )
   }
 
-  // return <DashboardShell>{children}</DashboardShell>
   return (
     <RouteGuard>
       <DashboardShell>{children}</DashboardShell>

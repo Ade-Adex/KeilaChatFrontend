@@ -11,7 +11,7 @@ import type {
   ResetPasswordSchema,
 } from '@/app/lib/validation/auth.schema'
 
-import { apiPost, apiPut } from '@/app/lib/api/apiClient'
+import { apiPost, apiGet } from '@/app/lib/api/apiClient'
 
 /* -------------------------------------------------------------------------- */
 /*                                AUTH ROUTES                                 */
@@ -29,6 +29,15 @@ export function registerUser(data: SignupFormData) {
  */
 export function loginOperator(data: LoginFormData) {
   return apiPost<AuthResponse>(`/api/v1/auth/login`, data)
+}
+
+
+/**
+ * Fetch Current Authenticated Operator Data Context
+ * Handles populating properties and account metrics professional standard way 🚀
+ */
+export function getCurrentProfile() {
+  return apiGet<AuthResponse>(`/api/v1/auth/me`)
 }
 
 /**

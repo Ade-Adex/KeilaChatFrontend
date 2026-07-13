@@ -10,8 +10,8 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import StatCard from './StatCard'
-import type { OperatorData } from '@/app/lib/api/operators.api'
 import type { AccountData } from '@/app/types/account'
+import { OperatorData } from '@/app/types/operator'
 
 interface StatsGridProps {
   operators: OperatorData[]

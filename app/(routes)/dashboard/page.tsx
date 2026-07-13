@@ -26,14 +26,11 @@ import AIInsights from '@/app/components/dashboard/overview/AIInsights'
 import PropertyHealth from '@/app/components/dashboard/overview/PropertyHealth'
 import AccountSummary from '@/app/components/dashboard/overview/AccountSummary'
 
-import { usePropertySetup } from '@/app/hooks/settings/usePropertySetup'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { useOperators } from '@/app/hooks/operators/useOperators'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-import {
-  getDashboardAnalytics,
-  type DashboardAnalyticsResponse,
-} from '@/app/lib/api/chat.api'
+import { getDashboardOverviewContext } from '@/app/lib/api/dashboard.api'
+import type { WebsiteData } from '@/app/lib/api/settings.api'
 
 import type {
   DashboardConversationChartItem,
@@ -42,75 +39,93 @@ import type {
   DashboardOperatorPerformance,
   DashboardPropertyHealth,
   DashboardAIInsights,
+  DashboardOverviewMetrics,
 } from '@/app/types/dashboard'
 
 export default function DashboardPage() {
-  const { property, loading: propertyLoading } = usePropertySetup()
   const user = useAuthStore((state) => state.operator)
   const account = useAuthStore((state) => state.account)
   const { operators } = useOperators()
 
+  const [property, setProperty] = useState<WebsiteData | null>(null)
   const [conversations, setConversations] = useState<
     DashboardRecentConversation[]
   >([])
   const [visitors, setVisitors] = useState<DashboardRecentVisitor[]>([])
 
-  /* -------------------------------------------------------------------------- */
-  /* 🎯 LIVE METRICS ARCHITECTURE                                               */
-  /* -------------------------------------------------------------------------- */
-  const [analytics, setAnalytics] = useState<
-    DashboardAnalyticsResponse['data'] | null
-  >(null)
+  const [analytics, setAnalytics] = useState<DashboardOverviewMetrics | null>(
+    null,
+  )
   const [chartData, setChartData] = useState<DashboardConversationChartItem[]>(
     [],
   )
-  const [loadedPropertyId, setLoadedPropertyId] = useState<string | null>(null)
 
+  const [pageLoading, setPageLoading] = useState(true)
   const isFetchingRef = useRef(false)
 
-  // 1️⃣ FIX: Only require analytics to load if a property actually exists!
-  const hasNoProperty = !propertyLoading && !property?._id
-  const analyticsLoading =
-    !hasNoProperty && (!analytics || loadedPropertyId !== property?._id)
+  const assignedProperties = user?.assignedProperties ?? []
 
-  const fetchLiveAnalytics = useCallback(async () => {
-    if (!property?._id || isFetchingRef.current) return
+  const propertyIdContext =
+    assignedProperties.length > 0
+      ? assignedProperties[0]?._id || assignedProperties[0]
+      : null
+
+  const fetchDashboardDataContext = useCallback(async () => {
+    if (!propertyIdContext || isFetchingRef.current) return
 
     isFetchingRef.current = true
     try {
-      const res = await getDashboardAnalytics(property._id)
-      if (res?.data) {
+      const res = await getDashboardOverviewContext(
+        propertyIdContext.toString(),
+      )
+
+      console.log('response in dash', res)
+      if (res?.success && res.data) {
+        setProperty(res.data.property)
         setAnalytics(res.data)
-        setChartData(res.data.chartData)
-        setLoadedPropertyId(property._id)
+        setChartData(res.data.chartData ?? [])
       }
     } catch (err) {
-      console.error('Failed fetching live dashboard data parameters:', err)
+      console.error(
+        'Failed fetching runtime contextual dashboard properties:',
+        err,
+      )
     } finally {
       isFetchingRef.current = false
+      setPageLoading(false)
     }
-  }, [property])
+  }, [propertyIdContext])
 
-  // 2️⃣ Clean Isolation: Safe microtask deferral protects against cascading state errors
+  /* -------------------------------------------------------------------------- */
+  /* 🎯 FIX: Wrapped State Updates in Microtask Execution Loop                  */
+  /* -------------------------------------------------------------------------- */
   useEffect(() => {
-    if (!property?._id) return
-
     const controller = new AbortController()
+
+    if (!propertyIdContext) {
+      // Defer state update to next microtask queue execution frame
+      // preventing synchronous cascading re-renders
+      Promise.resolve().then(() => {
+        if (!controller.signal.aborted) {
+          setPageLoading(false)
+        }
+      })
+      return
+    }
 
     Promise.resolve().then(() => {
       if (!controller.signal.aborted) {
-        void fetchLiveAnalytics()
+        void fetchDashboardDataContext()
       }
     })
 
     return () => {
       controller.abort()
     }
-  }, [property?._id, fetchLiveAnalytics])
+  }, [propertyIdContext, fetchDashboardDataContext])
 
-  // 3️⃣ Sockets Sync Subscription Effect
   useEffect(() => {
-    if (!property?._id) return
+    if (!propertyIdContext) return
 
     const socket = getChatSocket()
 
@@ -126,17 +141,16 @@ export default function DashboardPage() {
 
     socket.on('visitor_activity_sync', handleVisitors)
     socket.on('conversation_stream_sync', handleConversations)
-    socket.on('dashboard_refresh_request', fetchLiveAnalytics)
+    socket.on('dashboard_refresh_request', fetchDashboardDataContext)
 
     return () => {
       socket.off('visitor_activity_sync', handleVisitors)
       socket.off('conversation_stream_sync', handleConversations)
-      socket.off('dashboard_refresh_request', fetchLiveAnalytics)
+      socket.off('dashboard_refresh_request', fetchDashboardDataContext)
     }
-  }, [property?._id, fetchLiveAnalytics])
+  }, [propertyIdContext, fetchDashboardDataContext])
 
-  // Render main layout loading frame early
-  if (propertyLoading || analyticsLoading) {
+  if (pageLoading) {
     return (
       <Center h={400}>
         <Loader size="md" color="blue" />
@@ -144,10 +158,7 @@ export default function DashboardPage() {
     )
   }
 
-  /* -------------------------------------------------------------------------- */
-  /* 🎯 2️⃣ FIX: ONBOARDING / EMPTY PROPERTY FALLBACK SCREEN                      */
-  /* -------------------------------------------------------------------------- */
-  if (hasNoProperty) {
+  if (!propertyIdContext || !property) {
     return (
       <Stack gap="lg">
         {(user || account) && <DashboardHero user={user} account={account} />}
@@ -157,11 +168,11 @@ export default function DashboardPage() {
             <Title order={3}>Welcome to KeilaChat!</Title>
             <Text c="dimmed" maw={500}>
               To begin monitoring visitors and managing live chat operations,
-              you need to create your first property (website context).
+              you need to create your first property website workspace.
             </Text>
             <Button
               component={Link}
-              href="/dashboard/settings" // Change this to your actual onboarding/settings route URL
+              href="/dashboard/settings"
               color="blue"
               mt="md"
             >
@@ -173,9 +184,6 @@ export default function DashboardPage() {
     )
   }
 
-  /* -------------------------------------------------------------------------- */
-  /* 🎯 STANDARD RENDERING DATA PROCESSING FOR ONBOARDED USERS                 */
-  /* -------------------------------------------------------------------------- */
   const computedHealth: DashboardPropertyHealth = {
     websiteConfigured: !!property?.name,
     domainConfigured: !!property?.domain,
@@ -185,14 +193,15 @@ export default function DashboardPage() {
     categoryConfigured: !!property?.details?.category,
     descriptionConfigured: !!property?.details?.description,
     workingHoursEnabled: !!property?.workingHours?.enabled,
-    aiEnabled: !!property?.settings?.aiEnabled,
+    aiEnabled:
+      !!property?.settings?.aiEnabled || !!account?.settings?.aiEnabled,
     autoAssign: !!property?.settings?.autoAssign,
     onlineStatus: !!property?.settings?.onlineStatus,
     allowedDomains: property?.allowedDomains?.length ?? 0,
   }
 
   const computedAiDetails: DashboardAIInsights = {
-    enabled: !!property?.settings?.aiEnabled,
+    enabled: !!property?.settings?.aiEnabled || !!account?.settings?.aiEnabled,
     fallbackToHuman: !!property?.settings?.aiFallbackToHuman,
     autoAssign: !!property?.settings?.autoAssign,
     totalAIChats: analytics?.aiInsights?.totalAIChats ?? 0,
@@ -243,7 +252,11 @@ export default function DashboardPage() {
           ).length
         }
         aiResolutionProgress={aiResolutionProgress}
-        avgResponseTime={analytics?.metrics?.avgResponseTimeSec ?? 0}
+        avgResponseTime={
+          analytics?.metrics?.avgResponseTimeSec ??
+          user?.stats?.averageResponseTime ??
+          0
+        }
       />
 
       <Grid>
@@ -256,7 +269,7 @@ export default function DashboardPage() {
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, lg: 4 }}>
-          {property && <WebsiteSummary property={property} />}
+          <WebsiteSummary property={property} />
         </Grid.Col>
       </Grid>
 

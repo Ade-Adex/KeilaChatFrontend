@@ -1,50 +1,12 @@
-// // /app/hooks/settings/usePropertySetup.ts
+// /app/hooks/settings/usePropertySetup.ts
 
-// 'use client'
 
-// import { useEffect, useState } from 'react'
-
-// import { getWebsite } from '@/app/lib/api/settings.api'
-
-// import type { WebsiteData } from '@/app/lib/api/settings.api'
-
-// export function usePropertySetup() {
-//   const [property, setProperty] = useState<WebsiteData | null>(null)
-//   const [loading, setLoading] = useState(true)
-//   const [error, setError] = useState<string | null>(null)
-
-//   useEffect(() => {
-//     const load = async () => {
-//       try {
-//         const res = await getWebsite()
-//         console.log("Response", res.data)
-
-//         setProperty(res.data.property)
-//       } catch (err) {
-//         setError(
-//           err instanceof Error ? err.message : 'Unable to load property.',
-//         )
-//       } finally {
-//         setLoading(false)
-//       }
-//     }
-
-//     void load()
-//   }, [])
-
-//   return {
-//     property,
-//     loading,
-//     error,
-//   }
-// }
 
 'use client'
 
 import { useEffect, useState } from 'react'
 
 import { useAuthStore } from '@/app/store/useAuthStore'
-
 import { getWebsite, type WebsiteData } from '@/app/lib/api/settings.api'
 
 export function usePropertySetup() {
@@ -53,78 +15,104 @@ export function usePropertySetup() {
   const isAdmin = operator?.role === 'admin'
 
   const [property, setProperty] = useState<WebsiteData | null>(null)
-
   const [loading, setLoading] = useState(true)
-
   const [error, setError] = useState<string | null>(null)
 
   const [hasProperty, setHasProperty] = useState(false)
-
   const [hasAssignedProperty, setHasAssignedProperty] = useState(false)
 
   useEffect(() => {
     let mounted = true
 
-    async function loadProperty() {
+    const controller = new AbortController()
+
+    Promise.resolve().then(async () => {
+      if (controller.signal.aborted || !mounted) return
+
       try {
         setLoading(true)
 
+        /**
+         * ----------------------------------------------------------
+         * AGENT / SUPERVISOR
+         * ----------------------------------------------------------
+         * They cannot access /properties/settings.
+         * Simply rely on assigned properties already stored
+         * on the authenticated operator.
+         */
+       if (!isAdmin) {
+         const assigned = operator?.assignedProperties ?? []
+
+         if (!mounted) return
+
+         const firstProperty =
+           assigned.length > 0 ? (assigned[0] as WebsiteData) : null
+
+         setProperty(firstProperty)
+
+         setHasAssignedProperty(Boolean(firstProperty))
+         setHasProperty(Boolean(firstProperty))
+
+         setError(null)
+
+         return
+       }
+
+        /**
+         * ----------------------------------------------------------
+         * ADMIN
+         * ----------------------------------------------------------
+         * Load account property.
+         */
         const res = await getWebsite()
 
-        if (!mounted) return
+
+        console.log("response  in usePropertySetup", res)
+
+        if (!mounted || controller.signal.aborted) return
 
         const currentProperty = res.data?.property ?? null
 
+
+        console.log('currentProperty in usePropertySetup', currentProperty)
+
         setProperty(currentProperty)
 
-        setHasProperty(Boolean(currentProperty?._id))
+        const exists = Boolean(currentProperty?._id)
 
-        if (isAdmin) {
-          setHasAssignedProperty(Boolean(currentProperty?._id))
-        } else {
-          setHasAssignedProperty(
-            (operator?.assignedProperties?.length ?? 0) > 0,
-          )
-        }
+        setHasProperty(exists)
+        setHasAssignedProperty(exists)
 
         setError(null)
       } catch (err) {
-        if (!mounted) return
+        if (!mounted || controller.signal.aborted) return
 
         setProperty(null)
-
         setHasProperty(false)
-
         setHasAssignedProperty(false)
 
         setError(
           err instanceof Error ? err.message : 'Unable to load property.',
         )
       } finally {
-        if (mounted) {
+        if (mounted && !controller.signal.aborted) {
           setLoading(false)
         }
       }
-    }
-
-    void loadProperty()
+    })
 
     return () => {
       mounted = false
+      controller.abort()
     }
-  }, [isAdmin, operator?.assignedProperties])
+  }, [isAdmin, operator])
 
   return {
     property,
-
     loading,
-
     error,
-
     hasProperty,
-
     hasAssignedProperty,
-
     isAdmin,
   }
 }

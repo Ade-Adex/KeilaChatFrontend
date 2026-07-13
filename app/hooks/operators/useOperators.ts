@@ -1,63 +1,49 @@
 // /app/hooks/operators/useOperators.ts
 
+
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { getOperators, type OperatorData } from '@/app/lib/api/operators.api'
+import { getOperators, } from '@/app/lib/api/operators.api'
+import { OperatorData } from '@/app/types/operator'
 
 export function useOperators() {
   const [operators, setOperators] = useState<OperatorData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadOperators = useCallback(async () => {
+ const loadOperators = useCallback(async (signal?: AbortSignal) => {
+   try {
+     setLoading(true)
 
-    try {
-      setLoading(true)
+     const res = await getOperators()
 
-      const res = await getOperators()
+     if (signal?.aborted) return
 
-      setOperators(res.data)
+     setOperators(res.data)
 
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load operators')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+     setError(null)
+   } catch (err) {
+     if (signal?.aborted) return
 
- useEffect(() => {
-   let mounted = true
-
-   const fetchOperators = async () => {
-     try {
-       const res = await getOperators()
-
-       if (mounted) {
-         setOperators(res.data)
-         setError(null)
-       }
-     } catch (err) {
-       if (mounted) {
-         setError(
-           err instanceof Error ? err.message : 'Failed to load operators',
-         )
-       }
-     } finally {
-       if (mounted) {
-         setLoading(false)
-       }
+     setError(err instanceof Error ? err.message : 'Failed to load operators')
+   } finally {
+     if (!signal?.aborted) {
+       setLoading(false)
      }
    }
-
-   void fetchOperators()
-
-   return () => {
-     mounted = false
-   }
  }, [])
+
+useEffect(() => {
+  const controller = new AbortController()
+
+  Promise.resolve().then(() => {
+    void loadOperators(controller.signal)
+  })
+
+  return () => controller.abort()
+}, [loadOperators])
 
   return {
     operators,
@@ -66,5 +52,3 @@ export function useOperators() {
     refreshOperators: loadOperators,
   }
 }
-
-
