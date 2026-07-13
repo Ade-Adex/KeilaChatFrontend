@@ -13,6 +13,8 @@ import Link from 'next/link'
 import { getOperatorProfile } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
 import type { OperatorProfile } from '@/app/types/dashboard'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardShell({
   children,
@@ -22,6 +24,24 @@ export default function DashboardShell({
   const [opened, { toggle, close }] = useDisclosure(false)
   const [profile, setProfile] = useState<OperatorProfile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const router = useRouter()
+  const logout = useAuthStore((state) => state.logout)
+
+  // 🎯 Action handler to trigger matching cleanup sequence
+  const handleDropdownSignOutClick = async () => {
+    try {
+      close()
+      await logout()
+      router.replace('/signin')
+      router.refresh()
+    } catch (err) {
+      console.error(
+        '[KeilaChat DashboardShell] Error executing sign out sequence:',
+        err,
+      )
+    }
+  }
 
   useEffect(() => {
     let mounted = true
@@ -125,7 +145,6 @@ export default function DashboardShell({
               </Group>
             )}
 
-            {/* 🎯 RESPONSIVE USER FOOTPRINT: Minimal Indicator on Mobile, Full Metadata Profile on Desktop */}
             {profile?.operator && (
               <Menu shadow="md" width={200} position="bottom-end" withinPortal>
                 <Menu.Target>
@@ -164,9 +183,6 @@ export default function DashboardShell({
                           {profile.operator.firstName}{' '}
                           {profile.operator.lastName}
                         </Text>
-                        {/* <Text size="10px" className="text-muted-foreground truncate capitalize">
-                          {profile.operator.availabilityStatus ?? 'offline'}
-                        </Text> */}
                       </div>
                     </Group>
                   </UnstyledButton>
@@ -196,6 +212,13 @@ export default function DashboardShell({
                     className="text-xs font-medium"
                   >
                     Profile Settings
+                  </Menu.Item>
+
+                  <Menu.Item
+                    onClick={handleDropdownSignOutClick}
+                    className="text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Sign Out
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>
