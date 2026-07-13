@@ -70,7 +70,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
   if (!visitor) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center bg-card/20">
-        <p className="text-xs font-medium text-muted-foreground/60 leading-relaxed max-w-45">
+        <p className="text-xs font-medium text-foreground/60 leading-relaxed max-w-45">
           Detailed visitor telemetry profile context unpopulated.
         </p>
       </div>
@@ -111,13 +111,13 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
     <div className="h-full flex flex-col bg-card/40 divide-y divide-border">
       {/* Profiler Card Badge Header */}
       <div className="p-4 bg-card/50 text-center relative overflow-hidden">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/6 border border-primary/10 text-primary shadow-sm">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/30 border border-primary/10 text-primary shadow-sm">
           <FaUser size={16} />
         </div>
         <h4 className="mt-3 text-sm font-semibold tracking-tight text-foreground truncate px-2">
           {visitor.name || 'Anonymous Visitor'}
         </h4>
-        <p className="text-[11px] font-medium text-muted-foreground/80 truncate px-2 mt-0.5">
+        <p className="text-[11px] font-medium text-foreground/80 truncate px-2 mt-0.5">
           {visitor.email || 'No identity mapping registered'}
         </p>
       </div>
@@ -126,15 +126,15 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar text-xs">
         {/* Device Metrics Block */}
         <div className="space-y-2.5">
-          <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+          <h5 className="text-[10px] font-bold uppercase tracking-wider text-foreground/80">
             Device Telemetry
           </h5>
           <div className="grid gap-1.5">
             {/* 🎯 FIX 2: Check for displayLocation configuration string */}
             {displayLocation && (
-              <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-2.5 py-2">
                 <FaLocationDot
-                  className="text-muted-foreground/70 shrink-0"
+                  className="text-foreground/70 shrink-0"
                   size={12}
                 />
                 <span className="font-medium text-foreground truncate">
@@ -143,9 +143,9 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
               </div>
             )}
             {metadata?.deviceType && (
-              <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-2.5 py-2">
                 <FaDesktop
-                  className="text-muted-foreground/70 shrink-0"
+                  className="text-foreground/70 shrink-0"
                   size={12}
                 />
                 <span className="font-medium text-foreground capitalize truncate">
@@ -154,9 +154,9 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
               </div>
             )}
             {fullClientEngine && (
-              <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-2.5 py-2">
                 <FaGlobe
-                  className="text-muted-foreground/70 shrink-0"
+                  className="text-foreground/70 shrink-0"
                   size={12}
                 />
                 <span className="font-medium text-foreground truncate">
@@ -164,9 +164,9 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background/40 px-2.5 py-2">
               <FaClock
-                className="text-muted-foreground/70 shrink-0"
+                className="text-foreground/70 shrink-0"
                 size={12}
               />
               <span className="font-medium text-foreground truncate">
@@ -179,13 +179,13 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {/* Route Context */}
         {(currentPage || referrer) && (
           <div className="space-y-2.5">
-            <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+            <h5 className="text-[10px] font-bold uppercase tracking-wider text-foreground/80">
               Route Context
             </h5>
             <div className="space-y-1.5">
               {currentPage && (
-                <div className="rounded-lg border bg-background/40 p-2.5">
-                  <span className="block text-[10px] font-semibold text-muted-foreground/70 uppercase">
+                <div className="rounded-lg border border-border bg-background/40 p-2.5">
+                  <span className="block text-[10px] font-semibold text-foreground/70 uppercase">
                     Current Window Target
                   </span>
                   <p className="mt-1 font-mono text-[11px] break-all text-foreground leading-normal">
@@ -194,8 +194,8 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
                 </div>
               )}
               {referrer && (
-                <div className="rounded-lg border bg-background/40 p-2.5">
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground/70 uppercase">
+                <div className="rounded-lg border border-border bg-background/40 p-2.5">
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-foreground/70 uppercase">
                     <FaLink size={10} />
                     <span>Origin Referrer Path</span>
                   </div>
@@ -210,12 +210,12 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
 
         {/* Activity Aggregations */}
         <div className="space-y-2.5">
-          <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+          <h5 className="text-[10px] font-bold uppercase tracking-wider text-foreground/80">
             Activity Aggregations
           </h5>
-          <div className="rounded-lg border bg-background/40 p-2.5 divide-y divide-border/60">
+          <div className="rounded-lg border border-border bg-background/40 p-2.5 divide-y divide-border/60">
             <div className="flex justify-between pb-2">
-              <span className="text-muted-foreground font-medium">
+              <span className="text-foreground font-medium">
                 Session Route Loads
               </span>
               <span className="font-bold text-foreground">
@@ -223,11 +223,11 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
               </span>
             </div>
             <div className="flex justify-between pt-2">
-              <span className="text-muted-foreground font-medium">
+              <span className="text-foreground font-medium">
                 Interaction Opened
               </span>
               <span
-                className={`font-semibold ${visitor.chatOpened ? 'text-emerald-500' : 'text-muted-foreground'}`}
+                className={`font-semibold ${visitor.chatOpened ? 'text-emerald-500' : 'text-foreground'}`}
               >
                 {visitor.chatOpened ? 'Yes' : 'No'}
               </span>
@@ -238,7 +238,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {/* Context Segment Tags */}
         {visitor.tags && visitor.tags.length > 0 && (
           <div className="space-y-2.5">
-            <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+            <h5 className="text-[10px] font-bold uppercase tracking-wider text-foreground/80">
               Context Segment Tags
             </h5>
             <div className="flex flex-wrap gap-1">
@@ -258,10 +258,10 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         {/* Operator System Notes */}
         {visitor.notes && (
           <div className="space-y-2.5">
-            <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+            <h5 className="text-[10px] font-bold uppercase tracking-wider text-foreground/80">
               Operator System Notes
             </h5>
-            <div className="rounded-lg border border-amber-500/10 bg-amber-500/2 p-2.5 text-xs text-foreground/90 leading-relaxed shadow-inner">
+            <div className="rounded-lg border border-border bg-amber-500/2 p-2.5 text-xs text-foreground/90 leading-relaxed shadow-inner">
               {visitor.notes}
             </div>
           </div>
