@@ -1,5 +1,6 @@
 // /components/operator/VisitorInfoPanel.tsx
 
+// 🎯 TARGET FILE: /components/operator/VisitorInfoPanel.tsx
 'use client'
 
 import {
@@ -21,7 +22,6 @@ interface VisitorInfoPanelProps {
   session: OperatorConversation
 }
 
-// 🎯 FIXED: Omit deviceType from the base to safely accept relaxed string values from different analytics trackers
 interface NestedVisitorMetadata extends Omit<
   OperatorVisitorMetadata,
   'deviceType'
@@ -30,23 +30,28 @@ interface NestedVisitorMetadata extends Omit<
     city?: string
     country?: string
   }
-  city?: string
-  country?: string
-  os?: string
   operatingSystem?: string
   browser?: string
   deviceType?: string 
+  timezone?: string
+  language?: string
+  screenResolution?: string
+  ipAddress?: string
+  userAgent?: string
 }
 
 interface ExtendedOperatorVisitor extends Omit<OperatorVisitor, 'metadata'> {
   metadata?: NestedVisitorMetadata
+  currentPage?: string
+  referrer?: string
+  pageViews?: number
+  chatOpened?: boolean
+  tags?: string[]
+  notes?: string
 }
 
 export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
   const rawVisitor = session.visitorId
-
-  console.log('session payload:', session)
-  console.log('rawVisitor payload:', rawVisitor)
 
   const visitor: Partial<ExtendedOperatorVisitor> | null =
     rawVisitor && typeof rawVisitor === 'object'
@@ -59,7 +64,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
   if (!visitor) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center bg-card/20">
-        <p className="text-xs font-medium text-muted-foreground/60 leading-relaxed max-w-[180px]">
+        <p className="text-xs font-medium text-muted-foreground/60 leading-relaxed max-w-45">
           Detailed visitor telemetry profile context unpopulated.
         </p>
       </div>
@@ -68,14 +73,18 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
 
   const metadata = visitor.metadata
 
+  // 🎯 FIX 1: Safely fall back through the database object architecture
+  const locationCity = metadata?.location?.city || '';
+  const locationCountry = metadata?.location?.country || '';
+  
+  // Only display a clean string if at least one parameter value isn't "Unknown"
+  const cleanCity = locationCity && locationCity !== 'Unknown' ? locationCity : '';
+  const cleanCountry = locationCountry && locationCountry !== 'Unknown' ? locationCountry : '';
+  
+  const displayLocation = [cleanCity, cleanCountry].filter(Boolean).join(', ') 
+    || (locationCity === 'Unknown' || locationCountry === 'Unknown' ? 'Unknown Location' : '');
 
-  console.log('visitor metadata:', metadata)
-
-  const locationCity = metadata?.city || metadata?.location?.city
-  const locationCountry = metadata?.country || metadata?.location?.country
-  const location = [locationCity, locationCountry].filter(Boolean).join(', ')
-
-  const operatingSystem = metadata?.operatingSystem || metadata?.os || ''
+  const operatingSystem = metadata?.operatingSystem || ''
   const systemBrowser = metadata?.browser || ''
   const fullClientEngine = [systemBrowser, operatingSystem]
     .filter(Boolean)
@@ -96,7 +105,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
     <div className="h-full flex flex-col bg-card/40 divide-y divide-border">
       {/* Profiler Card Badge Header */}
       <div className="p-4 bg-card/50 text-center relative overflow-hidden">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/[0.06] border border-primary/10 text-primary shadow-sm">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/6 border border-primary/10 text-primary shadow-sm">
           <FaUser size={16} />
         </div>
         <h4 className="mt-3 text-sm font-semibold tracking-tight text-foreground truncate px-2">
@@ -115,14 +124,15 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
             Device Telemetry
           </h5>
           <div className="grid gap-1.5">
-            {location && (
+            {/* 🎯 FIX 2: Check for displayLocation configuration string */}
+            {displayLocation && (
               <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
                 <FaLocationDot
                   className="text-muted-foreground/70 shrink-0"
                   size={12}
                 />
                 <span className="font-medium text-foreground truncate">
-                  {location}
+                  {displayLocation}
                 </span>
               </div>
             )}
@@ -160,7 +170,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
           </div>
         </div>
 
-        {/* Live Vector Viewports */}
+        {/* Route Context */}
         {(currentPage || referrer) && (
           <div className="space-y-2.5">
             <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
@@ -192,7 +202,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
           </div>
         )}
 
-        {/* Dynamic Aggregated Quantities Meta Box */}
+        {/* Activity Aggregations */}
         <div className="space-y-2.5">
           <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
             Activity Aggregations
@@ -219,7 +229,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
           </div>
         </div>
 
-        {/* Meta Segment Identification Tags */}
+        {/* Context Segment Tags */}
         {visitor.tags && visitor.tags.length > 0 && (
           <div className="space-y-2.5">
             <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
@@ -239,13 +249,13 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
           </div>
         )}
 
-        {/* Structured Profile Annotation Box */}
+        {/* Operator System Notes */}
         {visitor.notes && (
           <div className="space-y-2.5">
             <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
               Operator System Notes
             </h5>
-            <div className="rounded-lg border border-amber-500/10 bg-amber-500/[0.02] p-2.5 text-xs text-foreground/90 leading-relaxed shadow-inner">
+            <div className="rounded-lg border border-amber-500/10 bg-amber-500/2 p-2.5 text-xs text-foreground/90 leading-relaxed shadow-inner">
               {visitor.notes}
             </div>
           </div>
