@@ -10,23 +10,50 @@ import {
   FaClock,
   FaLink,
   FaHashtag,
-  FaChartSimple,
 } from 'react-icons/fa6'
 import type {
   OperatorConversation,
   OperatorVisitor,
+  OperatorVisitorMetadata,
 } from '@/app/types/dashboard'
 
 interface VisitorInfoPanelProps {
   session: OperatorConversation
 }
 
+// 🎯 FIXED: Omit deviceType from the base to safely accept relaxed string values from different analytics trackers
+interface NestedVisitorMetadata extends Omit<
+  OperatorVisitorMetadata,
+  'deviceType'
+> {
+  location?: {
+    city?: string
+    country?: string
+  }
+  city?: string
+  country?: string
+  os?: string
+  operatingSystem?: string
+  browser?: string
+  deviceType?: string 
+}
+
+interface ExtendedOperatorVisitor extends Omit<OperatorVisitor, 'metadata'> {
+  metadata?: NestedVisitorMetadata
+}
+
 export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
-  const visitor: OperatorVisitor | null =
-    session.visitorId &&
-    typeof session.visitorId === 'object' &&
-    '_id' in session.visitorId
-      ? (session.visitorId as OperatorVisitor)
+  const rawVisitor = session.visitorId
+
+  console.log('session payload:', session)
+  console.log('rawVisitor payload:', rawVisitor)
+
+  const visitor: Partial<ExtendedOperatorVisitor> | null =
+    rawVisitor && typeof rawVisitor === 'object'
+      ? 'visitorId' in rawVisitor
+        ? ((rawVisitor as Record<string, unknown>)
+            .visitorId as Partial<ExtendedOperatorVisitor>)
+        : (rawVisitor as ExtendedOperatorVisitor)
       : null
 
   if (!visitor) {
@@ -39,15 +66,31 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
     )
   }
 
-  const location = [visitor.metadata?.city, visitor.metadata?.country]
+  const metadata = visitor.metadata
+
+
+  console.log('visitor metadata:', metadata)
+
+  const locationCity = metadata?.city || metadata?.location?.city
+  const locationCountry = metadata?.country || metadata?.location?.country
+  const location = [locationCity, locationCountry].filter(Boolean).join(', ')
+
+  const operatingSystem = metadata?.operatingSystem || metadata?.os || ''
+  const systemBrowser = metadata?.browser || ''
+  const fullClientEngine = [systemBrowser, operatingSystem]
     .filter(Boolean)
-    .join(', ')
-  const lastSeenTime = visitor.lastSeen
-    ? new Date(visitor.lastSeen).toLocaleTimeString([], {
+    .join(' / ')
+
+  const lastSeenValue = visitor.lastSeen || session.updatedAt
+  const lastSeenTime = lastSeenValue
+    ? new Date(lastSeenValue).toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
       })
     : 'Unknown'
+
+  const currentPage = visitor.currentPage
+  const referrer = visitor.referrer
 
   return (
     <div className="h-full flex flex-col bg-card/40 divide-y divide-border">
@@ -72,33 +115,39 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
             Device Telemetry
           </h5>
           <div className="grid gap-1.5">
-            <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
-              <FaLocationDot
-                className="text-muted-foreground/70 shrink-0"
-                size={12}
-              />
-              <span className="font-medium text-foreground truncate">
-                {location || 'Unknown Location'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
-              <FaDesktop
-                className="text-muted-foreground/70 shrink-0"
-                size={12}
-              />
-              <span className="font-medium text-foreground capitalize truncate">
-                {visitor.metadata?.deviceType || 'Unknown Hardware'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
-              <FaGlobe
-                className="text-muted-foreground/70 shrink-0"
-                size={12}
-              />
-              <span className="font-medium text-foreground truncate">
-                {visitor.metadata?.browser || 'Unknown Client Engine'}
-              </span>
-            </div>
+            {location && (
+              <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+                <FaLocationDot
+                  className="text-muted-foreground/70 shrink-0"
+                  size={12}
+                />
+                <span className="font-medium text-foreground truncate">
+                  {location}
+                </span>
+              </div>
+            )}
+            {metadata?.deviceType && (
+              <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+                <FaDesktop
+                  className="text-muted-foreground/70 shrink-0"
+                  size={12}
+                />
+                <span className="font-medium text-foreground capitalize truncate">
+                  {metadata.deviceType}
+                </span>
+              </div>
+            )}
+            {fullClientEngine && (
+              <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
+                <FaGlobe
+                  className="text-muted-foreground/70 shrink-0"
+                  size={12}
+                />
+                <span className="font-medium text-foreground truncate">
+                  {fullClientEngine}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-lg border bg-background/40 px-2.5 py-2">
               <FaClock
                 className="text-muted-foreground/70 shrink-0"
@@ -112,30 +161,36 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
         </div>
 
         {/* Live Vector Viewports */}
-        <div className="space-y-2.5">
-          <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-            Route Context
-          </h5>
-          <div className="space-y-1.5">
-            <div className="rounded-lg border bg-background/40 p-2.5">
-              <span className="block text-[10px] font-semibold text-muted-foreground/70 uppercase">
-                Current Window Target
-              </span>
-              <p className="mt-1 font-mono text-[11px] break-all text-foreground leading-normal">
-                {visitor.currentPage || 'Unknown URL route content frame'}
-              </p>
-            </div>
-            <div className="rounded-lg border bg-background/40 p-2.5">
-              <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground/70 uppercase">
-                <FaLink size={10} />
-                <span>Origin Referrer Path</span>
-              </div>
-              <p className="mt-1 font-mono text-[11px] break-all text-foreground leading-normal">
-                {visitor.referrer || 'Direct Domain Traffic Entry'}
-              </p>
+        {(currentPage || referrer) && (
+          <div className="space-y-2.5">
+            <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              Route Context
+            </h5>
+            <div className="space-y-1.5">
+              {currentPage && (
+                <div className="rounded-lg border bg-background/40 p-2.5">
+                  <span className="block text-[10px] font-semibold text-muted-foreground/70 uppercase">
+                    Current Window Target
+                  </span>
+                  <p className="mt-1 font-mono text-[11px] break-all text-foreground leading-normal">
+                    {currentPage}
+                  </p>
+                </div>
+              )}
+              {referrer && (
+                <div className="rounded-lg border bg-background/40 p-2.5">
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground/70 uppercase">
+                    <FaLink size={10} />
+                    <span>Origin Referrer Path</span>
+                  </div>
+                  <p className="mt-1 font-mono text-[11px] break-all text-foreground leading-normal">
+                    {referrer}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Dynamic Aggregated Quantities Meta Box */}
         <div className="space-y-2.5">
@@ -171,7 +226,7 @@ export default function VisitorInfoPanel({ session }: VisitorInfoPanelProps) {
               Context Segment Tags
             </h5>
             <div className="flex flex-wrap gap-1">
-              {visitor.tags.map((tag) => (
+              {visitor.tags.map((tag: string) => (
                 <span
                   key={tag}
                   className="inline-flex items-center gap-1 rounded bg-primary/10 border border-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"

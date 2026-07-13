@@ -1,163 +1,163 @@
-// /components/operator/ConversationSidebar.tsx
+  // /components/operator/ConversationSidebar.tsx
 
-'use client'
+  'use client'
 
-import { useEffect, useState } from 'react'
-import {
-  getQueuedSessions,
-  getActiveSessions,
-  getMySessions,
-} from '@/app/lib/api/chat.api'
-import { getChatSocket } from '@/app/hooks/useChatSocket'
-import { useAuthStore } from '@/app/store/useAuthStore'
-import { FiUser, FiActivity, FiLayers } from 'react-icons/fi'
-import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
+  import { useEffect, useState } from 'react'
+  import {
+    getQueuedSessions,
+    getActiveSessions,
+    getMySessions,
+  } from '@/app/lib/api/chat.api'
+  import { getChatSocket } from '@/app/hooks/useChatSocket'
+  import { useAuthStore } from '@/app/store/useAuthStore'
+  import { FiUser, FiActivity, FiLayers } from 'react-icons/fi'
+  import type { OperatorConversation, ChatMessage } from '@/app/types/dashboard'
 
-interface ConversationSidebarProps {
-  selectedConversation: OperatorConversation | null
-  onSelect: (conversation: OperatorConversation | null) => void
-  refreshKey?: number
-  propertyId: string | null 
-}
-
-interface WithId {
-  _id: string
-}
-interface NestedVisitorStructure {
-  visitorId?: {
-    name?: string
-  }
-}
-
-function isPopulatedWithId(obj: unknown): obj is WithId {
-  return typeof obj === 'object' && obj !== null && '_id' in obj
-}
-
-export default function ConversationSidebar({
-  selectedConversation,
-  onSelect,
-  refreshKey = 0,
-  propertyId, 
-}: ConversationSidebarProps) {
-  const [queuedChats, setQueuedChats] = useState<OperatorConversation[]>([])
-  const [activeChats, setActiveChats] = useState<OperatorConversation[]>([])
-  const [myChats, setMyChats] = useState<OperatorConversation[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const socket = getChatSocket()
-  const currentOperator = useAuthStore((state) => state.operator)
-
-  const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
-    if (!visitor) return 'Anonymous Visitor'
-
-    if (typeof visitor === 'object') {
-      if (
-        'name' in visitor &&
-        typeof (visitor as { name?: unknown }).name === 'string'
-      ) {
-        return (visitor as { name: string }).name
-      }
-
-      if ('visitorId' in visitor) {
-        const nested = visitor as NestedVisitorStructure
-        if (nested.visitorId?.name) {
-          return nested.visitorId.name
-        }
-      }
-    }
-
-    return 'Anonymous Visitor'
+  interface ConversationSidebarProps {
+    selectedConversation: OperatorConversation | null
+    onSelect: (conversation: OperatorConversation | null) => void
+    refreshKey?: number
+    propertyId: string | null 
   }
 
-  /* -------------------------------------------------------------------------- */
-  /* 🎯 FIX: Simplified data fetching logic to rely on store propertyId context*/
-  /* -------------------------------------------------------------------------- */
-  useEffect(() => {
-    let mounted = true
-    const fetchConversations = async () => {
-      // If there is no active workspace scope resolved yet, clear loading boundaries
-      if (!propertyId) {
-        if (mounted) setLoading(false)
-        return
-      }
-
-      try {
-        if (refreshKey === 0) setLoading(true)
-
-        // Perform parallel queries targeting the chosen workspace cleanly
-        const [queued, active, mine] = await Promise.all([
-          getQueuedSessions(propertyId),
-          getActiveSessions(propertyId),
-          getMySessions(),
-        ])
-
-        if (!mounted) return
-        setQueuedChats((queued.data ?? []) as OperatorConversation[])
-        setActiveChats((active.data ?? []) as OperatorConversation[])
-        setMyChats((mine.data ?? []) as OperatorConversation[])
-      } catch (error) {
-        console.error('❌ SIDEBAR FETCH EXCEPTION:', error)
-      } finally {
-        if (mounted) setLoading(false)
-      }
+  interface WithId {
+    _id: string
+  }
+  interface NestedVisitorStructure {
+    visitorId?: {
+      name?: string
     }
+  }
 
-    void fetchConversations()
-    return () => {
-      mounted = false
-    }
-  }, [refreshKey, propertyId]) 
+  function isPopulatedWithId(obj: unknown): obj is WithId {
+    return typeof obj === 'object' && obj !== null && '_id' in obj
+  }
 
-  useEffect(() => {
-    if (!socket) return
+  export default function ConversationSidebar({
+    selectedConversation,
+    onSelect,
+    refreshKey = 0,
+    propertyId, 
+  }: ConversationSidebarProps) {
+    const [queuedChats, setQueuedChats] = useState<OperatorConversation[]>([])
+    const [activeChats, setActiveChats] = useState<OperatorConversation[]>([])
+    const [myChats, setMyChats] = useState<OperatorConversation[]>([])
+    const [loading, setLoading] = useState(true)
 
-    const handleMessageUpdate = (payload: {
-      sessionId: string
-      message: ChatMessage
-      sessionContext?: OperatorConversation
-    }) => {
-      const updateList = (
-        list: OperatorConversation[],
-        type: 'mine' | 'queued' | 'active',
-      ) => {
-        const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
+    const socket = getChatSocket()
+    const currentOperator = useAuthStore((state) => state.operator)
 
-        if (targetIndex === -1) {
-          if (
-            payload.sessionContext &&
-            payload.sessionContext.status === type
-          ) {
-            return [payload.sessionContext, ...list]
-          }
-          return list
-        }
+    const getVisitorName = (visitor: OperatorConversation['visitorId']) => {
+      if (!visitor) return 'Anonymous Visitor'
 
-        const updatedList = [...list]
-        const targetChat = { ...updatedList[targetIndex] }
-
-        targetChat.lastMessage = payload.message.messageText
-        targetChat.lastMessageAt = payload.message.createdAt
-
-        if (payload.sessionContext?.assignedOperatorId) {
-          targetChat.assignedOperatorId =
-            payload.sessionContext.assignedOperatorId
-        }
-
+      if (typeof visitor === 'object') {
         if (
-          payload.message.senderType === 'visitor' &&
-          selectedConversation?._id !== payload.sessionId
+          'name' in visitor &&
+          typeof (visitor as { name?: unknown }).name === 'string'
         ) {
-          targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
+          return (visitor as { name: string }).name
         }
 
-        updatedList.splice(targetIndex, 1)
-        return [targetChat, ...updatedList]
+        if ('visitorId' in visitor) {
+          const nested = visitor as NestedVisitorStructure
+          if (nested.visitorId?.name) {
+            return nested.visitorId.name
+          }
+        }
       }
 
-      setMyChats((prev) => updateList(prev, 'mine'))
-      setQueuedChats((prev) => updateList(prev, 'queued'))
-      setActiveChats((prev) => updateList(prev, 'active'))
+      return 'Anonymous Visitor'
     }
+
+    /* -------------------------------------------------------------------------- */
+    /* 🎯 FIX: Simplified data fetching logic to rely on store propertyId context*/
+    /* -------------------------------------------------------------------------- */
+    useEffect(() => {
+      let mounted = true
+      const fetchConversations = async () => {
+        // If there is no active workspace scope resolved yet, clear loading boundaries
+        if (!propertyId) {
+          if (mounted) setLoading(false)
+          return
+        }
+
+        try {
+          if (refreshKey === 0) setLoading(true)
+
+          // Perform parallel queries targeting the chosen workspace cleanly
+          const [queued, active, mine] = await Promise.all([
+            getQueuedSessions(propertyId),
+            getActiveSessions(propertyId),
+            getMySessions(),
+          ])
+
+          if (!mounted) return
+          setQueuedChats((queued.data ?? []) as OperatorConversation[])
+          setActiveChats((active.data ?? []) as OperatorConversation[])
+          setMyChats((mine.data ?? []) as OperatorConversation[])
+        } catch (error) {
+          console.error('❌ SIDEBAR FETCH EXCEPTION:', error)
+        } finally {
+          if (mounted) setLoading(false)
+        }
+      }
+
+      void fetchConversations()
+      return () => {
+        mounted = false
+      }
+    }, [refreshKey, propertyId]) 
+
+    useEffect(() => {
+      if (!socket) return
+
+      const handleMessageUpdate = (payload: {
+        sessionId: string
+        message: ChatMessage
+        sessionContext?: OperatorConversation
+      }) => {
+        const updateList = (
+          list: OperatorConversation[],
+          type: 'mine' | 'queued' | 'active',
+        ) => {
+          const targetIndex = list.findIndex((c) => c._id === payload.sessionId)
+
+          if (targetIndex === -1) {
+            if (
+              payload.sessionContext &&
+              payload.sessionContext.status === type
+            ) {
+              return [payload.sessionContext, ...list]
+            }
+            return list
+          }
+
+          const updatedList = [...list]
+          const targetChat = { ...updatedList[targetIndex] }
+
+          targetChat.lastMessage = payload.message.messageText
+          targetChat.lastMessageAt = payload.message.createdAt
+
+          if (payload.sessionContext?.assignedOperatorId) {
+            targetChat.assignedOperatorId =
+              payload.sessionContext.assignedOperatorId
+          }
+
+          if (
+            payload.message.senderType === 'visitor' &&
+            selectedConversation?._id !== payload.sessionId
+          ) {
+            targetChat.unreadOperator = (targetChat.unreadOperator ?? 0) + 1
+          }
+
+          updatedList.splice(targetIndex, 1)
+          return [targetChat, ...updatedList]
+        }
+
+        setMyChats((prev) => updateList(prev, 'mine'))
+        setQueuedChats((prev) => updateList(prev, 'queued'))
+        setActiveChats((prev) => updateList(prev, 'active'))
+      }
 
     const handleStatusUpdateChange = (payload: {
       sessionId: string

@@ -69,10 +69,6 @@ export default function OperatorDashboard() {
     const socket = getChatSocket()
     if (!socket.connected) socket.connect()
 
-    // logger.info(
-    //   { propertyIdContext },
-    //   '🔗 Joining live property dashboard room channel',
-    // )
 
     socket.emit('join_property_dashboard', {
       propertyId: propertyIdContext,
