@@ -13,7 +13,7 @@ export function useEmbedResize(open: boolean) {
 
     const width = open ? (isMobile ? screenWidth : 420) : 64
 
-    const height = open ? (isMobile ? screenHeight : 760) : 58
+    const height = open ? (isMobile ? screenHeight : 760) : 64
 
     window.parent.postMessage(
       {
