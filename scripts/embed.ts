@@ -184,6 +184,45 @@ interface LegacyNavigator extends Navigator {
           break
         }
 
+        // case 'RESIZE': {
+        //   const width = Math.min(
+        //     Number.parseInt(data.width ?? '60', 10),
+        //     window.innerWidth,
+        //   )
+
+        //   const height = Math.min(
+        //     Number.parseInt(data.height ?? '60', 10),
+        //     window.innerHeight,
+        //   )
+
+        //   const mobile = window.screen.width <= 768
+        //   const expanded = width > 64 || height > 64
+
+        //   iframe.setAttribute('data-state', expanded ? 'expanded' : 'minimized')
+
+        //   Object.assign(host.style, {
+        //     position: 'fixed',
+        //     right: expanded ? (mobile ? '0' : '20px') : '20px',
+        //     bottom: expanded ? (mobile ? '0' : '20px') : '20px',
+        //     width: expanded ? (mobile ? '100%' : `${width}px`) : '64px',
+        //     height: expanded ? (mobile ? '100%' : `${height}px`) : '64px',
+        //   })
+
+        //   Object.assign(iframe.style, {
+        //     width: expanded ? '100%' : '64px',
+        //     height: expanded ? '100%' : '64px',
+        //     borderRadius: expanded ? (mobile ? '0' : '18px') : '999px',
+        //     boxShadow: expanded
+        //       ? '0 15px 35px rgba(0,0,0,.25)'
+        //       : '0 4px 12px rgba(0,0,0,.15)',
+        //   })
+
+        //   if (expanded) {
+        //     badge.style.display = 'none'
+        //   }
+        //   break
+        // }
+
         case 'RESIZE': {
           const width = Math.min(
             Number.parseInt(data.width ?? '60', 10),
@@ -202,8 +241,8 @@ interface LegacyNavigator extends Navigator {
 
           Object.assign(host.style, {
             position: 'fixed',
-            right: expanded ? (mobile ? '0' : '20px') : '20px',
-            bottom: expanded ? (mobile ? '0' : '20px') : '20px',
+            right: expanded ? '0px' : '20px',
+            bottom: expanded ? '0px' : '20px',
             width: expanded ? (mobile ? '100%' : `${width}px`) : '64px',
             height: expanded ? (mobile ? '100%' : `${height}px`) : '64px',
           })

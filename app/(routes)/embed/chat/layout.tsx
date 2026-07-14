@@ -15,7 +15,7 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
             *,
             *::before,
             *::after {
-              box-sizing: border-box;
+              // box-sizing: border-box;
             }
 
             html,

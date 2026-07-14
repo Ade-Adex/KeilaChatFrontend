@@ -327,7 +327,7 @@ export default function ClientChatWrapper({
   }
 
   return (
-    <div className="w-full h-full md:h-[calc(100vh-52px)] flex items-center justify-center bg-transparent">
+    <div className="w-full h-full flex items-center justify-center bg-transparent">
       {open ? (
         <ChatWindow
           widget={widget}
