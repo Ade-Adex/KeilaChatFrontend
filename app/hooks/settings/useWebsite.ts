@@ -1,57 +1,51 @@
 // /app/hooks/settings/useWebsite.ts
 
+
 'use client'
 
-import { useEffect, useState } from 'react'
-
-import { getWebsite, updateWebsite } from '@/app/lib/api/settings.api'
+import { useState } from 'react'
+import { useDashboardStore } from '@/app/store/useDashboardStore'
+import { updateWebsite } from '@/app/lib/api/settings.api'
 import type { WebsiteFormValues } from '@/app/lib/validation/settings/settings.schema'
 
 export function useWebsite() {
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const [website, setWebsite] = useState<WebsiteFormValues | null>(null)
+  // 🎯 Read existing configuration and updates action directly out of your dashboard state cache!
+  const cachedProperty = useDashboardStore((state) => state.property)
+  const updateCachedProperty = useDashboardStore(
+    (state) => state.updateCachedProperty,
+  )
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await getWebsite()
-        const property = res.data.property
-
-        setWebsite({
-          name: property.name ?? '',
-          domain: property.domain ?? '',
-          aiName: property.widgetSettings?.aiName ?? 'AI Assistant',
-          allowedDomains: property.allowedDomains.join('\n'),
-          category: property.details.category ?? '',
-          subCategory: property.details.subCategory ?? '',
-          region: property.details.region ?? '',
-          description: property.details.description ?? '',
-          logoUrl: property.details.logoUrl ?? '',
-        })
-      } catch (err) {
-        console.error('Failed to load website configuration:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void load()
-  }, [])
+  // Format initial values cleanly from memory context if it exists
+  const website: WebsiteFormValues = {
+    name: cachedProperty?.name ?? '',
+    domain: cachedProperty?.domain ?? '',
+    aiName: cachedProperty?.widgetSettings?.aiName ?? 'AI Assistant',
+    allowedDomains: cachedProperty?.allowedDomains
+      ? cachedProperty.allowedDomains.join('\n')
+      : '',
+    category: cachedProperty?.details?.category ?? '',
+    subCategory: cachedProperty?.details?.subCategory ?? '',
+    region: cachedProperty?.details?.region ?? '',
+    description: cachedProperty?.details?.description ?? '',
+    logoUrl: cachedProperty?.details?.logoUrl ?? '',
+  }
 
   const saveWebsite = async (values: WebsiteFormValues) => {
     setSaving(true)
 
     try {
+      const payloadAllowedDomains = values.allowedDomains
+        .split('\n')
+        .map((d) => d.trim())
+        .filter(Boolean)
+
       const res = await updateWebsite({
         name: values.name,
         domain: values.domain,
         aiName: values.aiName,
-        allowedDomains: values.allowedDomains
-          .split('\n')
-          .map((d) => d.trim())
-          .filter(Boolean),
+        allowedDomains: payloadAllowedDomains,
         category: values.category,
         subCategory: values.subCategory,
         region: values.region,
@@ -59,11 +53,17 @@ export function useWebsite() {
         logoUrl: values.logoUrl,
       })
 
-      setWebsite(values)
+      // 🎯 Sync update straight back into useDashboardStore to keep workspace view aligned perfectly
+      if (res?.success && res.data?.property) {
+        updateCachedProperty(res.data.property)
+      }
 
       return res
     } catch (err) {
-      console.error('Failed to update website configuration:', err)
+      console.error(
+        '[KeilaChat Settings] Failed to update website configuration:',
+        err,
+      )
       throw err
     } finally {
       setSaving(false)
@@ -71,7 +71,6 @@ export function useWebsite() {
   }
 
   return {
-    loading,
     saving,
     website,
     saveWebsite,

@@ -1,8 +1,6 @@
 // /app/components/dashboard/settings/WebsiteForm.tsx
-
 'use client'
 
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -27,7 +25,7 @@ import {
 } from '@/app/lib/validation/settings/settings.schema'
 
 export default function WebsiteForm() {
-  const { website, loading, saving, saveWebsite } = useWebsite()
+  const { website, saving, saveWebsite } = useWebsite()
 
   const {
     register,
@@ -37,33 +35,20 @@ export default function WebsiteForm() {
   } = useForm<WebsiteFormValues>({
     resolver: zodResolver(websiteSchema),
     mode: 'onChange',
-    defaultValues: {
-      name: '',
-      domain: '',
-      aiName: 'AI Assistant',
-      category: '',
-      subCategory: '',
-      region: '',
-      description: '',
-      logoUrl: '',
-      allowedDomains: '',
-    },
+    // 🎯 Instant initial value configuration from global dashboard state store profile memory
+    defaultValues: website,
   })
-
-  useEffect(() => {
-    if (website) {
-      reset(website)
-    }
-  }, [website, reset])
 
   const onSubmit = async (values: WebsiteFormValues) => {
     try {
       const response = await saveWebsite(values)
-      reset(values) 
+      reset(values)
 
       notifications.show({
         title: 'Settings Saved',
-        message: getSuccessMessage(response),
+        message:
+          getSuccessMessage(response) ||
+          'Website settings updated successfully.',
         color: 'green',
         icon: <FiCheck size={16} />,
         autoClose: 4000,
@@ -71,22 +56,12 @@ export default function WebsiteForm() {
     } catch (error: unknown) {
       notifications.show({
         title: 'Save Failed',
-        message: getErrorMessage(error), 
+        message: getErrorMessage(error),
         color: 'red',
         icon: <FiAlertCircle size={16} />,
         autoClose: 5000,
       })
     }
-  }
-
-  if (loading) {
-    return (
-      <Card className="bg-card! flex justify-center items-center p-6">
-        <Text size="sm" c="dimmed">
-          Loading website...
-        </Text>
-      </Card>
-    )
   }
 
   return (
@@ -128,7 +103,6 @@ export default function WebsiteForm() {
               }}
             />
 
-            {/* 🎯 ADDED: Custom SaaS AI Agent Identity Setup Configuration Field */}
             <TextInput
               label="AI Bot Name"
               placeholder="AI Assistant"

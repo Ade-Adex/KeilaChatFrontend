@@ -1,8 +1,13 @@
-// app/(routes)/admin/dashboard/contacts/page.tsx
+// /app/(routes)/admin/dashboard/contacts/page.tsx
+
+
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/app/store/useAuthStore'
+import { useOperatorsStore } from '@/app/store/useOperatorsStore' 
+import { useOperators } from '@/app/hooks/operators/useOperators' 
+import { useInviteOperator } from '@/app/hooks/operators/useInviteOperator' 
 import {
   TextInput,
   Select,
@@ -25,15 +30,9 @@ import {
   FiCheckCircle,
   FiClock,
 } from 'react-icons/fi'
-import { useOperators } from '@/app/hooks/operators/useOperators'
-import { useInviteOperator } from '@/app/hooks/operators/useInviteOperator'
-import { getMyProperties } from '@/app/lib/api/chat.api'
 
 export default function ContactsPage() {
   const operator = useAuthStore((state) => state.operator)
-  const account = useAuthStore((state) => state.account)
-
-  const accountId = account?._id
   const isAdmin = operator?.role === 'admin'
 
   const [opened, { open, close }] = useDisclosure(false)
@@ -42,53 +41,33 @@ export default function ContactsPage() {
   const [role, setRole] = useState<'admin' | 'supervisor' | 'agent'>('agent')
   const [assignedProperties, setAssignedProperties] = useState<string[]>([])
 
-  const [properties, setProperties] = useState<
-    {
-      _id: string
-      name: string
-      domain: string
-    }[]
-  >([])
-
-
+  // 🎯 Clean Facaded Hook States (Shared Caching Powered by Zustand underneath!)
+  const { operators, loading, refreshOperators } = useOperators()
+  const { sendInvite, loading: submitLoading, error } = useInviteOperator()
+  
+  // Keep properties cache inside the store context
+  const { properties, fetchProperties } = useOperatorsStore()
 
   useEffect(() => {
-    async function loadProperties() {
-      try {
-        const res = await getMyProperties()
-
-        setProperties(res.data)
-      } catch (error) {
-        console.error(error)
-      }
-    }
-
     if (isAdmin) {
-      void loadProperties()
+      Promise.resolve().then(() => {
+        void fetchProperties()
+      })
     }
-  }, [isAdmin])
-
-  const { operators, loading, refreshOperators } = useOperators()
-
-
-  
-
-  const { sendInvite, loading: submitLoading, error } = useInviteOperator()
+  }, [isAdmin, fetchProperties])
 
   const handleInviteOperator = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const success = await sendInvite(email, role, assignedProperties)
-
     if (!success) return
 
     setEmail('')
     setRole('agent')
     setAssignedProperties([])
-
     close()
 
-    await refreshOperators()
+    await refreshOperators() // Triggers the store to fetch fresh data
   }
 
   return (
@@ -98,7 +77,6 @@ export default function ContactsPage() {
           <Title order={2} className="tracking-tight text-foreground">
             Team Operators
           </Title>
-
           <Text size="sm" c="dimmed">
             Invite support agents and administrators to your workspace.
           </Text>
@@ -170,18 +148,9 @@ export default function ContactsPage() {
                 dropdown: 'bg-card! text-foreground! border border-border!',
               }}
               data={[
-                {
-                  value: 'agent',
-                  label: 'Support Agent',
-                },
-                {
-                  value: 'supervisor',
-                  label: 'Supervisor',
-                },
-                {
-                  value: 'admin',
-                  label: 'Administrator',
-                },
+                { value: 'agent', label: 'Support Agent' },
+                { value: 'supervisor', label: 'Supervisor' },
+                { value: 'admin', label: 'Administrator' },
               ]}
               leftSection={<FiShield size={16} />}
             />
@@ -208,7 +177,6 @@ export default function ContactsPage() {
               <Button variant="subtle" onClick={close} color="gray">
                 Cancel
               </Button>
-
               <Button
                 type="submit"
                 loading={submitLoading}
@@ -258,7 +226,6 @@ export default function ContactsPage() {
                     <Table.Td>
                       <Group gap="xs" wrap="nowrap">
                         <FiUser className="shrink-0" />
-
                         <Text size="sm" lineClamp={1}>
                           {op.firstName || op.lastName
                             ? `${op.firstName ?? ''} ${op.lastName ?? ''}`
@@ -296,7 +263,6 @@ export default function ContactsPage() {
                               size={14}
                               className="text-emerald-500 shrink-0"
                             />
-
                             <Text
                               size="xs"
                               className="font-medium text-emerald-500 whitespace-nowrap"
@@ -310,7 +276,6 @@ export default function ContactsPage() {
                               size={14}
                               className="text-amber-500 shrink-0"
                             />
-
                             <Text
                               size="xs"
                               className="font-medium text-amber-500 whitespace-nowrap"

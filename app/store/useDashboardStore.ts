@@ -18,6 +18,8 @@ interface DashboardState {
     propertyId: string,
     forceRefresh?: boolean,
   ) => Promise<void>
+  // 🎯 ADDED: Update property cache instantly from settings
+  updateCachedProperty: (property: Partial<WebsiteData>) => void
   clearDashboardCache: () => void
 }
 
@@ -30,7 +32,6 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
   error: null,
 
   fetchDashboardData: async (propertyId: string, forceRefresh = false) => {
-    // 🎯 If data is already cached and we aren't force-refreshing, skip the HTTP call
     if (get().hasLoaded && !forceRefresh && get().property) {
       return
     }
@@ -59,6 +60,13 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  // 🎯 ADDED: Clean, type-safe partial cache writer
+  updateCachedProperty: (updatedFields) => {
+    set((state) => ({
+      property: state.property ? { ...state.property, ...updatedFields } : null,
+    }))
   },
 
   clearDashboardCache: () => {

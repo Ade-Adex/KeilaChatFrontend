@@ -1,18 +1,26 @@
 // /app/components/dashboard/DashboardShell.tsx
 
+
 'use client'
 
-import { useEffect, useState } from 'react'
-import { AppShell, Burger, Group, ScrollArea, Avatar, Text, Menu, UnstyledButton } from '@mantine/core'
+import { useEffect } from 'react'
+import {
+  AppShell,
+  Burger,
+  Group,
+  ScrollArea,
+  Avatar,
+  Text,
+  Menu,
+  UnstyledButton,
+} from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { FaCircle } from 'react-icons/fa'
 import Sidebar from '@/app/components/dashboard/Sidebar'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import Link from 'next/link'
 
-import { getOperatorProfile } from '@/app/lib/api/chat.api'
 import { getChatSocket } from '@/app/hooks/useChatSocket'
-import type { OperatorProfile } from '@/app/types/dashboard'
 import { useAuthStore } from '@/app/store/useAuthStore'
 import { useRouter } from 'next/navigation'
 
@@ -22,13 +30,13 @@ export default function DashboardShell({
   children: React.ReactNode
 }) {
   const [opened, { toggle, close }] = useDisclosure(false)
-  const [profile, setProfile] = useState<OperatorProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-
   const router = useRouter()
+
+  // 🎯 Select unified context values directly out of your persisted auth state store
+  const operator = useAuthStore((state) => state.operator)
+  const updateOperator = useAuthStore((state) => state.updateOperator)
   const logout = useAuthStore((state) => state.logout)
 
-  // 🎯 Action handler to trigger matching cleanup sequence
   const handleDropdownSignOutClick = async () => {
     try {
       close()
@@ -44,35 +52,24 @@ export default function DashboardShell({
   }
 
   useEffect(() => {
-    let mounted = true
-
-    const fetchProfile = async () => {
-      try {
-        const result = await getOperatorProfile()
-        if (mounted) {
-          setProfile(result.data)
-        }
-      } catch (error) {
-        console.error('❌ Failed syncing profile content schema:', error)
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-
-    void fetchProfile()
+    if (!operator?._id) return
 
     const socket = getChatSocket()
-    const handlePresenceWireShift = (payload: { operatorId: string; availabilityStatus: string; isOnline: boolean }) => {
-      if (profile?.operator?._id === payload.operatorId && mounted) {
-        setProfile((prev) => {
-          if (!prev || !prev.operator) return prev
-          return {
-            ...prev,
-            operator: {
-              ...prev.operator,
-              availabilityStatus: payload.availabilityStatus as 'offline' | 'online' | 'away' | 'busy',
-            },
-          }
+
+    const handlePresenceWireShift = (payload: {
+      operatorId: string
+      availabilityStatus: string
+      isOnline: boolean
+    }) => {
+      // 🎯 Sync websocket changes directly into the global auth store state
+      if (operator._id === payload.operatorId) {
+        updateOperator({
+          availabilityStatus: payload.availabilityStatus as
+            | 'offline'
+            | 'online'
+            | 'away'
+            | 'busy',
+          isOnline: payload.isOnline,
         })
       }
     }
@@ -80,10 +77,9 @@ export default function DashboardShell({
     socket.on('operator_status_changed', handlePresenceWireShift)
 
     return () => {
-      mounted = false
       socket.off('operator_status_changed', handlePresenceWireShift)
     }
-  }, [profile?.operator?._id])
+  }, [operator?._id, updateOperator])
 
   return (
     <AppShell
@@ -117,8 +113,8 @@ export default function DashboardShell({
 
           {/* Right Block: Dynamic Status Badges, System Themes & User Profiles */}
           <Group className="gap-2 sm:gap-4" wrap="nowrap">
-            {/* 🎯 DESKTOP ONLY: Full Presence Pill Display */}
-            {profile?.operator && (
+            {/* DESKTOP ONLY: Full Presence Pill Display */}
+            {operator && (
               <Group
                 gap="xs"
                 visibleFrom="sm"
@@ -126,11 +122,11 @@ export default function DashboardShell({
               >
                 <FaCircle
                   className={`text-[10px] transition-colors duration-200 ${
-                    profile.operator.availabilityStatus === 'online'
+                    operator.availabilityStatus === 'online'
                       ? 'text-green-500'
-                      : profile.operator.availabilityStatus === 'busy'
+                      : operator.availabilityStatus === 'busy'
                         ? 'text-red-500'
-                        : profile.operator.availabilityStatus === 'away'
+                        : operator.availabilityStatus === 'away'
                           ? 'text-yellow-500'
                           : 'text-gray-400'
                   }`}
@@ -140,12 +136,12 @@ export default function DashboardShell({
                   fw={600}
                   className="capitalize text-muted-foreground"
                 >
-                  {profile.operator.availabilityStatus ?? 'offline'}
+                  {operator.availabilityStatus ?? 'offline'}
                 </Text>
               </Group>
             )}
 
-            {profile?.operator && (
+            {operator && (
               <Menu shadow="md" width={200} position="bottom-end" withinPortal>
                 <Menu.Target>
                   <UnstyledButton className="hover:bg-muted/50 p-1 rounded-xl transition-colors">
@@ -153,21 +149,21 @@ export default function DashboardShell({
                       {/* Avatar with built-in presence dot fallback badge */}
                       <div className="relative">
                         <Avatar
-                          src={profile.operator.avatar}
+                          src={operator.avatar || undefined}
                           radius="xl"
                           size="sm"
                           alt="avatar"
                           color="initials"
-                          name={profile.operator.firstName}
+                          name={operator.firstName}
                         />
                         {/* Mobile Status Dot Element */}
                         <div
                           className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-card sm:hidden ${
-                            profile.operator.availabilityStatus === 'online'
+                            operator.availabilityStatus === 'online'
                               ? 'bg-green-500'
-                              : profile.operator.availabilityStatus === 'busy'
+                              : operator.availabilityStatus === 'busy'
                                 ? 'bg-red-500'
-                                : profile.operator.availabilityStatus === 'away'
+                                : operator.availabilityStatus === 'away'
                                   ? 'bg-yellow-500'
                                   : 'bg-gray-400'
                           }`}
@@ -180,8 +176,7 @@ export default function DashboardShell({
                           fw={700}
                           className="truncate leading-tight"
                         >
-                          {profile.operator.firstName}{' '}
-                          {profile.operator.lastName}
+                          {operator.firstName} {operator.lastName}
                         </Text>
                       </div>
                     </Group>
@@ -190,19 +185,18 @@ export default function DashboardShell({
 
                 <Menu.Dropdown className="border-border bg-card">
                   <Menu.Label className="font-bold text-[11px] pb-0">
-                    Logged in as {profile.operator.firstName}{' '}
-                    {profile.operator.lastName ?? ''}
+                    Logged in as {operator.firstName} {operator.lastName ?? ''}
                   </Menu.Label>
 
-                  {profile.operator.email && (
+                  {operator.email && (
                     <Menu.Label className="text-[10px] text-muted-foreground pt-0 truncate max-w-45">
-                      {profile.operator.email}
+                      {operator.email}
                     </Menu.Label>
                   )}
 
                   <div className="px-3 py-1 sm:hidden border-b border-border mb-1 mt-1">
                     <Text size="xs" fw={600} className="capitalize">
-                      Status: {profile.operator.availabilityStatus ?? 'offline'}
+                      Status: {operator.availabilityStatus ?? 'offline'}
                     </Text>
                   </div>
 

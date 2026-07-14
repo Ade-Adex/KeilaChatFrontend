@@ -1,8 +1,6 @@
 // /app/components/dashboard/settings/WorkspaceForm.tsx
-
 'use client'
 
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -27,7 +25,7 @@ import {
 } from '@/app/lib/validation/settings/settings.schema'
 
 export default function WorkspaceForm() {
-  const { workspace, loading, saving, saveWorkspace } = useWorkspace()
+  const { workspace, saving, saveWorkspace } = useWorkspace()
 
   const {
     register,
@@ -37,27 +35,22 @@ export default function WorkspaceForm() {
   } = useForm<WorkspaceFormValues>({
     resolver: zodResolver(workspaceSchema),
     mode: 'onChange',
+    // 🎯 Instant initial value binding using Zustand data cache
     defaultValues: {
-      companyName: '',
+      companyName: workspace.companyName,
     },
   })
-
-  useEffect(() => {
-    if (workspace) {
-      reset({
-        companyName: workspace.companyName,
-      })
-    }
-  }, [workspace, reset])
 
   const onSubmit = async (values: WorkspaceFormValues) => {
     try {
       const response = await saveWorkspace(values)
-      reset(values) 
+      reset(values) // Clear dirty fields states context cleanly on layout
 
       notifications.show({
         title: 'Workspace Updated',
-        message: getSuccessMessage(response),
+        message:
+          getSuccessMessage(response) ||
+          'Workspace details updated successfully.',
         color: 'green',
         icon: <FiCheck size={16} />,
         autoClose: 4000,
@@ -65,22 +58,12 @@ export default function WorkspaceForm() {
     } catch (error: unknown) {
       notifications.show({
         title: 'Save Failed',
-        message: getErrorMessage(error), 
+        message: getErrorMessage(error),
         color: 'red',
         icon: <FiAlertCircle size={16} />,
         autoClose: 5000,
       })
     }
-  }
-
-  if (loading) {
-    return (
-      <Card className="bg-card! flex justify-center items-center p-6">
-        <Text size="sm" c="dimmed">
-          Loading workspace information...
-        </Text>
-      </Card>
-    )
   }
 
   return (
@@ -90,7 +73,6 @@ export default function WorkspaceForm() {
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="lg">
-          {/* Header */}
           <div>
             <Title order={3}>Workspace</Title>
             <Text size="sm" c="dimmed" mt={4}>
@@ -100,20 +82,18 @@ export default function WorkspaceForm() {
 
           <Divider className="border-border!" />
 
-          {/* Plan display */}
           <Group justify="space-between">
             <Text size="sm" fw={500}>
               Current Plan
             </Text>
 
-            <Badge color="blue" variant="light">
-              {workspace?.plan ?? 'free'}
+            <Badge color="blue" variant="light" className="uppercase">
+              {workspace.plan}
             </Badge>
           </Group>
 
           <Divider className="border-border!" />
 
-          {/* Form */}
           <TextInput
             label="Company Name"
             placeholder="Acme Inc."
@@ -127,7 +107,6 @@ export default function WorkspaceForm() {
 
           <Divider className="border-border!" />
 
-          {/* Submit */}
           <Group justify="flex-end">
             <Button
               type="submit"

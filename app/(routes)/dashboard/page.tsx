@@ -49,6 +49,8 @@ export default function DashboardPage() {
   // 🎯 Map global Zustand caching states
   const { property, analytics, chartData, loading, hasLoaded, fetchDashboardData } = useDashboardStore()
 
+  // console.log('DashboardPage', { property, analytics, chartData, loading, hasLoaded })
+
   const [conversations, setConversations] = useState<DashboardRecentConversation[]>([])
   const [visitors, setVisitors] = useState<DashboardRecentVisitor[]>([])
 

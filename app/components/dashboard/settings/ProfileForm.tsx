@@ -1,8 +1,8 @@
 // /app/components/dashboard/settings/ProfileForm.tsx
 
+
 'use client'
 
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -24,7 +24,7 @@ import { ProfileFormValues, profileSchema } from '@/app/lib/validation/settings/
 import { getErrorMessage, getSuccessMessage } from '@/app/lib/utils/error'
 
 export default function ProfileForm() {
-  const { profile, loading, saving, saveProfile } = useProfile()
+  const { profile, saving, saveProfile } = useProfile()
 
   const {
     register,
@@ -34,33 +34,20 @@ export default function ProfileForm() {
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     mode: 'onChange',
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      avatar: '',
-    },
+    // 🎯 Set initial baseline from Zustand once on component mount
+    defaultValues: profile, 
   })
-
-  const avatar = profile?.avatar
-
-  /**
-   * Load API data into form
-   */
-  useEffect(() => {
-    if (profile) {
-      reset(profile)
-    }
-  }, [profile, reset])
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
       const response = await saveProfile(values)
-      reset(values) // Marks the form clean (isDirty = false) after successful save
+      
+      // 🎯 Only reset on successful form submission to make the form clean again
+      reset(values) 
 
       notifications.show({
         title: 'Profile Updated',
-        message: getSuccessMessage(response),
+        message: getSuccessMessage(response) || 'Your profile configuration was saved successfully.',
         color: 'green',
         icon: <FiCheck size={16} />,
         autoClose: 4000,
@@ -74,14 +61,6 @@ export default function ProfileForm() {
         autoClose: 5000,
       })
     }
-  }
-
-  if (loading) {
-    return (
-      <Card className="bg-card! flex justify-center items-center p-6">
-        <Text size="sm" c="dimmed">Loading profile...</Text>
-      </Card>
-    )
   }
 
   return (
@@ -102,7 +81,7 @@ export default function ProfileForm() {
           <Divider className="border-border!" />
 
           <Group align="flex-start">
-            <Avatar src={avatar || undefined} radius="xl" size={100} />
+            <Avatar src={profile?.avatar || undefined} radius="xl" size={100} />
 
             <Stack gap={6}>
               <Button

@@ -22,10 +22,6 @@ export interface ProfileResponse {
   }
 }
 
-export function getProfile() {
-  return apiGet<ProfileResponse>(`/api/v1/operators/profile`)
-}
-
 export function updateProfile(data: ProfileFormValues) {
   return apiPut<ProfileResponse>(`/api/v1/operators/profile`, data)
 }
@@ -39,10 +35,6 @@ export interface WorkspaceResponse {
   data: {
     account: AccountData
   }
-}
-
-export function getWorkspace() {
-  return apiGet<WorkspaceResponse>(`/api/v1/account/workspace`)
 }
 
 export function updateWorkspace(data: WorkspaceFormValues) {

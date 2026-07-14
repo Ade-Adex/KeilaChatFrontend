@@ -1,53 +1,43 @@
 // /app/hooks/settings/useProfile.ts
 
+
 'use client'
 
-import { useEffect, useState } from 'react'
-
-import { getProfile, updateProfile } from '@/app/lib/api/settings.api'
+import { useState } from 'react'
+import { useAuthStore } from '@/app/store/useAuthStore'
+import { updateProfile } from '@/app/lib/api/settings.api'
 import type { ProfileFormValues } from '@/app/lib/validation/settings/settings.schema'
 
 export function useProfile() {
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const [profile, setProfile] = useState<ProfileFormValues | null>(null)
+  const operator = useAuthStore((state) => state.operator)
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      setLoading(true)
+  const updateOperator = useAuthStore((state) => state.updateOperator)
 
-      try {
-        const res = await getProfile()
-
-        setProfile({
-          firstName: res.data.operator.firstName ?? '',
-          lastName: res.data.operator.lastName ?? '',
-          email: res.data.operator.email,
-          avatar: res.data.operator.avatar ?? '',
-        })
-
-        return res
-      } catch (err) {
-        console.error('Failed to load profile:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadProfile()
-  }, [])
+  const profile: ProfileFormValues = {
+    firstName: operator?.firstName ?? '',
+    lastName: operator?.lastName ?? '',
+    email: operator?.email ?? '',
+    avatar: operator?.avatar ?? '',
+  }
 
   const saveProfile = async (values: ProfileFormValues) => {
     setSaving(true)
 
     try {
       const res = await updateProfile(values)
-      setProfile(values)
+
+      if (res?.success) {
+        updateOperator(values)
+      }
+
       return res
     } catch (err) {
-      console.error('Failed to update profile:', err)
-      // Rethrow the error so that the calling form component can catch it and display an error alert
+      console.error(
+        '[KeilaChat Settings] Failed to update operator runtime profile:',
+        err,
+      )
       throw err
     } finally {
       setSaving(false)
@@ -55,7 +45,6 @@ export function useProfile() {
   }
 
   return {
-    loading,
     saving,
     profile,
     saveProfile,
