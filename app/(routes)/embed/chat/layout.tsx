@@ -57,6 +57,7 @@
 
 
 
+
 // app/(routes)/embed/chat/layout.tsx
 import type { ReactNode } from 'react'
 
@@ -95,15 +96,16 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
       <div
         style={{
           position: 'fixed',
-          inset: 0,
-          width: '100%',
-          height: '100%',
+          top: '8px',      
+          right: '0px',
+          bottom: '0px',
+          left: '0px',
           display: 'flex',
-          alignItems: 'flex-end', // 🎯 FIX: Anchor item container cleanly to bottom of iframe
-          justifyContent: 'flex-end', // 🎯 FIX: Match right alignment profile workflow
+          alignItems: 'flex-end', 
+          justifyContent: 'flex-end',
           overflow: 'visible',
           background: 'transparent',
-          padding: '16px', // 🎯 Adds a nice spacing clearance boundary so the chat container isn't jammed hard against screen edges
+          padding: '0 16px 16px 16px', 
         }}
       >
         {children}
