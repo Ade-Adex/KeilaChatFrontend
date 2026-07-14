@@ -23,11 +23,9 @@ export default function DashboardLayout({
   const setAuth = useAuthStore((state) => state.login)
   const cachedOperator = useAuthStore((state) => state.operator)
 
-  // 🎯 Initialize checking state. If cachedOperator exists, checking is immediately false.
   const [checking, setChecking] = useState(() => !cachedOperator)
 
   useEffect(() => {
-    // 🎯 FIX: If we already have a session, bail out immediately with NO state mutations!
     if (cachedOperator) {
       return
     }
@@ -36,7 +34,6 @@ export default function DashboardLayout({
 
     async function verifyAndHydrate() {
       try {
-        // 1. Check if token cookies are valid (or refresh them)
         const authenticated = await checkAuth()
         if (!active) return
 
@@ -45,7 +42,6 @@ export default function DashboardLayout({
           return
         }
 
-        // 2. Fetch fresh user information directly from database records via /me
         const res = await getCurrentProfile()
         if (!active) return
 

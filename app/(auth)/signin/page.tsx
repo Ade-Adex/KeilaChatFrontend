@@ -21,12 +21,11 @@ import { loginSchema, type LoginSchema } from '@/app/lib/validation/auth.schema'
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const cachedOperator = useAuthStore((state) => state.operator) // 🎯 Read cached user state
+  const cachedOperator = useAuthStore((state) => state.operator)
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
   useEffect(() => {
-    // 🎯 If the store already says we are logged in, send directly to dashboard
     if (cachedOperator) {
       router.replace('/dashboard')
       return
