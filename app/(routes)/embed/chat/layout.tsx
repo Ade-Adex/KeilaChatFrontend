@@ -38,7 +38,7 @@ export default function EmbedLayout({ children }: EmbedLayoutProps) {
         style={{
           position: 'fixed',
           // inset: 0,
-          top: '8px',      
+          top: '8px',
           right: '0px',
           bottom: '0px',
           left: '0px',
