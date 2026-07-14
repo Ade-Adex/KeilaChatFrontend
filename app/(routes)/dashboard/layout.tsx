@@ -1,5 +1,5 @@
-// /app/(routes)/dashboard/layout.tsx
 
+// /app/(routes)/dashboard/layout.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -21,13 +21,24 @@ export default function DashboardLayout({
   const pathname = usePathname()
   
   const setAuth = useAuthStore((state) => state.login)
-  const [checking, setChecking] = useState(true)
+  const cachedOperator = useAuthStore((state) => state.operator)
+
+  // 🎯 Initialize checking state. If cachedOperator exists, checking is immediately false.
+  const [checking, setChecking] = useState(() => !cachedOperator)
 
   useEffect(() => {
+    // 🎯 FIX: If we already have a session, bail out immediately with NO state mutations!
+    if (cachedOperator) {
+      return
+    }
+
+    let active = true
+
     async function verifyAndHydrate() {
       try {
         // 1. Check if token cookies are valid (or refresh them)
         const authenticated = await checkAuth()
+        if (!active) return
 
         if (!authenticated) {
           router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
@@ -36,21 +47,29 @@ export default function DashboardLayout({
 
         // 2. Fetch fresh user information directly from database records via /me
         const res = await getCurrentProfile()
+        if (!active) return
 
         if (res?.success && res.data) {
           setAuth(res.data)
-          setChecking(false)
         } else {
           router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
         }
       } catch (err) {
         console.error('Failed to initialize operator dashboard workspace session:', err)
         router.replace(`/signin?callbackUrl=${encodeURIComponent(pathname)}`)
+      } finally {
+        if (active) {
+          setChecking(false)
+        }
       }
     }
 
     verifyAndHydrate()
-  }, [pathname, router, setAuth])
+
+    return () => {
+      active = false
+    }
+  }, [router, setAuth]) 
 
   if (checking) {
     return (

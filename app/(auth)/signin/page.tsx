@@ -1,5 +1,5 @@
-
 // /app/(auth)/signin/page.tsx
+
 
 'use client'
 
@@ -21,12 +21,17 @@ import { loginSchema, type LoginSchema } from '@/app/lib/validation/auth.schema'
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  const setAuth = useAuthStore((state) => state.login)
+  const cachedOperator = useAuthStore((state) => state.operator) // 🎯 Read cached user state
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
   useEffect(() => {
+    // 🎯 If the store already says we are logged in, send directly to dashboard
+    if (cachedOperator) {
+      router.replace('/dashboard')
+      return
+    }
+
     async function verify() {
       const authenticated = await checkAuth()
 
@@ -36,7 +41,7 @@ function LoginContent() {
     }
 
     verify()
-  }, [router])
+  }, [router, cachedOperator]) 
 
   const {
     register,
@@ -45,7 +50,6 @@ function LoginContent() {
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
-
     defaultValues: {
       email: '',
       password: '',
@@ -82,7 +86,6 @@ function LoginContent() {
       <div className="w-full max-w-md rounded-xl bg-card p-8 shadow-2xl">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold">Operator Sign In</h1>
-
           <p className="mt-2 text-sm text-muted-foreground">
             Authenticate your workspace session
           </p>
@@ -114,7 +117,6 @@ function LoginContent() {
                 {...register('rememberMe')}
                 className="h-4 w-4"
               />
-
               <span className="text-sm">Remember me</span>
             </label>
 
