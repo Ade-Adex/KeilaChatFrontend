@@ -1,6 +1,9 @@
 // /app/components/dashboard/settings/WebsiteForm.tsx
+
+
 'use client'
 
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -13,6 +16,7 @@ import {
   TextInput,
   Textarea,
   Title,
+  LoadingOverlay, 
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { FiGlobe, FiSave, FiCheck, FiAlertCircle } from 'react-icons/fi'
@@ -25,7 +29,7 @@ import {
 } from '@/app/lib/validation/settings/settings.schema'
 
 export default function WebsiteForm() {
-  const { website, saving, saveWebsite } = useWebsite()
+  const { website, saving, isLoading, saveWebsite } = useWebsite() 
 
   const {
     register,
@@ -35,9 +39,14 @@ export default function WebsiteForm() {
   } = useForm<WebsiteFormValues>({
     resolver: zodResolver(websiteSchema),
     mode: 'onChange',
-    // 🎯 Instant initial value configuration from global dashboard state store profile memory
     defaultValues: website,
   })
+
+  useEffect(() => {
+    if (website) {
+      reset(website)
+    }
+  }, [website, reset])
 
   const onSubmit = async (values: WebsiteFormValues) => {
     try {
@@ -68,9 +77,14 @@ export default function WebsiteForm() {
     <Card
       radius="lg"
       shadow="sm"
+      pos="relative" // 🎯 Required to restrict loading overlay inside form layout
       className="bg-card! border border-border! text-foreground!"
     >
+      {/* 🎯 Prevent blank flashing settings fields during backend retrieval */}
+      <LoadingOverlay visible={isLoading} overlayProps={{ blur: 1 }} />
+
       <form onSubmit={handleSubmit(onSubmit)}>
+        {/* ... Rest of your form input fields identical ... */}
         <Stack gap="xl">
           <div>
             <Title order={3}>Website</Title>

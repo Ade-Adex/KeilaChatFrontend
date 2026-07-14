@@ -50,6 +50,7 @@ export default function DashboardPage() {
   const { property, analytics, chartData, loading, hasLoaded, fetchDashboardData } = useDashboardStore()
 
   // console.log('DashboardPage', { property, analytics, chartData, loading, hasLoaded })
+  // console.log('DashboardPage user', { user, account, operators })
 
   const [conversations, setConversations] = useState<DashboardRecentConversation[]>([])
   const [visitors, setVisitors] = useState<DashboardRecentVisitor[]>([])
