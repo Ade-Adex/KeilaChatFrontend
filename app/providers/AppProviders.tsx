@@ -18,7 +18,9 @@ export default function AppProviders({
 }) {
   const pathname = usePathname()
 
-  const isExcluded = ['/embed/chat', '/dashboard'].some((path) => pathname.startsWith(path));
+  const isExcluded =
+    pathname &&
+    ['/embed/chat', '/dashboard'].some((path) => pathname.startsWith(path))
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
