@@ -51,17 +51,60 @@ export default function DashboardShell({
     }
   }
 
+  // useEffect(() => {
+  //   if (!operator?._id) return
+
+  //   const socket = getChatSocket()
+
+  //   const handlePresenceWireShift = (payload: {
+  //     operatorId: string
+  //     availabilityStatus: string
+  //     isOnline: boolean
+  //   }) => {
+  //     // 🎯 Sync websocket changes directly into the global auth store state
+  //     if (operator._id === payload.operatorId) {
+  //       updateOperator({
+  //         availabilityStatus: payload.availabilityStatus as
+  //           | 'offline'
+  //           | 'online'
+  //           | 'away'
+  //           | 'busy',
+  //         isOnline: payload.isOnline,
+  //       })
+  //     }
+  //   }
+
+  //   socket.on('operator_status_changed', handlePresenceWireShift)
+
+  //   return () => {
+  //     socket.off('operator_status_changed', handlePresenceWireShift)
+  //   }
+  // }, [operator?._id, updateOperator])
+
+  // /app/components/dashboard/DashboardShell.tsx
+
   useEffect(() => {
     if (!operator?._id) return
 
     const socket = getChatSocket()
+
+    // 🎯 1. Ensure the socket is connected immediately when the dashboard mounts
+    if (!socket.connected) {
+      socket.connect()
+    }
+
+    // 🎯 2. Notify backend server that this operator has connected/come online
+    socket.emit('operator_connected', {
+      operatorId: operator._id,
+      clientType: 'operator',
+    })
 
     const handlePresenceWireShift = (payload: {
       operatorId: string
       availabilityStatus: string
       isOnline: boolean
     }) => {
-      // 🎯 Sync websocket changes directly into the global auth store state
+      // Sync websocket changes directly into the global auth store state
       if (operator._id === payload.operatorId) {
         updateOperator({
           availabilityStatus: payload.availabilityStatus as
@@ -78,6 +121,8 @@ export default function DashboardShell({
 
     return () => {
       socket.off('operator_status_changed', handlePresenceWireShift)
+      // Optional: don't disconnect the entire socket globally here if other parts use it,
+      // but you can tell the backend if they leave
     }
   }, [operator?._id, updateOperator])
 
